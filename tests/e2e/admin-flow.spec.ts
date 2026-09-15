@@ -24,7 +24,8 @@ test("uninvited email is turned away at sign-in", async ({ page }) => {
   await page.goto("/admin/sign-in");
   await page.getByRole("textbox").fill("stranger@example.com");
   await page.getByRole("button", { name: /sign-in link/i }).click();
-  await expect(page.getByRole("alert")).toContainText(/isn't on the team/i);
+  // Not getByRole("alert"): Next's route announcer is also role=alert.
+  await expect(page.locator(".banner-warn")).toContainText(/isn't on the team/i);
 });
 
 test("invited admin signs in via magic link", async ({ page }) => {
