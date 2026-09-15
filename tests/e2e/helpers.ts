@@ -23,6 +23,20 @@ export function adminApi() {
  */
 export async function signIn(page: Page, email: string) {
   const supabase = adminApi();
+
+  // Ensure the auth user exists first: generateLink auto-creates on first use,
+  // which races the invite triggers. createUser runs the same invite gate.
+  const { data: users } = await supabase.auth.admin.listUsers();
+  if (!users?.users.some((u) => u.email === email)) {
+    const { error: createError } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true,
+    });
+    if (createError && !/already/i.test(createError.message)) {
+      throw new Error(`createUser failed for ${email}: ${createError.message}`);
+    }
+  }
+
   const { data, error } = await supabase.auth.admin.generateLink({
     type: "magiclink",
     email,

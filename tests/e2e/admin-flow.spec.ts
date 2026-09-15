@@ -52,12 +52,24 @@ test("create property → import KML → corners numbered clockwise from entranc
   await expect(table.locator("tbody tr")).toHaveCount(4);
   await expect(table).toContainText("C1");
   await expect(table).toContainText("C4");
-  // Gate 1 numbering: C1 = NW corner (30.173932, −94.196061)
-  const firstRow = table.locator("tbody tr").first();
-  await expect(firstRow).toContainText("30.1739");
-  await expect(firstRow).toContainText("-94.1960");
   await expect(page.getByTestId("entrance-coords")).toBeVisible();
   await expect(page.getByTestId("drawn-map")).toBeVisible();
+
+  // Import defaults the entrance to the first edge (KML order starts at NE),
+  // so C1 = NE until the entrance is confirmed.
+  const firstRow = table.locator("tbody tr").first();
+  await expect(firstRow).toContainText("30.1737");
+  await expect(firstRow).toContainText("-94.1956");
+
+  // Move the entrance to the Broussard Rd frontage (top of the drawn map):
+  // numbering re-derives to the Gate 1 layout, C1 = NW (30.173932, −94.196061).
+  await page.getByRole("button", { name: "Move entrance" }).click();
+  const map = page.getByTestId("drawn-map");
+  const box = await map.boundingBox();
+  if (!box) throw new Error("drawn map not visible");
+  await map.click({ position: { x: box.width / 2, y: box.height * 0.09 } });
+  await expect(firstRow).toContainText("30.1739");
+  await expect(firstRow).toContainText("-94.1960");
 
   // Verify and lock (CAD-verified); as admin the unlock action appears.
   await page.getByRole("button", { name: "CAD-verified", exact: true }).click();
