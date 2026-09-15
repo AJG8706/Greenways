@@ -1,0 +1,117 @@
+{
+  "$meta": {
+    "locale": "es",
+    "version": "0.1",
+    "notes": "Español neutro para compradores en Texas. Trato de usted. Distancias en pies (así se mide el terreno aquí). Frases cortas para leer al sol."
+  },
+  "common": {
+    "appName": "Greenways",
+    "byline": "por Texas Greener Pastures",
+    "switchLanguage": "English",
+    "switchLanguageShort": "EN",
+    "back": "Atrás",
+    "close": "Cerrar",
+    "ok": "OK",
+    "ft": "pies",
+    "acres": "{n} acres",
+    "corner": "Esquina {n}",
+    "cornerShort": "E{n}"
+  },
+  "welcome": {
+    "eyebrow": "Recorrido guiado",
+    "title": "Camine el terreno. Encuentre cada esquina.",
+    "body": "Su teléfono le señala cada estaca de esquina. Sin instalar nada, sin cuenta.",
+    "start": "Empezar a caminar",
+    "preview": "Ver el recorrido desde casa",
+    "loadHint": "Funciona mejor en el terreno. Abra este enlace antes de salir del pavimento para que cargue todo.",
+    "saved": "Guardado sin conexión · {mb} MB"
+  },
+  "permission": {
+    "title": "Greenways necesita su ubicación y su brújula",
+    "body": "Así la flecha le señala cada estaca. No se guarda nada sobre usted.",
+    "cta": "Permitir ubicación y brújula",
+    "iosNote": "Su teléfono preguntará dos veces. Toque Permitir las dos veces.",
+    "denied": "Sin ubicación, la flecha no puede señalar. Aún puede ver el recorrido.",
+    "retry": "Intentar de nuevo",
+    "openSettings": "La ubicación está apagada para este navegador. Actívela en Configuración y vuelva."
+  },
+  "intro": {
+    "label": "Vista aérea",
+    "skip": "Saltar intro",
+    "duration": "{s} seg"
+  },
+  "hud": {
+    "tracking": "Buscando",
+    "away": "de distancia",
+    "here": "Está aquí",
+    "honesty": "Las estacas marcan la esquina exacta. La flecha lo deja a unos pasos.",
+    "calibrate": "Gire despacio en un círculo para calibrar la brújula.",
+    "gpsWeak": "Señal GPS débil. Siga caminando, se estabiliza.",
+    "gpsLost": "Sin GPS por ahora. Aléjese de árboles o vehículos.",
+    "map": "Mapa",
+    "hideMap": "Ocultar mapa",
+    "corners": "Esquinas",
+    "found": "Encontrada",
+    "foundCount": "{found} de {total} encontradas",
+    "nextNearest": "La más cercana",
+    "menu": "Más",
+    "restart": "Empezar de nuevo",
+    "help": "Ayuda",
+    "compass": "Brújula"
+  },
+  "picker": {
+    "title": "Elija una esquina",
+    "subtitle": "Una a la vez. La flecha sigue la que elija.",
+    "nearest": "Más cercana",
+    "found": "Encontrada",
+    "trackThis": "Buscar esta esquina"
+  },
+  "arrival": {
+    "title": "Encontró la Esquina {n}",
+    "subtitle": "La estaca está a unos pasos.",
+    "lookFor": "Busque",
+    "clip": "Ver la llegada",
+    "next": "Siguiente esquina",
+    "stay": "Ver la esquina",
+    "allDone": "Esa fue la última"
+  },
+  "boundary": {
+    "title": "Está justo fuera del límite del lote",
+    "body": "Regrese hacia la flecha. El límite va por el lado de la cerca.",
+    "dismiss": "Entendido"
+  },
+  "done": {
+    "title": "Caminó las {n} esquinas",
+    "body": "Ese es todo el lote, de punta a punta. ¿Preguntas? Estamos a un mensaje.",
+    "homesite": "Ver el sitio para la casa",
+    "text": "Enviar mensaje a Texas Greener Pastures",
+    "again": "Caminarlo otra vez",
+    "share": "Enviar este recorrido a alguien"
+  },
+  "preview": {
+    "title": "Ver el recorrido",
+    "body": "Todo el recorrido desde casa: la vista aérea, la entrada, cada esquina, el sitio para la casa.",
+    "play": "Reproducir",
+    "chapters": "Capítulos",
+    "chapterIntro": "Vista aérea",
+    "chapterEntrance": "Entrada desde el camino",
+    "chapterCorner": "Esquina {n}",
+    "chapterHomesite": "Sitio para la casa",
+    "goOnSite": "¿Está en el terreno? Empezar a caminar"
+  },
+  "offline": {
+    "saved": "Guardado sin conexión",
+    "noSignal": "Sin señal. Todo lo que necesita ya está cargado.",
+    "loading": "Cargando el recorrido… {pct}%"
+  },
+  "sms": {
+    "walkPack": "Su recorrido Greenways de {property} está listo: {link}\nÁbralo antes de salir del pavimento para que cargue. Le señala cada estaca de esquina. — Texas Greener Pastures"
+  },
+  "help": {
+    "title": "Cómo funciona",
+    "s1": "Elija una esquina. La flecha la señala y el número es la distancia en pies.",
+    "s2": "Camine hasta que diga que llegó. Busque la estaca que describe la tarjeta.",
+    "s3": "Toque Siguiente esquina. El límite del lote está en el mapa si quiere verlo.",
+    "s4": "Si la flecha parece equivocada, gire despacio en un círculo para reiniciar la brújula."
+  }
+}

@@ -1,0 +1,31 @@
+/* Greenways app styles. The design system itself lives in phase1/src/greenways.css
+   (source of truth from the Phase 1 hand-off) and is imported verbatim. */
+@import "../phase1/src/greenways.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* next/font self-hosted families override the raw family names declared in greenways.css. */
+:root {
+  --gw-font-display: var(--font-zilla-slab), Rockwell, "Roboto Slab", Georgia, serif;
+  --gw-font-ui: var(--font-atkinson), "Atkinson Hyperlegible", system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font: var(--gw-t-body);
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* MapLibre chrome on the Greenways surfaces */
+.maplibregl-map {
+  font: var(--gw-t-small);
+}
