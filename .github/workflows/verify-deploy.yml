@@ -1,0 +1,57 @@
+name: Verify deployment
+
+# Manually triggered smoke check of the deployed preview + hosted Supabase.
+# Uses only the public URL and the publishable (anon) key — no secrets.
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_url:
+        description: Deployed app origin
+        default: https://greenways-jade.vercel.app
+        required: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      URL: ${{ inputs.deploy_url }}
+      SUPABASE_URL: https://pdrvinfahqnskuwqumuu.supabase.co
+      ANON_KEY: sb_publishable_qYvdo406rkxrs1i89h3LwA_PO4wS8ZG
+    steps:
+      - name: App — root redirects into admin sign-in
+        run: |
+          set -x
+          curl -fsSL -o page.html "$URL/"
+          grep -q "Sign in to Greenways" page.html
+
+      - name: App — walk surface renders from messages (EN)
+        run: |
+          curl -fsSL -o walk.html "$URL/walk/broussard-lot-4"
+          grep -q "Walk the land" walk.html
+
+      - name: App — walk surface honors the Spanish cookie
+        run: |
+          curl -fsSL -H "Cookie: NEXT_LOCALE=es" -o walk-es.html "$URL/walk/broussard-lot-4"
+          grep -q "Camine el terreno" walk-es.html
+
+      - name: Supabase — schema exists and RLS hides data from anon
+        run: |
+          # Table present -> 200 with [] (anon is not a team member).
+          # Missing schema would return a PostgREST error instead.
+          BODY=$(curl -fsS "$SUPABASE_URL/rest/v1/properties?select=slug" \
+            -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")
+          test "$BODY" = "[]"
+
+      - name: Supabase — seed invites present (is_invited RPC)
+        run: |
+          R=$(curl -fsS -X POST "$SUPABASE_URL/rest/v1/rpc/is_invited" \
+            -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"check_email": "alton@texasgreenerpastures.com"}')
+          test "$R" = "true"
+          R2=$(curl -fsS -X POST "$SUPABASE_URL/rest/v1/rpc/is_invited" \
+            -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"check_email": "stranger@example.com"}')
+          test "$R2" = "false"
