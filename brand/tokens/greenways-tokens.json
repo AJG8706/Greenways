@@ -1,0 +1,218 @@
+{
+  "$description": "Greenways brand tokens v1.0 (Texas Greener Pastures)",
+  "color": {
+    "pasture-green": {
+      "$type": "color",
+      "$value": "#34452D",
+      "$description": "Primary brand color. Wordmark, primary buttons on light, emblem field.",
+      "$extensions": {
+        "rgb": [
+          52,
+          69,
+          45
+        ],
+        "cmyk_approx": [
+          25,
+          0,
+          35,
+          73
+        ],
+        "source": "TGP"
+      }
+    },
+    "pine-shadow": {
+      "$type": "color",
+      "$value": "#24301F",
+      "$description": "3D tour viewer chrome, dark surfaces, body text on light.",
+      "$extensions": {
+        "rgb": [
+          36,
+          48,
+          31
+        ],
+        "cmyk_approx": [
+          25,
+          0,
+          35,
+          81
+        ],
+        "source": "TGP"
+      }
+    },
+    "prairie-cream": {
+      "$type": "color",
+      "$value": "#F5F3E9",
+      "$description": "Page background on light, text and icons on dark.",
+      "$extensions": {
+        "rgb": [
+          245,
+          243,
+          233
+        ],
+        "cmyk_approx": [
+          0,
+          1,
+          5,
+          4
+        ],
+        "source": "TGP"
+      }
+    },
+    "sage-mist": {
+      "$type": "color",
+      "$value": "#CBD2B8",
+      "$description": "Secondary surfaces, dividers, muted text on dark.",
+      "$extensions": {
+        "rgb": [
+          203,
+          210,
+          184
+        ],
+        "cmyk_approx": [
+          3,
+          0,
+          12,
+          18
+        ],
+        "source": "TGP"
+      }
+    },
+    "harvest-gold": {
+      "$type": "color",
+      "$value": "#BCAA6E",
+      "$description": "Emblem star and ring, highlights on dark. Never text on light.",
+      "$extensions": {
+        "rgb": [
+          188,
+          170,
+          110
+        ],
+        "cmyk_approx": [
+          0,
+          10,
+          41,
+          26
+        ],
+        "source": "TGP"
+      }
+    },
+    "hill-green": {
+      "$type": "color",
+      "$value": "#4A5E3E",
+      "$description": "Emblem mid-tone, hover and pressed states on dark.",
+      "$extensions": {
+        "rgb": [
+          74,
+          94,
+          62
+        ],
+        "cmyk_approx": [
+          21,
+          0,
+          34,
+          63
+        ],
+        "source": "Greenways"
+      }
+    },
+    "trailhead-green": {
+      "$type": "color",
+      "$value": "#8DBA5E",
+      "$description": "Tour path, hotspots, 'you are here', Available lots, actions on dark.",
+      "$extensions": {
+        "rgb": [
+          141,
+          186,
+          94
+        ],
+        "cmyk_approx": [
+          24,
+          0,
+          49,
+          27
+        ],
+        "source": "Greenways"
+      }
+    },
+    "trailhead-deep": {
+      "$type": "color",
+      "$value": "#48712F",
+      "$description": "Trailhead role on light: links, focus rings, Available badges.",
+      "$extensions": {
+        "rgb": [
+          72,
+          113,
+          47
+        ],
+        "cmyk_approx": [
+          36,
+          0,
+          58,
+          56
+        ],
+        "source": "Greenways"
+      }
+    },
+    "gold-ink": {
+      "$type": "color",
+      "$value": "#76672F",
+      "$description": "Gold for text on light: endorsement line, Under-contract badges.",
+      "$extensions": {
+        "rgb": [
+          118,
+          103,
+          47
+        ],
+        "cmyk_approx": [
+          0,
+          13,
+          60,
+          54
+        ],
+        "source": "Greenways"
+      }
+    },
+    "fence-post-red": {
+      "$type": "color",
+      "$value": "#A23B2A",
+      "$description": "Errors and Sold lots only.",
+      "$extensions": {
+        "rgb": [
+          162,
+          59,
+          42
+        ],
+        "cmyk_approx": [
+          0,
+          64,
+          74,
+          36
+        ],
+        "source": "Greenways"
+      }
+    }
+  },
+  "font": {
+    "display": {
+      "$type": "fontFamily",
+      "$value": [
+        "Zilla Slab",
+        "Rockwell",
+        "Roboto Slab",
+        "Georgia",
+        "serif"
+      ],
+      "$description": "Wordmark, headings. Bold 700 / SemiBold 600."
+    },
+    "ui": {
+      "$type": "fontFamily",
+      "$value": [
+        "Atkinson Hyperlegible Next",
+        "Atkinson Hyperlegible",
+        "system-ui",
+        "sans-serif"
+      ],
+      "$description": "UI and body. Regular 400, Medium 500, Bold 700."
+    }
+  }
+}

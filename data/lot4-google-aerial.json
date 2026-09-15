@@ -1,0 +1,18 @@
+{
+ "source": "Google Maps satellite screenshot, z19, captured 2026-09-15 (Imagery \u00a92026 Airbus, Maxar Technologies) \u2014 internal look only, not licensed for production",
+ "ft_per_px": 0.98481048846908,
+ "px": [
+  958,
+  1058
+ ],
+ "local_ft": {
+  "minX": -472.20084224397425,
+  "maxX": 471.24760570940447,
+  "minY": -520.9466096198233,
+  "maxY": 520.9828871804633
+ },
+ "center": [
+  30.1730626,
+  -94.195866
+ ]
+}

@@ -1,0 +1,261 @@
+/* ==========================================================================
+   Greenways design system — v0.1 (Phase 1)
+   Source of truth for color: Branding/greenways-brand-kit/tokens/greenways-tokens.css
+   Two themes by role, not by OS preference:
+     [data-surface="light"]  admin console, listing-style pages (Prairie Cream ground)
+     [data-surface="walk"]   buyer walk / tour viewer (Pine Shadow chrome — the land stays brightest)
+   Every pairing used here is an approved pairing from the brand spec (AA or AAA).
+   ========================================================================== */
+
+:root {
+  /* ---- Core palette (brand kit v1.0) ---- */
+  --gw-pasture-green:   #34452D;
+  --gw-pine-shadow:     #24301F;
+  --gw-prairie-cream:   #F5F3E9;
+  --gw-sage-mist:       #CBD2B8;
+  --gw-harvest-gold:    #BCAA6E;
+  --gw-hill-green:      #4A5E3E;
+  --gw-trailhead-green: #8DBA5E;
+  --gw-trailhead-deep:  #48712F;
+  --gw-gold-ink:        #76672F;
+  --gw-fence-post-red:  #A23B2A;
+
+  /* ---- Derived working tints (not brand colors; surfaces and lines only) ---- */
+  --gw-cream-2:         #ECE9DC;   /* secondary light surface (inputs, table stripes) */
+  --gw-cream-3:         #E2DECD;   /* borders on light */
+  --gw-pine-2:          #2E3C28;   /* raised dark surface */
+  --gw-pine-3:          #1B241A;   /* sunken dark surface / scrim base */
+  --gw-sage-ink:        #5B6650;   /* muted text on light: 5.9:1 on cream (AA) */
+
+  /* ---- Type ---- */
+  --gw-font-display: "Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
+  --gw-font-ui: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Type scale — from the brand spec, plus the walk HUD sizes it needs */
+  --gw-t-display: 700 2.5rem/1.1 var(--gw-font-display);        /* 40/44 */
+  --gw-t-h1:      700 2rem/1.19 var(--gw-font-display);         /* 32/38 */
+  --gw-t-h2:      600 1.5625rem/1.28 var(--gw-font-display);    /* 25/32 */
+  --gw-t-h3:      600 1.25rem/1.3 var(--gw-font-display);       /* 20/26 */
+  --gw-t-body:    400 1.0625rem/1.59 var(--gw-font-ui);         /* 17/27 */
+  --gw-t-body-m:  500 1.0625rem/1.59 var(--gw-font-ui);
+  --gw-t-small:   500 0.875rem/1.5 var(--gw-font-ui);           /* 14/21 */
+  --gw-t-label:   700 0.75rem/1.33 var(--gw-font-ui);           /* 12/16, uppercase + tracking */
+  --gw-t-hud-distance: 700 clamp(4rem, 22vw, 6.5rem)/1 var(--gw-font-display);
+  --gw-t-hud-corner:   700 clamp(1.75rem, 8vw, 2.25rem)/1.1 var(--gw-font-display);
+
+  /* ---- Space (4px base) ---- */
+  --gw-s-1: 4px;  --gw-s-2: 8px;  --gw-s-3: 12px; --gw-s-4: 16px;
+  --gw-s-5: 20px; --gw-s-6: 24px; --gw-s-8: 32px; --gw-s-10: 40px; --gw-s-12: 48px; --gw-s-16: 64px;
+
+  /* ---- Shape ---- */
+  --gw-r-1: 6px; --gw-r-2: 10px; --gw-r-3: 16px; --gw-r-pill: 999px;
+
+  /* ---- Motion ---- */
+  --gw-ease: cubic-bezier(.2,.7,.2,1);
+  --gw-dur-1: 120ms; --gw-dur-2: 200ms; --gw-dur-3: 360ms;
+
+  /* ---- Field ergonomics ---- */
+  --gw-tap-min: 56px;      /* buyer app: gloves, sun, walking */
+  --gw-tap-admin: 40px;
+
+  /* ---- Semantic: light surface (default) ---- */
+  --bg:            var(--gw-prairie-cream);
+  --bg-2:          var(--gw-cream-2);
+  --bg-3:          #FFFFFF;
+  --line:          var(--gw-cream-3);
+  --text:          var(--gw-pine-shadow);
+  --text-2:        var(--gw-sage-ink);
+  --heading:       var(--gw-pasture-green);
+  --link:          var(--gw-trailhead-deep);
+  --accent-text:   var(--gw-gold-ink);
+  --btn-bg:        var(--gw-pasture-green);
+  --btn-bg-hover:  var(--gw-hill-green);
+  --btn-text:      var(--gw-prairie-cream);
+  --focus:         var(--gw-trailhead-deep);
+  --error:         var(--gw-fence-post-red);
+  --ok:            var(--gw-trailhead-deep);
+  --warn:          var(--gw-gold-ink);
+  --shadow-1: 0 1px 2px rgba(36,48,31,.08), 0 1px 1px rgba(36,48,31,.04);
+  --shadow-2: 0 6px 20px rgba(36,48,31,.12), 0 2px 6px rgba(36,48,31,.06);
+}
+
+/* ---- Semantic: walk / tour surface (dark chrome) ---- */
+[data-surface="walk"] {
+  --bg:            var(--gw-pine-shadow);
+  --bg-2:          var(--gw-pine-2);
+  --bg-3:          var(--gw-pine-3);
+  --line:          rgba(203,210,184,.18);
+  --text:          var(--gw-prairie-cream);
+  --text-2:        var(--gw-sage-mist);
+  --heading:       var(--gw-prairie-cream);
+  --link:          var(--gw-trailhead-green);
+  --accent-text:   var(--gw-harvest-gold);
+  --btn-bg:        var(--gw-trailhead-green);
+  --btn-bg-hover:  #9CC86F;
+  --btn-text:      var(--gw-pine-shadow);
+  --focus:         var(--gw-trailhead-green);
+  --error:         #D9705F;              /* red lifted for dark; 5.2:1 on pine */
+  --ok:            var(--gw-trailhead-green);
+  --warn:          var(--gw-harvest-gold);
+  --path:          var(--gw-trailhead-green);
+  --marker:        var(--gw-harvest-gold);
+  --shadow-1: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-2: 0 10px 30px rgba(0,0,0,.45);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+.gw, .gw * , .gw *::before, .gw *::after { box-sizing: border-box; }
+.gw {
+  font: var(--gw-t-body);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.gw h1, .gw h2, .gw h3, .gw h4 { margin: 0; color: var(--heading); text-wrap: balance; }
+.gw h1 { font: var(--gw-t-h1); }
+.gw h2 { font: var(--gw-t-h2); }
+.gw h3 { font: var(--gw-t-h3); }
+.gw p  { margin: 0; }
+.gw a  { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+.gw .t-display { font: var(--gw-t-display); color: var(--heading); }
+.gw .t-small   { font: var(--gw-t-small); color: var(--text-2); }
+.gw .t-label   { font: var(--gw-t-label); letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.gw .t-body-m  { font: var(--gw-t-body-m); }
+.gw .num       { font-variant-numeric: tabular-nums; }
+.gw .muted     { color: var(--text-2); }
+.gw .accent    { color: var(--accent-text); }
+
+.gw :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: var(--gw-r-1); }
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.gw .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--gw-s-2);
+  min-height: var(--gw-tap-admin); padding: 0 var(--gw-s-4);
+  border: 1.5px solid transparent; border-radius: var(--gw-r-2);
+  font: var(--gw-t-body-m); line-height: 1; color: var(--btn-text); background: var(--btn-bg);
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+  transition: background var(--gw-dur-1) var(--gw-ease), transform var(--gw-dur-1) var(--gw-ease), box-shadow var(--gw-dur-1);
+}
+.gw .btn:hover  { background: var(--btn-bg-hover); }
+.gw .btn:active { transform: translateY(1px); }
+.gw .btn[disabled], .gw .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.gw .btn-secondary { background: transparent; color: var(--heading); border-color: var(--heading); }
+.gw .btn-secondary:hover { background: rgba(52,69,45,.08); }
+[data-surface="walk"] .gw .btn-secondary, .gw[data-surface="walk"] .btn-secondary { color: var(--text); border-color: var(--text-2); }
+[data-surface="walk"] .gw .btn-secondary:hover, .gw[data-surface="walk"] .btn-secondary:hover { background: rgba(245,243,233,.08); }
+.gw .btn-ghost { background: transparent; color: var(--link); }
+.gw .btn-ghost:hover { background: rgba(72,113,47,.08); }
+.gw .btn-danger { background: var(--error); color: var(--gw-prairie-cream); }
+.gw .btn-lg { min-height: var(--gw-tap-min); padding: 0 var(--gw-s-6); font-size: 1.125rem; border-radius: var(--gw-r-3); }
+.gw .btn-sm { min-height: 32px; padding: 0 var(--gw-s-3); font-size: .875rem; }
+.gw .btn-block { width: 100%; }
+.gw .btn-icon { width: var(--gw-tap-admin); padding: 0; }
+
+/* ==========================================================================
+   Pills, badges, status
+   ========================================================================== */
+.gw .pill {
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px;
+  border-radius: var(--gw-r-pill); font: var(--gw-t-small); line-height: 1; white-space: nowrap;
+}
+.gw .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.gw .pill-available { background: var(--gw-trailhead-green); color: var(--gw-pine-shadow); }
+.gw .pill-contract  { background: var(--gw-harvest-gold);    color: var(--gw-pine-shadow); }
+.gw .pill-sold      { background: var(--gw-fence-post-red);  color: var(--gw-prairie-cream); }
+/* workflow states (admin, light surface) */
+.gw .pill-draft     { background: var(--gw-cream-2); color: var(--gw-sage-ink); }
+.gw .pill-working   { background: var(--gw-cream-2); color: var(--gw-gold-ink); }
+.gw .pill-review    { background: var(--gw-harvest-gold); color: var(--gw-pine-shadow); }
+.gw .pill-live      { background: var(--gw-pasture-green); color: var(--gw-prairie-cream); }
+.gw .pill-error     { background: var(--gw-fence-post-red); color: var(--gw-prairie-cream); }
+
+/* ==========================================================================
+   Surfaces
+   ========================================================================== */
+.gw .card { background: var(--bg-3); border: 1px solid var(--line); border-radius: var(--gw-r-3); padding: var(--gw-s-5); }
+.gw .panel { background: var(--bg-2); border-radius: var(--gw-r-3); padding: var(--gw-s-5); }
+.gw .divider { height: 1px; background: var(--line); }
+
+/* ==========================================================================
+   Forms
+   ========================================================================== */
+.gw label.field { display: grid; gap: 6px; font: var(--gw-t-small); color: var(--text); }
+.gw .input, .gw select.input, .gw textarea.input {
+  width: 100%; min-height: var(--gw-tap-admin); padding: 8px 12px;
+  font: var(--gw-t-body); color: var(--text); background: var(--bg-3);
+  border: 1.5px solid var(--line); border-radius: var(--gw-r-2);
+}
+.gw .input:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px rgba(72,113,47,.18); }
+.gw textarea.input { min-height: 88px; resize: vertical; line-height: 1.5; }
+.gw .help { font: var(--gw-t-small); color: var(--text-2); }
+.gw .check { display: inline-flex; align-items: center; gap: 10px; font: var(--gw-t-body); cursor: pointer; }
+.gw .check input { width: 20px; height: 20px; accent-color: var(--gw-trailhead-deep); }
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+.gw .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--gw-r-3); background: var(--bg-3); }
+.gw table { width: 100%; border-collapse: collapse; font: var(--gw-t-small); color: var(--text); }
+.gw th { text-align: left; font: var(--gw-t-label); letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--bg-2); }
+.gw td { padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.gw tr:last-child td { border-bottom: 0; }
+.gw tr.row-link { cursor: pointer; }
+.gw tr.row-link:hover td { background: rgba(52,69,45,.04); }
+
+/* ==========================================================================
+   Tabs
+   ========================================================================== */
+.gw .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.gw .tab { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px;
+  padding: 12px 14px; font: var(--gw-t-body-m); color: var(--text-2); cursor: pointer; white-space: nowrap; }
+.gw .tab[aria-selected="true"] { color: var(--heading); border-bottom-color: var(--gw-pasture-green); }
+.gw .tab:hover { color: var(--heading); }
+
+/* ==========================================================================
+   Toast / banner
+   ========================================================================== */
+.gw .banner { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--gw-r-2); border: 1px solid var(--line); background: var(--bg-2); font: var(--gw-t-small); color: var(--text); }
+.gw .banner-warn { border-color: var(--gw-harvest-gold); }
+.gw .banner-error { border-color: var(--error); }
+
+/* ==========================================================================
+   Walk HUD primitives
+   ========================================================================== */
+.gw .hud-distance { font: var(--gw-t-hud-distance); color: var(--text); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.gw .hud-corner   { font: var(--gw-t-hud-corner); color: var(--text); }
+.gw .hud-unit     { font: 600 1.25rem/1 var(--gw-font-display); color: var(--text-2); }
+.gw .hud-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px;
+  border-radius: var(--gw-r-pill); background: rgba(245,243,233,.08); color: var(--text); font: var(--gw-t-small); border: 1px solid var(--line);
+}
+.gw .hud-chip-strong { background: var(--gw-trailhead-green); color: var(--gw-pine-shadow); border-color: transparent; }
+.gw .hud-chip-gold   { background: var(--gw-harvest-gold); color: var(--gw-pine-shadow); border-color: transparent; }
+
+/* corner tiles in the picker */
+.gw .corner-tile {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+  min-height: var(--gw-tap-min); padding: 10px 14px; border-radius: var(--gw-r-3);
+  background: var(--bg-2); border: 1.5px solid transparent; color: var(--text); cursor: pointer; text-align: left; width: 100%; font: var(--gw-t-body);
+}
+.gw .corner-tile[aria-pressed="true"] { border-color: var(--gw-trailhead-green); background: rgba(141,186,94,.12); }
+.gw .corner-tile .id { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 700 1rem/1 var(--gw-font-display); background: var(--gw-harvest-gold); color: var(--gw-pine-shadow); }
+.gw .corner-tile.found .id { background: var(--gw-trailhead-green); }
+.gw .corner-tile .dist { font: 700 1.25rem/1 var(--gw-font-display); font-variant-numeric: tabular-nums; }
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+.gw .stack { display: grid; gap: var(--gw-s-4); }
+.gw .row { display: flex; gap: var(--gw-s-3); align-items: center; flex-wrap: wrap; }
+.gw .between { justify-content: space-between; }
+.gw .grow { flex: 1 1 auto; min-width: 0; }
+.gw .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gw * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

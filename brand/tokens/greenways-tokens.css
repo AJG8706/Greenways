@@ -1,0 +1,45 @@
+/* Greenways brand tokens v1.0 — Texas Greener Pastures
+   Core greens, cream, sage and gold are derived from existing TGP brand assets.
+   Contrast grades are WCAG 2.x, computed against the paired color named in each comment. */
+:root {
+  /* Core palette */
+  --gw-pasture-green:   #34452D; /* primary brand */
+  --gw-pine-shadow:     #24301F; /* dark surfaces, tour chrome, body text on light */
+  --gw-prairie-cream:   #F5F3E9; /* light surface, text on dark */
+  --gw-sage-mist:       #CBD2B8; /* secondary surface, muted text on dark */
+  --gw-harvest-gold:    #BCAA6E; /* accents on dark only */
+  --gw-hill-green:      #4A5E3E; /* hover/pressed on dark */
+  --gw-trailhead-green: #8DBA5E; /* tour path, hotspots, actions on dark */
+  --gw-trailhead-deep:  #48712F; /* trailhead role on light */
+  --gw-gold-ink:        #76672F; /* gold for text on light */
+  --gw-fence-post-red:  #A23B2A; /* errors, sold lots */
+
+  /* Semantic: light surfaces */
+  --gw-bg:            var(--gw-prairie-cream);
+  --gw-text:          var(--gw-pine-shadow);     /* 12.44:1 on cream, AAA */
+  --gw-heading:       var(--gw-pasture-green);   /*  9.28:1 on cream, AAA */
+  --gw-link:          var(--gw-trailhead-deep);  /*  5.13:1 on cream, AA  */
+  --gw-accent-text:   var(--gw-gold-ink);        /*  5.03:1 on cream, AA  */
+  --gw-btn-bg:        var(--gw-pasture-green);
+  --gw-btn-text:      var(--gw-prairie-cream);   /*  9.28:1, AAA */
+  --gw-focus:         var(--gw-trailhead-deep);
+  --gw-error:         var(--gw-fence-post-red);  /*  5.91:1 on cream, AA  */
+
+  /* Semantic: 3D tour viewer (dark) */
+  --gw-tour-chrome:   var(--gw-pine-shadow);
+  --gw-tour-text:     var(--gw-prairie-cream);   /* 12.44:1, AAA */
+  --gw-tour-muted:    var(--gw-sage-mist);       /*  8.86:1, AAA */
+  --gw-tour-path:     var(--gw-trailhead-green);
+  --gw-tour-hotspot:  var(--gw-trailhead-green);
+  --gw-tour-action:   var(--gw-trailhead-green); /* Pine text on it: 6.14:1, AA */
+  --gw-tour-marker:   var(--gw-harvest-gold);    /* 6.01:1 on pine, AA */
+
+  /* Lot status (pill fill / pill text) */
+  --gw-lot-available-bg: var(--gw-trailhead-green); --gw-lot-available-fg: var(--gw-pine-shadow);   /* 6.14:1 */
+  --gw-lot-contract-bg:  var(--gw-harvest-gold);    --gw-lot-contract-fg:  var(--gw-pine-shadow);   /* 6.01:1 */
+  --gw-lot-sold-bg:      var(--gw-fence-post-red);  --gw-lot-sold-fg:      var(--gw-prairie-cream); /* 5.91:1 */
+
+  /* Type */
+  --gw-font-display: "Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
+  --gw-font-ui: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+}

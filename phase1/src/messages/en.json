@@ -1,0 +1,274 @@
+{
+  "$meta": {
+    "locale": "en",
+    "version": "0.1",
+    "notes": "Buyer-facing strings are written for a non-technical reader on a phone in bright sun: short lines, no jargon, one idea per screen. Feet everywhere; buyers pace land in feet."
+  },
+  "common": {
+    "appName": "Greenways",
+    "byline": "by Texas Greener Pastures",
+    "switchLanguage": "Español",
+    "switchLanguageShort": "ES",
+    "back": "Back",
+    "close": "Close",
+    "ok": "OK",
+    "ft": "ft",
+    "acres": "{n} acres",
+    "corner": "Corner {n}",
+    "cornerShort": "C{n}"
+  },
+  "welcome": {
+    "eyebrow": "Self-guided walk",
+    "title": "Walk the land. Find every corner.",
+    "body": "Your phone points you to each corner stake. No app to install, no account.",
+    "start": "Start walking",
+    "preview": "Preview the walk from home",
+    "loadHint": "Best on site. Open this link before you leave pavement so everything loads.",
+    "saved": "Saved for offline · {mb} MB"
+  },
+  "permission": {
+    "title": "Greenways needs your location and compass",
+    "body": "That's how the arrow points you to each stake. Nothing about you is stored.",
+    "cta": "Allow location & compass",
+    "iosNote": "Your phone will ask twice. Tap Allow both times.",
+    "denied": "Without location, the arrow can't point. You can still preview the walk.",
+    "retry": "Try again",
+    "openSettings": "Location is off for this browser. Turn it on in Settings, then come back."
+  },
+  "intro": {
+    "label": "Intro flyover",
+    "skip": "Skip intro",
+    "duration": "{s} sec"
+  },
+  "hud": {
+    "tracking": "Tracking",
+    "away": "away",
+    "here": "You're here",
+    "honesty": "Stakes mark the exact corner. The arrow gets you within a few steps.",
+    "calibrate": "Turn slowly in a circle to calibrate the compass.",
+    "gpsWeak": "Weak GPS. Keep walking — it will settle.",
+    "gpsLost": "No GPS right now. Step away from trees or vehicles.",
+    "map": "Map",
+    "hideMap": "Hide map",
+    "corners": "Corners",
+    "found": "Found",
+    "foundCount": "{found} of {total} found",
+    "nextNearest": "Next nearest",
+    "menu": "More",
+    "restart": "Start over",
+    "help": "Help",
+    "compass": "Compass"
+  },
+  "picker": {
+    "title": "Pick a corner",
+    "subtitle": "One at a time. The arrow follows the one you pick.",
+    "nearest": "Nearest",
+    "found": "Found",
+    "trackThis": "Track this corner"
+  },
+  "arrival": {
+    "title": "You found Corner {n}",
+    "subtitle": "The stake is within a few steps.",
+    "lookFor": "Look for",
+    "clip": "Watch the approach",
+    "next": "Next corner",
+    "stay": "View corner",
+    "allDone": "That was the last one"
+  },
+  "boundary": {
+    "title": "You're just outside the lot line",
+    "body": "Head back toward the arrow. The line runs along the fence side.",
+    "dismiss": "Got it"
+  },
+  "done": {
+    "title": "You walked all {n} corners",
+    "body": "That's the whole lot, edge to edge. Questions? We're a text away.",
+    "homesite": "See the homesite",
+    "text": "Text Texas Greener Pastures",
+    "again": "Walk it again",
+    "share": "Send this walk to someone"
+  },
+  "preview": {
+    "title": "Preview the walk",
+    "body": "The whole tour from home: the flyover, the entrance, every corner, the homesite.",
+    "play": "Play the tour",
+    "chapters": "Chapters",
+    "chapterIntro": "Flyover",
+    "chapterEntrance": "Entrance from the road",
+    "chapterCorner": "Corner {n}",
+    "chapterHomesite": "Homesite",
+    "goOnSite": "On the property? Start walking"
+  },
+  "offline": {
+    "saved": "Saved for offline",
+    "noSignal": "No signal. Everything you need is already loaded.",
+    "loading": "Loading the walk… {pct}%"
+  },
+  "sms": {
+    "walkPack": "Your Greenways walk for {property} is ready: {link}\nOpen it before you leave pavement so it loads. It points you to every corner stake. — Texas Greener Pastures"
+  },
+  "help": {
+    "title": "How this works",
+    "s1": "Pick a corner. The arrow points at it and the number is how far in feet.",
+    "s2": "Walk until it says you're there. Look for the stake described on the card.",
+    "s3": "Tap Next corner. The lot line is on the map if you want to see it.",
+    "s4": "If the arrow seems wrong, turn slowly in a circle to reset the compass."
+  },
+  "admin": {
+    "nav": {
+      "properties": "Properties",
+      "team": "Team",
+      "settings": "Settings",
+      "signOut": "Sign out"
+    },
+    "signIn": {
+      "title": "Sign in to Greenways",
+      "body": "Team members only. We'll email you a one-tap sign-in link.",
+      "email": "Work email",
+      "cta": "Email me a sign-in link",
+      "sent": "Check your inbox. The link works for 15 minutes.",
+      "notInvited": "That email isn't on the team yet. Ask an admin to invite you."
+    },
+    "properties": {
+      "title": "Properties",
+      "new": "New property",
+      "search": "Search properties",
+      "cols": {
+        "property": "Property",
+        "county": "County",
+        "corners": "Corners",
+        "media": "Media",
+        "status": "Status",
+        "walks": "Walks (30d)",
+        "updated": "Updated"
+      }
+    },
+    "status": {
+      "draft": "Draft",
+      "generating": "Generating",
+      "review": "In review",
+      "published": "Published",
+      "error": "Needs attention"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "corners": "Corners",
+      "photos": "Photos",
+      "content": "Content",
+      "media": "Media",
+      "publish": "Publish",
+      "analytics": "Analytics",
+      "demo": "Demo"
+    },
+    "corners": {
+      "title": "Corners",
+      "importKml": "Import KML",
+      "source": "Geometry source",
+      "verified": "CAD-verified",
+      "locked": "Locked",
+      "unlock": "Unlock to edit",
+      "order": "Numbered clockwise from the road entrance",
+      "entrance": "Entrance",
+      "stakeDesc": "Stake description",
+      "cols": {
+        "corner": "Corner",
+        "lat": "Latitude",
+        "lng": "Longitude",
+        "stake": "Stake",
+        "photos": "Photos"
+      }
+    },
+    "photos": {
+      "title": "Capture protocol",
+      "approach": "Approach shot (~30 ft out)",
+      "stake": "Stake close-up",
+      "entrance360": "Entrance 360°",
+      "homesite": "Homesite 360°",
+      "gate": "Gate / access",
+      "aerial": "Drone / aerial",
+      "upload": "Upload",
+      "missing": "Missing",
+      "ready": "Ready"
+    },
+    "content": {
+      "title": "Buyer-facing text",
+      "en": "English",
+      "es": "Spanish",
+      "draftEs": "Draft Spanish",
+      "reviewNote": "Drafted by AI. Read it before publishing.",
+      "displayName": "Display name",
+      "stake": "Stake description",
+      "arrivalNote": "Arrival note"
+    },
+    "media": {
+      "title": "Media",
+      "generate": "Generate assets",
+      "queue": "Generation queue",
+      "review": "Review queue",
+      "approve": "Approve",
+      "reject": "Reject",
+      "regenerate": "Regenerate",
+      "source": "Source photo",
+      "generated": "Generated clip",
+      "realityRule": "Approve only what matches the land. Buyers will be standing on it.",
+      "rejectReason": "What's wrong?",
+      "reasons": {
+        "structure": "Invented structure",
+        "water": "Invented water",
+        "terrain": "Wrong terrain / tree line",
+        "motion": "Bad motion / horizon",
+        "other": "Other"
+      }
+    },
+    "publish": {
+      "title": "Publish",
+      "publicLink": "Public link",
+      "qr": "QR code",
+      "download": "Download QR",
+      "prospectLinks": "Prospect links",
+      "issue": "Issue link",
+      "smsSnippet": "Walk-pack SMS",
+      "copy": "Copy",
+      "copied": "Copied",
+      "publishCta": "Publish walk",
+      "published": "Published",
+      "unpublish": "Unpublish"
+    },
+    "analytics": {
+      "title": "Walk analytics",
+      "sessions": "Walks",
+      "completion": "Found all corners",
+      "median": "Median time to corner",
+      "boundary": "Left the lot line",
+      "compass": "Compass problems",
+      "byCorner": "Time to each corner",
+      "recent": "Recent walks"
+    },
+    "demo": {
+      "title": "Demo & QA",
+      "body": "Runs the real buyer walk with a simulated walker. Same code path as the field.",
+      "scenario": "Scenario",
+      "speed": "Walking speed",
+      "noise": "GPS noise",
+      "compassErr": "Compass error",
+      "launch": "Launch demo",
+      "scenarios": {
+        "clean": "Clean walk, sunny afternoon",
+        "noisy": "Noisy GPS under trees",
+        "compass": "Compass 30° off until calibrated",
+        "boundary": "Wanders outside the line at Corner 3"
+      }
+    },
+    "team": {
+      "title": "Team",
+      "invite": "Invite",
+      "email": "Email",
+      "role": "Role",
+      "admin": "Admin",
+      "editor": "Editor",
+      "pending": "Invite pending",
+      "active": "Active",
+      "remove": "Remove"
+    }
+  }
+}

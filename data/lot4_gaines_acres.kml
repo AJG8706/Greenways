@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Lot 4 - Gaines Acres</name>
+    <Style id="lot4">
+      <LineStyle><color>ff0f7a2a</color><width>4</width></LineStyle>
+      <PolyStyle><color>4d53a834</color><fill>1</fill><outline>1</outline></PolyStyle>
+    </Style>
+    <Style id="pin">
+      <IconStyle><color>ff0f7a2a</color></IconStyle>
+    </Style>
+    <Placemark>
+      <name>Lot 4 (Gaines Acres) — 7595 Broussard Rd</name>
+      <description>Lot 4, Gaines Acres (minor plat of 4.98-ac tract, D. Easley Survey, Abstract 20, Jefferson County, TX). Owner: Texas Greener Pastures LLC. JCAD prop_id 429955. Survey: 1.49 ac (Faust Engineering); CAD stated area 64,433 sq ft (1.48 ac). Boundary: Jefferson CAD parcel polygon, cross-checked against Gaines Acres replat survey dimensions.</description>
+      <styleUrl>#lot4</styleUrl>
+      <Polygon>
+        <outerBoundaryIs><LinearRing><coordinates>
+          -94.1956948,30.1737303,0
+          -94.1956711,30.1722938,0
+          -94.1960369,30.1722937,0
+          -94.1960614,30.1739324,0
+          -94.1956948,30.1737303,0
+        </coordinates></LinearRing></outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark>
+      <name>Lot 4 — 1.49 ac</name>
+      <description>7595 Broussard Rd, Beaumont, TX 77713 — Texas Greener Pastures LLC</description>
+      <styleUrl>#pin</styleUrl>
+      <Point><coordinates>-94.1958660,30.1730626,0</coordinates></Point>
+    </Placemark>
+  </Document>
+</kml>

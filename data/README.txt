@@ -1,0 +1,1 @@
+lot4-google-aerial.jpg is a Google Maps satellite screenshot (z19, 2026-09-15) georeferenced in lot4-google-aerial.json (local feet, origin at the parcel centroid). Internal look only — not licensed for production. Production imagery: Google Maps Platform or Mapbox tiles behind a TGP key.
