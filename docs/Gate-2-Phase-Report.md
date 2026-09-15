@@ -1,6 +1,6 @@
 # Greenways — Gate 2 Phase Report
 
-**Phase 2: Foundation & Admin Console · September 15, 2026 · Status: built; awaiting hosted-schema paste + Vercel connection for the click-through preview**
+**Phase 2: Foundation & Admin Console · September 15, 2026 · Status: built, CI green (lint · typecheck · 27 unit tests · build · 6-test E2E on a real Supabase stack); awaiting hosted-schema paste + Vercel connection for the click-through preview**
 
 ## What's built
 
@@ -30,7 +30,7 @@
 ## What's tested
 
 - **Unit (Vitest, 27):** projection round-trip and scale constants, bearing quadrants, angular delta short-path, point-in-polygon incl. boundary cases, signed distance sign/magnitude, ring normalization and clockwise detection, **Lot 4 numbering matches Gate 1 (C1=NW…)**, renumbering when the entrance moves, Lot 4 area ≈ 1.49 ac, KML parsing of the real pilot file plus malformed-input rejections.
-- **E2E (Playwright, 6):** uninvited email turned away at sign-in; invited admin in via magic-link token; create property → import the real KML → four corners in the table with C1 at the NW road corner → lock → re-import refused; admin invites a second member from the Team tab; that editor signs in via the invite and edits content, and has no unlock affordance; Publish shows the block while Spanish is unreviewed.
+- **E2E (Playwright, 6, green in CI against a real local Supabase stack):** uninvited email turned away at sign-in; invited admin in via magic-link token; create property → import the real KML → corners default-numbered from the first edge → **move the entrance to the Broussard Rd frontage on the map → renumbering lands on the Gate 1 layout (C1=NW)** → lock → re-import refused; admin invites a second member from the Team tab; that editor signs in via the invite and edits content, and has no unlock affordance; Publish shows the block while Spanish is unreviewed.
 - Migration + seed validated against Postgres 16 directly; production build compiles all 17 routes.
 
 ## What's placeholder
