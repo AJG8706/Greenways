@@ -28,5 +28,16 @@ jobs:
           fi
       - name: Link project
         run: supabase link --project-ref "$PROJECT_REF"
+      - name: Repair migration history
+        # 20260915000001_init.sql was applied via the SQL Editor before the
+        # CLI was linked, so the remote schema exists without history. Mark it
+        # applied so push starts from the next migration. Idempotent.
+        run: supabase migration repair --status applied 20260915000001
       - name: Push migrations
         run: supabase db push --include-all
+      - name: Verify new columns are live
+        run: |
+          BODY=$(curl -fsS "https://$PROJECT_REF.supabase.co/rest/v1/properties?select=sale_status&limit=1" \
+            -H "apikey: sb_publishable_qYvdo406rkxrs1i89h3LwA_PO4wS8ZG" \
+            -H "Authorization: Bearer sb_publishable_qYvdo406rkxrs1i89h3LwA_PO4wS8ZG")
+          echo "sale_status select: $BODY"
