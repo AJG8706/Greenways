@@ -57,7 +57,9 @@
     "menu": "Más",
     "restart": "Empezar de nuevo",
     "help": "Ayuda",
-    "compass": "Brújula"
+    "compass": "Brújula",
+    "courseMode": "Camine unos pasos para que la flecha pueda apuntar.",
+    "rotate": "Ponga el teléfono en vertical."
   },
   "picker": {
     "title": "Elija una esquina",

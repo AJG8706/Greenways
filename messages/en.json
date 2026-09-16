@@ -57,7 +57,9 @@
     "menu": "More",
     "restart": "Start over",
     "help": "Help",
-    "compass": "Compass"
+    "compass": "Compass",
+    "courseMode": "Walk a few steps so the arrow can point.",
+    "rotate": "Turn your phone upright."
   },
   "picker": {
     "title": "Pick a corner",

@@ -88,6 +88,23 @@ describe("position filter (HUD spec §3)", () => {
     });
     expect(ok.accepted).toBe(true);
   });
+
+  it("re-seeds after sustained teleports (drive between corners / demo jump)", () => {
+    let s = createPositionFilter();
+    ({ state: s } = stepPositionFilter(s, {
+      point: { x: 0, y: 0 },
+      accuracyFt: 12,
+      timestampMs: 0,
+    }));
+    // Three consecutive far fixes agree with each other: third re-seeds.
+    let r = stepPositionFilter(s, { point: { x: 600, y: 0 }, accuracyFt: 12, timestampMs: 1000 });
+    expect(r.accepted).toBe(false);
+    r = stepPositionFilter(r.state, { point: { x: 602, y: 1 }, accuracyFt: 12, timestampMs: 2000 });
+    expect(r.accepted).toBe(false);
+    r = stepPositionFilter(r.state, { point: { x: 604, y: 2 }, accuracyFt: 12, timestampMs: 3000 });
+    expect(r.accepted).toBe(true);
+    expect(r.state.fix).toEqual({ x: 604, y: 2 }); // seeded fresh, not smoothed
+  });
 });
 
 describe("heading filter (HUD spec §3)", () => {
@@ -246,7 +263,7 @@ describe("simulated walker (demo mode)", () => {
     expect(after.headingDeg).toBeCloseTo(0, 9);
   });
 
-  it("wander detours off-course and decays", () => {
+  it("wander detours off-course and decays (default: 90° right)", () => {
     const target = { x: 0, y: 1000 };
     const s = createWalker({ x: 0, y: 0 }, 7);
     const r = stepWalker(s, {
@@ -258,5 +275,22 @@ describe("simulated walker (demo mode)", () => {
     // 90° off a due-north course → moves east.
     expect(r.state.truePos.x).toBeGreaterThan(0);
     expect(r.state.wanderRemainingFt).toBeLessThan(25);
+  });
+
+  it("wander honors an explicit bearing and holds it across ticks", () => {
+    const target = { x: 0, y: 1000 };
+    const s = createWalker({ x: 0, y: 0 }, 7);
+    let r = stepWalker(s, {
+      target,
+      dtMs: 1000,
+      scenario: SCENARIOS.boundary!,
+      startWander: true,
+      wanderBearingDeg: 180, // due south, straight away from the walk line
+    });
+    expect(r.state.truePos.y).toBeLessThan(0);
+    const yAfterFirst = r.state.truePos.y;
+    r = stepWalker(r.state, { target, dtMs: 1000, scenario: SCENARIOS.boundary! });
+    expect(r.state.truePos.y).toBeLessThan(yAfterFirst); // still southbound
+    expect(r.state.wanderBearingDeg).not.toBeNull();
   });
 });
