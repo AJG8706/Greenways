@@ -1,6 +1,6 @@
 # Greenways — Gate 2 Phase Report
 
-**Phase 2: Foundation & Admin Console · September 16, 2026 · Status: built, CI green (lint · typecheck · 27 unit tests · build · 6-test E2E on a real Supabase stack) · deployed and verified — preview: https://greenways-jade.vercel.app**
+**Phase 2: Foundation & Admin Console · September 16, 2026 · Status: Gate 2 approved by Alton, Sep 16, 2026 — Phase 3 underway. Deployed at https://greenways-jade.vercel.app; CI green (lint · typecheck · unit tests · build · E2E on a real Supabase stack)**
 
 ## What's built
 
