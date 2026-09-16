@@ -71,6 +71,8 @@ export default async function WalkPage({
     entrance: { lat: property.entrance_lat, lng: property.entrance_lng },
     declinationDeg: 1.5, // Beaumont ≈ +1.5°E (2026); per-property model in Phase 6
     demo: demoScenario,
+    googleKey:
+      process.env.GOOGLE_MAPS_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? null,
   };
 
   return <WalkApp config={config} />;

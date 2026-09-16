@@ -28,4 +28,6 @@ export type WalkConfig = {
   declinationDeg: number;
   /** Demo scenario when launched from the admin Demo tab; null in the field. */
   demo: (WalkerScenario & { key: string }) | null;
+  /** Browser key for the Google satellite mini-map; drawn fallback when null. */
+  googleKey: string | null;
 };
