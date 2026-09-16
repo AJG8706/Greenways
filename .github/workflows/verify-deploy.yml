@@ -21,9 +21,14 @@ jobs:
     steps:
       - name: App — root redirects into admin sign-in
         run: |
-          set -x
-          curl -fsSL -o page.html "$URL/"
-          grep -q "Sign in to Greenways" page.html
+          # A fresh push may still be building on Vercel; poll up to ~4 min.
+          for i in $(seq 1 16); do
+            if curl -fsSL -o page.html "$URL/" && grep -q "Sign in to Greenways" page.html; then
+              echo "up after $i checks"; exit 0
+            fi
+            sleep 15
+          done
+          echo "deployment never became ready"; exit 1
 
       - name: App — walk surface renders from messages (EN)
         run: |
