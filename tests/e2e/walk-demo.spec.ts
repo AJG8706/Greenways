@@ -89,3 +89,21 @@ test("the walk is fully bilingual via the cookie locale", async ({ page, context
   await page.getByTestId("start-walking").click();
   await expect(page.getByText("Buscando", { exact: false })).toBeVisible({ timeout: 10000 });
 });
+
+test("PWA assets serve: manifest and service worker", async ({ page, request }) => {
+  const manifest = await request.get("/manifest.webmanifest");
+  expect(manifest.ok()).toBeTruthy();
+  const json = (await manifest.json()) as { name?: string; icons?: unknown[] };
+  expect(json.name).toBe("Greenways");
+  expect((json.icons ?? []).length).toBeGreaterThan(1);
+
+  const sw = await request.get("/sw.js");
+  expect(sw.ok()).toBeTruthy();
+  expect(sw.headers()["content-type"]).toContain("javascript");
+
+  await page.goto("/walk/broussard-lot-4?demo=clean");
+  await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
+    "href",
+    /manifest\.webmanifest/,
+  );
+});
