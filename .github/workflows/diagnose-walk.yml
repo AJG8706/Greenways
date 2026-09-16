@@ -7,6 +7,11 @@ name: Diagnose walk
 
 on:
   workflow_dispatch:
+    inputs:
+      relock_corners:
+        description: Re-lock broussard-lot-4 corners (guardrail #2 lock)
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -32,6 +37,14 @@ jobs:
         run: |
           curl -s -w "\nHTTP %{http_code}\n" "$SUPABASE_URL/rest/v1/properties?select=slug&slug=eq.broussard-lot-4" \
             -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY"
+
+      - name: Re-lock Lot 4 corners
+        if: inputs.relock_corners
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" \
+            -c "update public.corners c set locked = true from public.properties p where p.id = c.property_id and p.slug = 'broussard-lot-4' and not c.locked;"
 
       - name: Inspect walk data directly (pooler)
         env:
