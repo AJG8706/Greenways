@@ -24,6 +24,7 @@ import { createWalkLogger, type WalkLogger } from "@/lib/walk/events";
 import { createDemoSource, createSensorSource, type WalkSource } from "@/lib/walk/source";
 import type { WalkConfig } from "@/lib/walk/types";
 import { ArrowRing, CornerStrip, DistanceReadout, StatusLine } from "./hud-parts";
+import { GoogleMiniMap } from "./google-mini-map";
 import { MiniMap } from "./mini-map";
 import { ArrivalCard, BoundaryBanner, HelpSheet, PickerSheet } from "./sheets";
 import { DemoTray } from "./demo-tray";
@@ -553,6 +554,26 @@ export function WalkApp({ config }: { config: WalkConfig }) {
               rotationDeg={rotation}
               arrived={foundIds.has(trackedCorner.id)}
               dimmed={statusKey === "calibrate"}
+            />
+          ) : config.googleKey ? (
+            <GoogleMiniMap
+              apiKey={config.googleKey}
+              corners={config.corners}
+              buyer={buyerPoint ? geo.proj.fromLocal(buyerPoint) : null}
+              trackedId={trackedCorner.id}
+              foundIds={foundIds}
+              distanceFt={distFeet}
+              fallback={
+                <MiniMap
+                  ringLocal={geo.ringLocal}
+                  corners={config.corners}
+                  cornerLocal={geo.cornerLocal}
+                  buyer={buyerPoint}
+                  trackedId={trackedCorner.id}
+                  foundIds={foundIds}
+                  distanceFt={distFeet}
+                />
+              }
             />
           ) : (
             <MiniMap
