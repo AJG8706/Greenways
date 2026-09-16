@@ -36,6 +36,18 @@ export function NewPropertyDialog() {
             {t("cols.county")}
             <Input name="county" placeholder="Jefferson" />
           </label>
+          <label className="row" style={{ gap: "var(--gw-s-3)", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              name="test_lot"
+              data-testid="new-property-test-lot"
+              style={{ width: 18, height: 18 }}
+            />
+            <span className="stack" style={{ gap: 2 }}>
+              <span className="t-body-m">{t("testLot")}</span>
+              <span className="t-small muted">{t("testLotHint")}</span>
+            </span>
+          </label>
           {!state.ok && state.message ? (
             <div className="banner banner-error" role="alert">
               {state.message}

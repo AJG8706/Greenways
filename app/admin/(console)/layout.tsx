@@ -23,6 +23,8 @@ export default async function AdminLayout({
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const email = teamUser?.email ?? user.email ?? "";
+
   const t = await getTranslations("admin.nav");
   const tTeam = await getTranslations("admin.team");
 
@@ -30,7 +32,7 @@ export default async function AdminLayout({
     <div data-surface="light" className="gw grid min-h-dvh grid-cols-[240px_1fr]">
       <aside
         data-surface="walk"
-        className="gw flex flex-col gap-6 p-5"
+        className="gw flex min-w-0 flex-col gap-6 overflow-hidden p-5"
         style={{ background: "var(--gw-pine-2)", color: "var(--gw-prairie-cream)" }}
       >
         <Link href="/admin/properties" className="no-underline">
@@ -53,13 +55,30 @@ export default async function AdminLayout({
             {t("settings")}
           </SidebarLink>
         </nav>
-        <div className="mt-auto panel" style={{ background: "var(--gw-pine-3)" }}>
-          <div className="stack" style={{ gap: "var(--gw-s-2)" }}>
-            <strong>{teamUser?.display_name ?? teamUser?.email ?? user.email}</strong>
-            <span className="t-small" style={{ color: "var(--gw-sage-mist)" }}>
-              {teamUser?.role === "admin" ? tTeam("admin") : tTeam("editor")} ·{" "}
-              {teamUser?.email ?? user.email}
+        <div
+          className="mt-auto panel gw-break-anywhere"
+          style={{ background: "var(--gw-pine-3)", padding: "var(--gw-s-4)" }}
+        >
+          <div className="stack gw-break-anywhere" style={{ gap: "var(--gw-s-2)" }}>
+            <strong className="gw-break-anywhere" title={email}>
+              {teamUser?.display_name ?? email}
+            </strong>
+            <span
+              className="t-small gw-break-anywhere"
+              style={{ color: "var(--gw-sage-mist)" }}
+              title={email}
+            >
+              {teamUser?.role === "admin" ? tTeam("admin") : tTeam("editor")}
             </span>
+            {teamUser?.display_name ? (
+              <span
+                className="t-small gw-break-anywhere"
+                style={{ color: "var(--gw-sage-mist)" }}
+                title={email}
+              >
+                {email}
+              </span>
+            ) : null}
             <SignOutButton label={t("signOut")} />
           </div>
         </div>

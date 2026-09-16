@@ -142,8 +142,14 @@
         "media": "Media",
         "status": "Status",
         "walks": "Walks (30d)",
-        "updated": "Updated"
-      }
+        "updated": "Updated",
+        "mode": "Mode"
+      },
+      "modeDemo": "Demo",
+      "modeLive": "Live GPS",
+      "modeTestLot": "Test lot",
+      "testLot": "GPS test lot (no CAD geometry)",
+      "testLotHint": "For field-testing the live GPS walk. Corners come from a generated 100 ft square you drop on a map or on your own position — never buyer-facing, and it can never be published."
     },
     "status": {
       "draft": "Draft",
@@ -182,7 +188,14 @@
       "mapSource": "Map imagery",
       "mapDrawn": "Drawn",
       "mapSatellite": "Satellite",
-      "mapGoogle": "Google"
+      "mapGoogle": "Google",
+      "testLot": "Test lot",
+      "placeTestSquare": "Place test square",
+      "placeTestSquarePrompt": "Click the centre on the map…",
+      "testLotNote": "Generated 100 ft-radius square for GPS field testing — not CAD-verified geometry, and it can never be published.",
+      "useMyLocation": "Use my location",
+      "locating": "Reading your position…",
+      "noGeolocation": "Could not read this device's position. Click the map instead, or allow location access."
     },
     "photos": {
       "title": "Capture protocol",
@@ -253,6 +266,14 @@
     "demo": {
       "title": "Demo & QA",
       "body": "Runs the real buyer walk with a simulated walker. Same code path as the field.",
+      "modeOn": "Demo mode on — the walk runs the simulated walker",
+      "modeOff": "Demo mode off — the walk runs live device GPS",
+      "modeHint": "With demo mode off this property's link ignores ?demo= entirely and always reads the real phone GPS. Turn it on to run the simulated-walk scenarios below. Real listings stay off.",
+      "modeHintTestLot": "This is a generated test lot for GPS field testing, so demo mode is normally off: the link reads the real phone GPS. Turn it on only to replay the simulated scenarios on this square.",
+      "liveOnly": "Live GPS. Open the walk link on the phone you are testing with, allow location and compass, and walk the corners. Stakes mark the exact corner; the arrow gets you within a few steps.",
+      "liveWalkTitle": "Live GPS walk",
+      "liveWalkBody": "The same buyer link, no simulation. Best on the phone itself — a desktop browser has no compass and a coarse position.",
+      "openLiveWalk": "Open live walk",
       "scenario": "Scenario",
       "speed": "Walking speed",
       "noise": "GPS noise",

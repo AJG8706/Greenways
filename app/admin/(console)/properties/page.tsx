@@ -14,7 +14,9 @@ export default async function PropertiesPage() {
 
   const { data: properties, error } = await supabase
     .from("properties")
-    .select("id, slug, name, county, status, sale_status, updated_at, corners(id, locked)")
+    .select(
+      "id, slug, name, county, status, sale_status, demo_mode, test_lot, updated_at, corners(id, locked)",
+    )
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -39,6 +41,7 @@ export default async function PropertiesPage() {
                 <th>{t("cols.county")}</th>
                 <th>{t("cols.corners")}</th>
                 <th>{t("cols.status")}</th>
+                <th>{t("cols.mode")}</th>
                 <th>{tSale("label")}</th>
                 <th>{t("cols.updated")}</th>
               </tr>
@@ -62,6 +65,16 @@ export default async function PropertiesPage() {
                       <Pill tone={statusTone[p.status] ?? "draft"}>
                         {tStatus(p.status)}
                       </Pill>
+                    </td>
+                    <td>
+                      <Pill tone={p.demo_mode ? "working" : "available"}>
+                        {p.demo_mode ? t("modeDemo") : t("modeLive")}
+                      </Pill>
+                      {p.test_lot ? (
+                        <Pill tone="draft" className="ml-2">
+                          {t("modeTestLot")}
+                        </Pill>
+                      ) : null}
                     </td>
                     <td>
                       <Pill tone={saleTone[p.sale_status]}>

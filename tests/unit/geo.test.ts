@@ -15,6 +15,11 @@ import {
   signedDistanceToPolygon,
 } from "@/lib/geo/polygon";
 import { centroid, distanceFt, makeProjection } from "@/lib/geo/project";
+import {
+  TEST_LOT_RADIUS_FT,
+  testLotEntrance,
+  testLotRing,
+} from "@/lib/geo/test-lot";
 import type { LatLng, PointFt } from "@/lib/geo/types";
 
 // Lot 4, Gaines Acres — the CAD-verified pilot ring from data/lot4_gaines_acres.kml
@@ -198,5 +203,78 @@ describe("area", () => {
   it("Lot 4 is ~1.49 acres (survey figure)", () => {
     expect(areaAcres(LOT4_RING)).toBeGreaterThan(1.35);
     expect(areaAcres(LOT4_RING)).toBeLessThan(1.6);
+  });
+});
+
+describe("test-lot squares (GPS field testing, not CAD geometry)", () => {
+  // 7676 Hillmont St, Houston TX 77040 — the office used for the live-GPS test.
+  const office: LatLng = { lat: 29.8437125, lng: -95.5059483 };
+
+  it("puts every corner exactly the radius from the centre", () => {
+    const ring = testLotRing(office, TEST_LOT_RADIUS_FT);
+    const proj = makeProjection(office);
+    expect(ring).toHaveLength(4);
+    for (const c of ring) {
+      expect(distanceFt({ x: 0, y: 0 }, proj.toLocal(c))).toBeCloseTo(
+        TEST_LOT_RADIUS_FT,
+        3,
+      );
+    }
+  });
+
+  it("orders NW, NE, SE, SW clockwise like the pilot lot", () => {
+    const ring = testLotRing(office);
+    expect(isClockwise(ring.map(makeProjection(office).toLocal))).toBe(true);
+    const [nw, ne, se, sw] = ring as [LatLng, LatLng, LatLng, LatLng];
+    expect(nw.lat).toBeGreaterThan(se.lat);
+    expect(ne.lat).toBeGreaterThan(sw.lat);
+    expect(nw.lng).toBeLessThan(ne.lng);
+    expect(sw.lng).toBeLessThan(se.lng);
+  });
+
+  it("numbers corners from the north-edge entrance without reordering", () => {
+    const ring = testLotRing(office);
+    const entrance = testLotEntrance(ring);
+    // The entrance sits on the C1 -> C2 edge, so numbering is already correct.
+    expect(orderCornersFromEntrance(ring, entrance)).toEqual(ring);
+  });
+
+  it("makes a walkable square: sides 141 ft, adjacent corners well past arrival", () => {
+    const ring = testLotRing(office, TEST_LOT_RADIUS_FT);
+    const proj = makeProjection(office);
+    const local = ring.map(proj.toLocal);
+    for (let i = 0; i < 4; i++) {
+      const side = distanceFt(local[i]!, local[(i + 1) % 4]!);
+      expect(side).toBeCloseTo(TEST_LOT_RADIUS_FT * Math.SQRT2, 2);
+      expect(side).toBeGreaterThan(100); // >> ARRIVE_RADIUS_FT, so no ambiguity
+    }
+    expect(areaAcres(ring)).toBeCloseTo(0.46, 2);
+  });
+});
+
+describe("Hillmont test lot (migration 20260916180000)", () => {
+  // The migration stores these corners as literals because hosted seeding runs
+  // through `supabase db push`, not through app code. Keep the two in step: if
+  // the projection or the square generator changes, this fails first.
+  const center: LatLng = { lat: 29.8437125, lng: -95.5059483 };
+  const migrationCorners: LatLng[] = [
+    { lat: 29.8439074, lng: -95.5061715 }, // C1 NW
+    { lat: 29.8439074, lng: -95.5057251 }, // C2 NE
+    { lat: 29.8435176, lng: -95.5057251 }, // C3 SE
+    { lat: 29.8435176, lng: -95.5061715 }, // C4 SW
+  ];
+
+  it("matches what testLotRing generates for the office centre", () => {
+    const generated = testLotRing(center, TEST_LOT_RADIUS_FT).map((p) => ({
+      lat: Number(p.lat.toFixed(7)),
+      lng: Number(p.lng.toFixed(7)),
+    }));
+    expect(generated).toEqual(migrationCorners);
+  });
+
+  it("matches the entrance the migration stores", () => {
+    const entrance = testLotEntrance(testLotRing(center, TEST_LOT_RADIUS_FT));
+    expect(Number(entrance.lat.toFixed(7))).toBe(29.8439074);
+    expect(Number(entrance.lng.toFixed(7))).toBe(-95.5059483);
   });
 });

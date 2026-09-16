@@ -16,7 +16,7 @@ export default async function CornersPage({
     await Promise.all([
       supabase
         .from("properties")
-        .select("id, entrance_lat, entrance_lng, geometry_source, boundary")
+        .select("id, entrance_lat, entrance_lng, geometry_source, boundary, test_lot")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -77,6 +77,7 @@ export default async function CornersPage({
       }
       geometrySource={property.geometry_source}
       isAdmin={me?.role === "admin"}
+      isTestLot={property.test_lot}
       lastLockEvent={lastLockEvent}
       labels={{
         title: t("title"),
@@ -97,6 +98,13 @@ export default async function CornersPage({
         mapDrawn: t("mapDrawn"),
         mapSatellite: t("mapSatellite"),
         mapGoogle: t("mapGoogle"),
+        testLot: t("testLot"),
+        placeTestSquare: t("placeTestSquare"),
+        placeTestSquarePrompt: t("placeTestSquarePrompt"),
+        testLotNote: t("testLotNote"),
+        useMyLocation: t("useMyLocation"),
+        locating: t("locating"),
+        noGeolocation: t("noGeolocation"),
       }}
     />
   );

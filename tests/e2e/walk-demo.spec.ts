@@ -107,3 +107,25 @@ test("PWA assets serve: manifest and service worker", async ({ page, request }) 
     /manifest\.webmanifest/,
   );
 });
+
+/**
+ * Demo is opt-in per property. The Hillmont test lot ships with demo_mode off
+ * (it exists to exercise real device GPS), so `?demo=` must not put a
+ * simulated walker on it — the guarantee that a stray demo link can never
+ * replace a real walker's position with a simulation.
+ */
+test("a property with demo mode off ignores ?demo= and asks for real GPS", async ({
+  page,
+  context,
+}) => {
+  await context.clearPermissions();
+  await page.goto("/walk/hillmont-gps-test?demo=clean");
+  await expect(page.getByTestId("start-walking")).toBeVisible();
+  await page.getByTestId("start-walking").click();
+
+  // Live path: the walk asks for the device's sensors instead of dropping
+  // straight into the HUD, and the demo tray never mounts.
+  await expect(page.getByTestId("allow-sensors")).toBeVisible();
+  await expect(page.getByTestId("demo-tray-toggle")).toHaveCount(0);
+  await expect(page.getByTestId("hud-arrow")).toHaveCount(0);
+});

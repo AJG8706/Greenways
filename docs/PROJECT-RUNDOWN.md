@@ -19,7 +19,7 @@ One web app, three surfaces, one database: a desktop **admin console** (English)
 | Gate 7 (pilot & launch) | Not started |
 
 **Production:** https://greenways-jade.vercel.app (Vercel project on `main`; every PR gets a preview URL).
-Admin: `/admin` (magic-link sign-in, invite-only). Buyer walk: `/walk/broussard-lot-4`; demo: append `?demo=clean|noisy|compass|boundary`. Spanish: `NEXT_LOCALE=es` cookie or the ES chip.
+Admin: `/admin` (magic-link sign-in, invite-only). Buyer walk: `/walk/broussard-lot-4`; demo: append `?demo=clean|noisy|compass|boundary` — **only on a property with `demo_mode` on**. Live-GPS field test target: `/walk/hillmont-gps-test` (demo off, so `?demo=` is ignored there). Spanish: `NEXT_LOCALE=es` cookie or the ES chip.
 
 ## Stack and repo map
 
@@ -38,13 +38,14 @@ components/
   walk/  (walk-app controller, hud-parts, sheets, mini-map, google-mini-map, demo-tray)
   ui/    (shadcn-style primitives re-themed to Greenways tokens)
 lib/
-  geo/   # local-feet projection, bearing, polygon math, corner ordering (pure, tested)
+  geo/   # local-feet projection, bearing, polygon math, corner ordering,
+         #   test-lot square generator (pure, tested)
   hud/   # position/heading filters, arrival, boundary, simulated walker (pure, tested)
   walk/  # sensor + demo sources, audio, events logger, types
   supabase/ (client/server/admin clients; database.types.ts — see gotcha below)
   kml.ts, i18n/, photos.ts, utils.ts
-supabase/migrations/         # 2 migrations; seed.sql enters Broussard Lot 4
-tests/unit (Vitest, 44) · tests/e2e (Playwright, 17)
+supabase/migrations/         # 3 migrations; seed.sql enters Broussard Lot 4
+tests/unit (Vitest, 50) · tests/e2e (Playwright, 18)
 .github/workflows/           # ci, db-push, verify-deploy, diagnose-auth, diagnose-walk
 docs/                        # plan, HUD spec, copy deck, gate reports, this file
 data/                        # lot4_gaines_acres.kml (pilot); lot4 aerial jpg = INTERNAL ONLY
@@ -55,11 +56,11 @@ brand/                       # brand kit; tokens are the color source of truth
 
 Work on a feature branch (history so far is on `claude/greenways-phase-2-mc1lfb`), conventional commits, **small PRs into `main`**; merging deploys production. CI must be green to merge: lint, typecheck, Vitest, `next build`, and the Playwright suite against a real local Supabase stack (`supabase start` works in GitHub runners). Local commands: `pnpm dev|build|lint|typecheck|test|test:e2e`, `pnpm db:start|db:reset|db:types` (needs Docker).
 
-## Data model + enforcement (migrations 20260915000001, 20260916120000)
+## Data model + enforcement (migrations 20260915000001, 20260916120000, 20260916180000)
 
-Tables: `properties` (i18n name jsonb, address, county, acres, entrance lat/lng, boundary GeoJSON, `status` draft|generating|review|published|error, `sale_status` available|under_contract|sold, `es_reviewed(+by,+at)`), `corners` (n, lat/lng, i18n name/stake, approach/stake photo paths, `locked`), `media_assets` (type capture|image|video, slot, status generated|approved|rejected), `generation_jobs`, `walk_links` (public|prospect, token), `walk_sessions`, `walk_events`, `team_users` + `invites` (admin|editor, `first_signed_in_at` / `last_sent_at`), `demo_scenarios`, `audit_log`. RLS on every table (team read/write; deletes + team management admin-only; storage bucket `property-photos` private, team-only).
+Tables: `properties` (i18n name jsonb, address, county, acres, entrance lat/lng, boundary GeoJSON, `status` draft|generating|review|published|error, `sale_status` available|under_contract|sold, `demo_mode`, `test_lot`, `es_reviewed(+by,+at)`), `corners` (n, lat/lng, i18n name/stake, approach/stake photo paths, `locked`), `media_assets` (type capture|image|video, slot, status generated|approved|rejected), `generation_jobs`, `walk_links` (public|prospect, token), `walk_sessions`, `walk_events`, `team_users` + `invites` (admin|editor, `first_signed_in_at` / `last_sent_at`), `demo_scenarios`, `audit_log`. RLS on every table (team read/write; deletes + team management admin-only; storage bucket `property-photos` private, team-only).
 
-**Guardrails live in Postgres triggers, not just UI:** locked corners cannot move; unlock is admin-only and audit-logged; `status='published'` is blocked while Spanish is unreviewed or any corner unlocked; a `before insert` trigger on `auth.users` makes magic links invite-only; invite "acceptance" = first real sign-in (`last_sign_in_at` transition), because issuing an OTP creates the auth user before any email is opened.
+**Guardrails live in Postgres triggers, not just UI:** locked corners cannot move; unlock is admin-only and audit-logged; `status='published'` is blocked while Spanish is unreviewed, any corner unlocked, or the property is a `test_lot`; a `before insert` trigger on `auth.users` makes magic links invite-only; invite "acceptance" = first real sign-in (`last_sign_in_at` transition), because issuing an OTP creates the auth user before any email is opened.
 
 ## Environments, keys, automation
 
@@ -81,6 +82,8 @@ Tables: `properties` (i18n name jsonb, address, county, acres, entrance lat/lng,
 8. Sale-status pills: **Fence Post Red is sold lots and errors only** (brand guardrail #7). Harvest Gold/Trailhead Green never as text on cream.
 9. Overlays on the walk must not swallow taps — full-screen containers get `pointer-events: none` with the sheet `auto` (arrival card regression, fixed).
 10. Demo telemetry is stored with a `demo:` device prefix — filter it in any analytics work.
+11. **Demo mode is per-property and off by default** (`properties.demo_mode`, Demo tab checkbox). With it off the walk runs live device GPS and `?demo=` is ignored entirely, so a stray demo link can never swap a real walker's position for a simulation. The pilot is switched on by migration `20260916180000` and by `seed.sql` — the seed has to set it too, because a local `db reset` seeds *after* migrations, so the migration's `update ... where slug='broussard-lot-4'` matches nothing there.
+12. **Test lots** (`properties.test_lot`) carry a generated 100 ft-radius square instead of CAD geometry — for GPS field testing only. The publish trigger refuses them, the Corners tab swaps KML import for "Place test square" / "Use my location", and `lib/geo/test-lot.ts` is the single generator. The Hillmont row's coordinates are literals in the migration (hosted seeding goes through `db push`, not app code) and a unit test pins them to what `testLotRing` produces, so the two cannot drift.
 
 ## Rules that do not bend (from CLAUDE.md — enforce in every change)
 
@@ -88,7 +91,7 @@ Corners only from CAD-verified geometry, locked after verification, unlock = log
 
 ## Immediate queue (in order)
 
-1. **Gate 3 field test** (Alton, on-site — HUD spec §12): feed the measured numbers back into `ARRIVE_RADIUS_FT` (`lib/hud/arrival.ts`), boundary thresholds (`lib/hud/boundary.ts`), and filter constants (`lib/hud/filters.ts`). All marked *tune in field*.
+1. **Gate 3 field test** (Alton, on-site — HUD spec §12). A GPS test target now exists off-site too: `hillmont-gps-test`, a 100 ft-radius square at 7676 Hillmont St, Houston (the office), running live GPS. Needs the `DB push` workflow before it appears on hosted. Feed the measured numbers back into `ARRIVE_RADIUS_FT` (`lib/hud/arrival.ts`), boundary thresholds (`lib/hud/boundary.ts`), and filter constants (`lib/hud/filters.ts`). All marked *tune in field*.
 2. **Team roster activation** — waiting on emails + roles from Alton (Rosalia, Ferdy, Laura, Joseph, Lizzie). Insert `invites` rows (no emails sent unless the admin presses Send/Resend).
 3. **Phase 4 — Higgsfield media pipeline** (plan §3, Gate 4): prompt templating from the Prompt Library, `generation_jobs` queue → Higgsfield API (`HIGGSFIELD_API_KEY` to be added) → side-by-side review queue in the Media tab (approve / reject-with-reason / regenerate from same source frames) → approved assets fill media slots. Credits discipline: intro + entrance first, lock style, then batch corners.
 4. **Phase 5** — publish flow (public link + QR, tokenized prospect links), GHL/n8n webhook (calendar `xBSMR6gHnlxKqJfB5Pte`), walk analytics UI on `walk_events`, Monday.com inventory-row link (`MONDAY_API_TOKEN`).

@@ -16,7 +16,7 @@ on conflict (email) do nothing;
 with prop as (
   insert into public.properties
     (slug, name, address, county, acres, entrance_lat, entrance_lng,
-     boundary, geometry_source, status, es_reviewed)
+     boundary, geometry_source, status, es_reviewed, demo_mode)
   values (
     'broussard-lot-4',
     jsonb_build_object(
@@ -39,7 +39,12 @@ with prop as (
     }'::jsonb,
     'lot4_gaines_acres.kml · Jefferson CAD parcel polygon, cross-checked against Gaines Acres replat',
     'draft',
-    false
+    false,
+    -- The pilot is the demo/QA property: the Demo tab's simulated-walk
+    -- scenarios only run where demo_mode is on. Migration 20260916180000 sets
+    -- the same flag on hosted; the seed has to set it here because seeding
+    -- runs after migrations on a local `db reset`.
+    true
   )
   returning id
 )

@@ -267,6 +267,8 @@ export type Database = {
           geometry_source: string | null;
           status: Database["public"]["Enums"]["property_status"];
           sale_status: Database["public"]["Enums"]["sale_status"];
+          demo_mode: boolean;
+          test_lot: boolean;
           es_reviewed: boolean;
           es_reviewed_by: string | null;
           es_reviewed_at: string | null;
@@ -287,6 +289,8 @@ export type Database = {
           geometry_source?: string | null;
           status?: Database["public"]["Enums"]["property_status"];
           sale_status?: Database["public"]["Enums"]["sale_status"];
+          demo_mode?: boolean;
+          test_lot?: boolean;
           es_reviewed?: boolean;
           es_reviewed_by?: string | null;
           es_reviewed_at?: string | null;
@@ -307,6 +311,8 @@ export type Database = {
           geometry_source?: string | null;
           status?: Database["public"]["Enums"]["property_status"];
           sale_status?: Database["public"]["Enums"]["sale_status"];
+          demo_mode?: boolean;
+          test_lot?: boolean;
           es_reviewed?: boolean;
           es_reviewed_by?: string | null;
           es_reviewed_at?: string | null;
