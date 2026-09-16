@@ -32,3 +32,12 @@ jobs:
         run: |
           curl -s -w "\nHTTP %{http_code}\n" "$SUPABASE_URL/rest/v1/properties?select=slug&slug=eq.broussard-lot-4" \
             -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY"
+
+      - name: Inspect walk data directly (pooler)
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" \
+            -c "select slug, entrance_lat, entrance_lng, sale_status, status from public.properties where slug='broussard-lot-4';" \
+            -c "select n, locked, round(lat::numeric,5) lat, round(lng::numeric,5) lng from public.corners c join public.properties p on p.id=c.property_id where p.slug='broussard-lot-4' order by n;" \
+            -c "select count(*) as corner_rows from public.corners;"
