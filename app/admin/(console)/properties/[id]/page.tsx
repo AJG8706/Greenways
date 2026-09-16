@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
 import { PHOTO_SLOTS_PER_CORNER, PROPERTY_PHOTO_SLOTS } from "@/lib/photos";
+import { DeletePropertyButton } from "@/components/admin/delete-property-button";
 
 // Overview tab: the assemble checklist, computed from real data.
 export default async function OverviewPage({
@@ -14,7 +15,7 @@ export default async function OverviewPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: property }, { data: corners }, { data: captures }] =
+  const [{ data: property }, { data: corners }, { data: captures }, userRes] =
     await Promise.all([
       supabase
         .from("properties")
@@ -31,8 +32,15 @@ export default async function OverviewPage({
         .select("slot")
         .eq("property_id", id)
         .eq("type", "capture"),
+      supabase.auth.getUser(),
     ]);
   if (!property) notFound();
+
+  const { data: me } = await supabase
+    .from("team_users")
+    .select("role")
+    .eq("user_id", userRes.data.user?.id ?? "")
+    .maybeSingle();
 
   const t = await getTranslations("admin");
   const cornerList = corners ?? [];
@@ -149,6 +157,23 @@ export default async function OverviewPage({
           </Link>
         </div>
       </section>
+      {me?.role === "admin" ? (
+        <section className="card lg:col-span-2" style={{ borderColor: "var(--error)" }}>
+          <div className="row between">
+            <div>
+              <h3>Danger zone</h3>
+              <p className="t-small muted">
+                Deletes the property with its corners, photos, content and links.
+                Admin only; audit-logged.
+              </p>
+            </div>
+            <DeletePropertyButton
+              propertyId={id}
+              propertyName={i18nText(property.name).en || "this property"}
+            />
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
