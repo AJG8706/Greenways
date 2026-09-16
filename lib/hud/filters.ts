@@ -20,13 +20,25 @@ export type PositionFilterState = {
   fix: PointFt | null;
   lastAcceptedRaw: PointFt | null;
   lastAcceptedAtMs: number | null;
+  consecutiveTeleports: number;
 };
 
 export const ACCURACY_REJECT_FT = 100;
 export const TELEPORT_FT_PER_S = 25;
+/**
+ * After this many consecutive teleport rejections the filter re-seeds from
+ * the raw fix: sustained agreement among "impossible" fixes means the buyer
+ * really moved (drove between corners, demo jump) — the old anchor is stale.
+ */
+export const TELEPORT_RESEED_AFTER = 3;
 
 export function createPositionFilter(): PositionFilterState {
-  return { fix: null, lastAcceptedRaw: null, lastAcceptedAtMs: null };
+  return {
+    fix: null,
+    lastAcceptedRaw: null,
+    lastAcceptedAtMs: null,
+    consecutiveTeleports: 0,
+  };
 }
 
 export function positionAlpha(accuracyFt: number): number {
@@ -42,6 +54,7 @@ export function stepPositionFilter(
     return { state, accepted: false };
   }
 
+  let reseed = false;
   if (state.lastAcceptedRaw !== null && state.lastAcceptedAtMs !== null) {
     const dtS = (raw.timestampMs - state.lastAcceptedAtMs) / 1000;
     if (dtS > 0) {
@@ -50,14 +63,21 @@ export function stepPositionFilter(
         raw.point.y - state.lastAcceptedRaw.y,
       );
       if (dist / dtS > TELEPORT_FT_PER_S) {
-        return { state, accepted: false };
+        const teleports = state.consecutiveTeleports + 1;
+        if (teleports < TELEPORT_RESEED_AFTER) {
+          return {
+            state: { ...state, consecutiveTeleports: teleports },
+            accepted: false,
+          };
+        }
+        reseed = true;
       }
     }
   }
 
   const alpha = positionAlpha(raw.accuracyFt);
   const fix =
-    state.fix === null
+    state.fix === null || reseed
       ? raw.point
       : {
           x: state.fix.x + alpha * (raw.point.x - state.fix.x),
@@ -65,7 +85,12 @@ export function stepPositionFilter(
         };
 
   return {
-    state: { fix, lastAcceptedRaw: raw.point, lastAcceptedAtMs: raw.timestampMs },
+    state: {
+      fix,
+      lastAcceptedRaw: raw.point,
+      lastAcceptedAtMs: raw.timestampMs,
+      consecutiveTeleports: 0,
+    },
     accepted: true,
   };
 }

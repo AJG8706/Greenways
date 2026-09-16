@@ -88,6 +88,23 @@ describe("position filter (HUD spec §3)", () => {
     });
     expect(ok.accepted).toBe(true);
   });
+
+  it("re-seeds after sustained teleports (drive between corners / demo jump)", () => {
+    let s = createPositionFilter();
+    ({ state: s } = stepPositionFilter(s, {
+      point: { x: 0, y: 0 },
+      accuracyFt: 12,
+      timestampMs: 0,
+    }));
+    // Three consecutive far fixes agree with each other: third re-seeds.
+    let r = stepPositionFilter(s, { point: { x: 600, y: 0 }, accuracyFt: 12, timestampMs: 1000 });
+    expect(r.accepted).toBe(false);
+    r = stepPositionFilter(r.state, { point: { x: 602, y: 1 }, accuracyFt: 12, timestampMs: 2000 });
+    expect(r.accepted).toBe(false);
+    r = stepPositionFilter(r.state, { point: { x: 604, y: 2 }, accuracyFt: 12, timestampMs: 3000 });
+    expect(r.accepted).toBe(true);
+    expect(r.state.fix).toEqual({ x: 604, y: 2 }); // seeded fresh, not smoothed
+  });
 });
 
 describe("heading filter (HUD spec §3)", () => {
