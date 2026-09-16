@@ -65,6 +65,10 @@ export default async function CornersPage({
   return (
     <CornersEditor
       propertyId={id}
+      mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? null}
+      googleKey={
+        process.env.GOOGLE_MAPS_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? null
+      }
       corners={cornerRows}
       entrance={
         property.entrance_lat !== null && property.entrance_lng !== null
