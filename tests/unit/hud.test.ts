@@ -106,7 +106,7 @@ describe("heading filter (HUD spec §3)", () => {
 
 describe("arrival (HUD spec §4)", () => {
   it("fires after 2 s continuously within the radius", () => {
-    let s = createArrival();
+    const s = createArrival();
     let r = stepArrival(s, { filteredDistFt: 18, rawDistFt: 22, nowMs: 0 });
     expect(r.justArrived).toBe(false);
     r = stepArrival(r.state, { filteredDistFt: 19, rawDistFt: 22, nowMs: 1000 });
@@ -121,7 +121,7 @@ describe("arrival (HUD spec §4)", () => {
   });
 
   it("resets the hold when the buyer drifts back out", () => {
-    let s = createArrival();
+    const s = createArrival();
     let r = stepArrival(s, { filteredDistFt: 18, rawDistFt: 22, nowMs: 0 });
     r = stepArrival(r.state, { filteredDistFt: 25, rawDistFt: 30, nowMs: 1500 });
     r = stepArrival(r.state, { filteredDistFt: 18, rawDistFt: 22, nowMs: 2000 });
@@ -150,7 +150,7 @@ describe("boundary warning (HUD spec §7)", () => {
   const far = 1000; // far from entrance
 
   it("warns only after 3 s more than 10 ft outside", () => {
-    let s = createBoundary();
+    const s = createBoundary();
     let r = stepBoundary(s, { signedDistFt: -12, entranceDistFt: far, nowMs: 0 });
     expect(r.state.warning).toBe(false);
     r = stepBoundary(r.state, {
@@ -184,7 +184,7 @@ describe("boundary warning (HUD spec §7)", () => {
   });
 
   it("clears after 2 s back inside", () => {
-    let s = createBoundary();
+    const s = createBoundary();
     let r = stepBoundary(s, { signedDistFt: -15, entranceDistFt: far, nowMs: 0 });
     r = stepBoundary(r.state, { signedDistFt: -15, entranceDistFt: far, nowMs: 3000 });
     expect(r.state.warning).toBe(true);
@@ -248,7 +248,7 @@ describe("simulated walker (demo mode)", () => {
 
   it("wander detours off-course and decays", () => {
     const target = { x: 0, y: 1000 };
-    let s = createWalker({ x: 0, y: 0 }, 7);
+    const s = createWalker({ x: 0, y: 0 }, 7);
     const r = stepWalker(s, {
       target,
       dtMs: 1000,
