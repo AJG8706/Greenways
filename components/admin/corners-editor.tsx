@@ -14,6 +14,7 @@ import { closestPointOnPolygon } from "@/lib/geo/polygon";
 import { centroid, makeProjection } from "@/lib/geo/project";
 import type { LatLng } from "@/lib/geo/types";
 import { DrawnMap } from "./drawn-map";
+import { GoogleMap } from "./google-map";
 import { SatelliteMap } from "./satellite-map";
 
 export type CornerRow = {
@@ -65,6 +66,8 @@ export function CornersEditor({
   isAdmin,
   lastLockEvent,
   labels,
+  mapboxToken,
+  googleKey,
 }: {
   propertyId: string;
   corners: CornerRow[];
@@ -73,6 +76,9 @@ export function CornersEditor({
   isAdmin: boolean;
   lastLockEvent: { action: string; at: string } | null;
   labels: CornersLabels;
+  /** Passed from the server so env names stay flexible (browser-safe keys). */
+  mapboxToken: string | null;
+  googleKey: string | null;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [entranceMode, setEntranceMode] = useState(false);
@@ -81,8 +87,6 @@ export function CornersEditor({
 
   const hasGeometry = corners.length >= 3;
   const allLocked = hasGeometry && corners.every((c) => c.locked);
-  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-  const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
 
   const available: MapProvider[] = [
     "drawn",
@@ -90,7 +94,7 @@ export function CornersEditor({
     ...(googleKey ? (["google"] as const) : []),
   ];
   const [provider, setProvider] = useState<MapProvider>(
-    mapboxToken ? "mapbox" : "drawn",
+    googleKey ? "google" : mapboxToken ? "mapbox" : "drawn",
   );
   useEffect(() => {
     try {
@@ -251,13 +255,14 @@ export function CornersEditor({
                   onMapClick={onMapClick}
                 />
               ) : provider === "google" && googleKey ? (
-                <div
-                  className="grid place-items-center rounded-2 p-8 text-center"
-                  style={{ aspectRatio: "1", background: "var(--gw-pine-3)", color: "var(--gw-sage-mist)" }}
-                >
-                  Google Maps layer arrives with the Phase 3 map work — key detected,
-                  wiring pending.
-                </div>
+                <GoogleMap
+                  apiKey={googleKey}
+                  corners={corners}
+                  entrance={entrance}
+                  draggable={!allLocked}
+                  onCornerDragged={onCornerDragged}
+                  onMapClick={onMapClick}
+                />
               ) : (
                 <DrawnMap
                   corners={corners}
