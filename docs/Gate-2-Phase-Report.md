@@ -1,6 +1,6 @@
 # Greenways — Gate 2 Phase Report
 
-**Phase 2: Foundation & Admin Console · September 15, 2026 · Status: built, CI green (lint · typecheck · 27 unit tests · build · 6-test E2E on a real Supabase stack); awaiting hosted-schema paste + Vercel connection for the click-through preview**
+**Phase 2: Foundation & Admin Console · September 16, 2026 · Status: built, CI green (lint · typecheck · 27 unit tests · build · 6-test E2E on a real Supabase stack) · deployed and verified — preview: https://greenways-jade.vercel.app**
 
 ## What's built
 
@@ -51,21 +51,19 @@
 
 ## Open risks carried forward
 
-- **Hosted schema not yet applied** — the cloud project (`pdrvinfahqnskuwqumuu`) has keys wired into the app, but the SQL needs one paste in the dashboard (README §Hosted Supabase) or a DB password/access token for `supabase db push`. Until then the deployed app has no tables behind it.
-- **No preview URL yet** — Vercel token still to arrive; connecting the repo gives every PR a preview URL from then on.
+- ~~Hosted schema~~ **Resolved Sep 16**: schema + seed applied to the cloud project via the SQL Editor; a `Verify deployment` workflow confirmed the deployed app, RLS, and seeded invites end-to-end. Future migrations should move to `supabase db push` from CI (needs the access token + DB password as GitHub secrets).
+- ~~Preview URL~~ **Resolved Sep 16**: `main` created and deployed as production on Vercel — https://greenways-jade.vercel.app. PRs into `main` get preview URLs from here on. Vercel token still useful for CLI management but no longer blocking.
 - The real email delivery path for magic links (SMTP, deliverability, 15-min expiry copy) is proven only through Supabase's local mail sink and the token flow; verify once the hosted project has the schema and you sign in for real.
 - Supabase free tier pauses after 7 idle days during build — known, resolved at Gate 6.
 - iOS compass behavior and everything sensor-side remains Phase 3 risk, unchanged from Gate 1.
 
 ## Inputs still needed
 
-1. **Cloud schema**: paste the two SQL files (or send the DB password / a personal access token and I'll push and regenerate types).
-2. **Vercel token** → repo connection → preview URL for the Gate 2 click-through.
-3. **Team roster with roles** for real invites (seed has both of Alton's emails as admin).
-4. **Mapbox token** (or the Google Maps Platform decision from the kickoff §4) for satellite on the Corners tab.
-5. **Anthropic API key** on the deployment to light up Draft Spanish.
-6. **Broussard photos to protocol** + stake status/descriptions to replace the seeded stake text.
+1. **Team roster with roles** for real invites (seed has both of Alton's emails as admin).
+2. **Mapbox token** (or the Google Maps Platform decision from the kickoff §4) for satellite on the Corners tab.
+3. **Anthropic API key** on the deployment to light up Draft Spanish.
+4. **Broussard photos to protocol** + stake status/descriptions to replace the seeded stake text.
 
 ## Gate 2 ask
 
-Paste the schema (or send credentials), connect Vercel, then click through: sign in with your email → Properties → Broussard Lot 4 → Corners (map, table, lock/unlock as admin) → Photos upload → Content (draft + review flag) → Team (invite a second address and sign in with it). Approve or send changes; Phase 3 (Corner Finder PWA + demo mode) starts on approval.
+Open https://greenways-jade.vercel.app and click through: sign in with your email → Properties → Broussard Lot 4 → Corners (map, table, lock/unlock as admin) → Photos upload → Content (draft + review flag) → Team (invite a second address and sign in with it). Approve or send changes; Phase 3 (Corner Finder PWA + demo mode) starts on approval.
