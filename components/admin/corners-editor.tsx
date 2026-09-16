@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Lock, LockOpen, Upload } from "lucide-react";
 import {
   importKml,
@@ -43,7 +43,19 @@ export type CornersLabels = {
   lng: string;
   stake: string;
   photos: string;
+  mapSource: string;
+  mapDrawn: string;
+  mapSatellite: string;
+  mapGoogle: string;
 };
+
+/**
+ * Map background providers. 'google' is prepared as a first-class option —
+ * it renders once NEXT_PUBLIC_GOOGLE_MAPS_KEY exists and the layer ships
+ * (kickoff §4 decision); 'drawn' is always available as the fallback.
+ */
+export type MapProvider = "drawn" | "mapbox" | "google";
+const MAP_PROVIDER_KEY = "gw-map-provider";
 
 export function CornersEditor({
   propertyId,
@@ -70,6 +82,34 @@ export function CornersEditor({
   const hasGeometry = corners.length >= 3;
   const allLocked = hasGeometry && corners.every((c) => c.locked);
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const googleKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+
+  const available: MapProvider[] = [
+    "drawn",
+    ...(mapboxToken ? (["mapbox"] as const) : []),
+    ...(googleKey ? (["google"] as const) : []),
+  ];
+  const [provider, setProvider] = useState<MapProvider>(
+    mapboxToken ? "mapbox" : "drawn",
+  );
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(MAP_PROVIDER_KEY) as MapProvider | null;
+      if (stored && available.includes(stored)) setProvider(stored);
+    } catch {
+      // storage unavailable — keep the default
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function pickProvider(next: MapProvider) {
+    setProvider(next);
+    try {
+      localStorage.setItem(MAP_PROVIDER_KEY, next);
+    } catch {
+      // storage unavailable — selection lasts for the session
+    }
+  }
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);
@@ -175,7 +215,33 @@ export function CornersEditor({
         <section className="card" style={{ padding: "var(--gw-s-3)" }}>
           {hasGeometry ? (
             <div className="stack" style={{ gap: "var(--gw-s-3)" }}>
-              {mapboxToken ? (
+              {available.length > 1 ? (
+                <div className="row" style={{ padding: "0 var(--gw-s-2)" }}>
+                  <span className="t-label">{labels.mapSource}</span>
+                  {available.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      className="btn btn-sm btn-secondary"
+                      aria-pressed={provider === p}
+                      style={
+                        provider === p
+                          ? { background: "var(--gw-pasture-green)", color: "var(--gw-prairie-cream)" }
+                          : undefined
+                      }
+                      onClick={() => pickProvider(p)}
+                      data-testid={`map-provider-${p}`}
+                    >
+                      {p === "drawn"
+                        ? labels.mapDrawn
+                        : p === "mapbox"
+                          ? labels.mapSatellite
+                          : labels.mapGoogle}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {provider === "mapbox" && mapboxToken ? (
                 <SatelliteMap
                   token={mapboxToken}
                   corners={corners}
@@ -184,6 +250,14 @@ export function CornersEditor({
                   onCornerDragged={onCornerDragged}
                   onMapClick={onMapClick}
                 />
+              ) : provider === "google" && googleKey ? (
+                <div
+                  className="grid place-items-center rounded-2 p-8 text-center"
+                  style={{ aspectRatio: "1", background: "var(--gw-pine-3)", color: "var(--gw-sage-mist)" }}
+                >
+                  Google Maps layer arrives with the Phase 3 map work — key detected,
+                  wiring pending.
+                </div>
               ) : (
                 <DrawnMap
                   corners={corners}
@@ -195,7 +269,9 @@ export function CornersEditor({
               )}
               <p className="t-small muted" style={{ padding: "0 var(--gw-s-2)" }}>
                 {labels.order} · drag a pin only after unlocking
-                {!mapboxToken ? " · drawn fallback (no imagery key configured)" : null}
+                {!mapboxToken && !googleKey
+                  ? " · drawn fallback (no imagery key configured)"
+                  : null}
               </p>
             </div>
           ) : (

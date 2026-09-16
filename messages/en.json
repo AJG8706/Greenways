@@ -176,7 +176,11 @@
         "lng": "Longitude",
         "stake": "Stake",
         "photos": "Photos"
-      }
+      },
+      "mapSource": "Map imagery",
+      "mapDrawn": "Drawn",
+      "mapSatellite": "Satellite",
+      "mapGoogle": "Google"
     },
     "photos": {
       "title": "Capture protocol",
@@ -268,7 +272,18 @@
       "editor": "Editor",
       "pending": "Invite pending",
       "active": "Active",
-      "remove": "Remove"
+      "remove": "Remove",
+      "resend": "Resend invite",
+      "sendInvite": "Send invite",
+      "sent": "Sent",
+      "lastSent": "Invite sent",
+      "inviteHint": "Creating an invite emails a sign-in link. Use Resend if it didn't arrive."
+    },
+    "sale": {
+      "label": "Lot status",
+      "available": "Available",
+      "underContract": "Under contract",
+      "sold": "Sold"
     }
   }
 }

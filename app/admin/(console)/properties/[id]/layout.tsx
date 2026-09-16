@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
 import { Pill, statusTone } from "@/components/ui/pill";
 import { PropertyTabs } from "@/components/admin/property-tabs";
+import { SaleStatusSelect } from "@/components/admin/sale-status-select";
 
 export default async function PropertyLayout({
   children,
@@ -17,7 +18,7 @@ export default async function PropertyLayout({
   const supabase = await createClient();
   const { data: property } = await supabase
     .from("properties")
-    .select("id, slug, name, address, county, acres, status")
+    .select("id, slug, name, address, county, acres, status, sale_status")
     .eq("id", id)
     .maybeSingle();
   if (!property) notFound();
@@ -43,6 +44,16 @@ export default async function PropertyLayout({
             </Pill>
           </div>
         </div>
+        <SaleStatusSelect
+          propertyId={property.id}
+          value={property.sale_status}
+          labels={{
+            label: t("sale.label"),
+            available: t("sale.available"),
+            under_contract: t("sale.underContract"),
+            sold: t("sale.sold"),
+          }}
+        />
       </div>
       <PropertyTabs
         propertyId={property.id}

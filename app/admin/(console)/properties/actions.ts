@@ -265,3 +265,24 @@ export async function moveCorner(
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
 }
+
+/** Notate the lot's sale state: available | under_contract | sold. */
+export async function setSaleStatus(
+  propertyId: string,
+  saleStatus: "available" | "under_contract" | "sold",
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("properties")
+    .update({ sale_status: saleStatus })
+    .eq("id", propertyId);
+  if (error) return { ok: false, message: error.message };
+  await supabase.rpc("write_audit", {
+    p_action: "sale_status_changed",
+    p_property_id: propertyId,
+    p_detail: { to: saleStatus },
+  });
+  revalidatePath("/admin/properties");
+  revalidatePath(`/admin/properties/${propertyId}`);
+  return { ok: true };
+}

@@ -3,16 +3,18 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
 import { Pill, statusTone } from "@/components/ui/pill";
+import { saleTone } from "@/components/admin/sale-status-select";
 import { NewPropertyDialog } from "./new-property-dialog";
 
 export default async function PropertiesPage() {
   const t = await getTranslations("admin.properties");
   const tStatus = await getTranslations("admin.status");
+  const tSale = await getTranslations("admin.sale");
   const supabase = await createClient();
 
   const { data: properties, error } = await supabase
     .from("properties")
-    .select("id, slug, name, county, status, updated_at, corners(id, locked)")
+    .select("id, slug, name, county, status, sale_status, updated_at, corners(id, locked)")
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -37,6 +39,7 @@ export default async function PropertiesPage() {
                 <th>{t("cols.county")}</th>
                 <th>{t("cols.corners")}</th>
                 <th>{t("cols.status")}</th>
+                <th>{tSale("label")}</th>
                 <th>{t("cols.updated")}</th>
               </tr>
             </thead>
@@ -58,6 +61,15 @@ export default async function PropertiesPage() {
                     <td>
                       <Pill tone={statusTone[p.status] ?? "draft"}>
                         {tStatus(p.status)}
+                      </Pill>
+                    </td>
+                    <td>
+                      <Pill tone={saleTone[p.sale_status]}>
+                        {tSale(
+                          p.sale_status === "under_contract"
+                            ? "underContract"
+                            : p.sale_status,
+                        )}
                       </Pill>
                     </td>
                     <td className="num">
