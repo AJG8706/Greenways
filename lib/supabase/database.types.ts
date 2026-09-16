@@ -176,6 +176,7 @@ export type Database = {
           invited_by: string | null;
           created_at: string;
           accepted_at: string | null;
+          last_sent_at: string | null;
         };
         Insert: {
           id?: string;
@@ -184,6 +185,7 @@ export type Database = {
           invited_by?: string | null;
           created_at?: string;
           accepted_at?: string | null;
+          last_sent_at?: string | null;
         };
         Update: {
           id?: string;
@@ -192,6 +194,7 @@ export type Database = {
           invited_by?: string | null;
           created_at?: string;
           accepted_at?: string | null;
+          last_sent_at?: string | null;
         };
         Relationships: [
           {
@@ -263,6 +266,7 @@ export type Database = {
           boundary: Json | null;
           geometry_source: string | null;
           status: Database["public"]["Enums"]["property_status"];
+          sale_status: Database["public"]["Enums"]["sale_status"];
           es_reviewed: boolean;
           es_reviewed_by: string | null;
           es_reviewed_at: string | null;
@@ -282,6 +286,7 @@ export type Database = {
           boundary?: Json | null;
           geometry_source?: string | null;
           status?: Database["public"]["Enums"]["property_status"];
+          sale_status?: Database["public"]["Enums"]["sale_status"];
           es_reviewed?: boolean;
           es_reviewed_by?: string | null;
           es_reviewed_at?: string | null;
@@ -301,6 +306,7 @@ export type Database = {
           boundary?: Json | null;
           geometry_source?: string | null;
           status?: Database["public"]["Enums"]["property_status"];
+          sale_status?: Database["public"]["Enums"]["sale_status"];
           es_reviewed?: boolean;
           es_reviewed_by?: string | null;
           es_reviewed_at?: string | null;
@@ -326,6 +332,7 @@ export type Database = {
           display_name: string | null;
           role: Database["public"]["Enums"]["team_role"];
           created_at: string;
+          first_signed_in_at: string | null;
         };
         Insert: {
           id?: string;
@@ -334,6 +341,7 @@ export type Database = {
           display_name?: string | null;
           role?: Database["public"]["Enums"]["team_role"];
           created_at?: string;
+          first_signed_in_at?: string | null;
         };
         Update: {
           id?: string;
@@ -342,6 +350,7 @@ export type Database = {
           display_name?: string | null;
           role?: Database["public"]["Enums"]["team_role"];
           created_at?: string;
+          first_signed_in_at?: string | null;
         };
         Relationships: [];
       };
@@ -478,6 +487,7 @@ export type Database = {
     };
     Enums: {
       team_role: "admin" | "editor";
+      sale_status: "available" | "under_contract" | "sold";
       property_status: "draft" | "generating" | "review" | "published" | "error";
       media_status: "generated" | "approved" | "rejected";
       link_kind: "public" | "prospect";

@@ -89,6 +89,10 @@ export default async function CornersPage({
         lng: t("cols.lng"),
         stake: t("cols.stake"),
         photos: t("cols.photos"),
+        mapSource: t("mapSource"),
+        mapDrawn: t("mapDrawn"),
+        mapSatellite: t("mapSatellite"),
+        mapGoogle: t("mapGoogle"),
       }}
     />
   );
