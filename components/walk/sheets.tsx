@@ -103,10 +103,10 @@ export function ArrivalCard({
   const t = useTranslations();
   const locale = useLocale();
   return (
-    <div className="fixed inset-0 z-40 flex flex-col justify-end">
+    <div className="fixed inset-0 z-40 flex flex-col justify-end" style={{ pointerEvents: "none" }}>
       <div
         className="rounded-t-3 p-5"
-        style={{ background: "var(--bg-2)", boxShadow: "var(--shadow-2)" }}
+        style={{ background: "var(--bg-2)", boxShadow: "var(--shadow-2)", pointerEvents: "auto" }}
         role="dialog"
         aria-modal
         data-testid="arrival-card"

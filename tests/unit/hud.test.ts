@@ -263,7 +263,7 @@ describe("simulated walker (demo mode)", () => {
     expect(after.headingDeg).toBeCloseTo(0, 9);
   });
 
-  it("wander detours off-course and decays", () => {
+  it("wander detours off-course and decays (default: 90° right)", () => {
     const target = { x: 0, y: 1000 };
     const s = createWalker({ x: 0, y: 0 }, 7);
     const r = stepWalker(s, {
@@ -275,5 +275,22 @@ describe("simulated walker (demo mode)", () => {
     // 90° off a due-north course → moves east.
     expect(r.state.truePos.x).toBeGreaterThan(0);
     expect(r.state.wanderRemainingFt).toBeLessThan(25);
+  });
+
+  it("wander honors an explicit bearing and holds it across ticks", () => {
+    const target = { x: 0, y: 1000 };
+    const s = createWalker({ x: 0, y: 0 }, 7);
+    let r = stepWalker(s, {
+      target,
+      dtMs: 1000,
+      scenario: SCENARIOS.boundary!,
+      startWander: true,
+      wanderBearingDeg: 180, // due south, straight away from the walk line
+    });
+    expect(r.state.truePos.y).toBeLessThan(0);
+    const yAfterFirst = r.state.truePos.y;
+    r = stepWalker(r.state, { target, dtMs: 1000, scenario: SCENARIOS.boundary! });
+    expect(r.state.truePos.y).toBeLessThan(yAfterFirst); // still southbound
+    expect(r.state.wanderBearingDeg).not.toBeNull();
   });
 });

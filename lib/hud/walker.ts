@@ -30,6 +30,7 @@ export type WalkerState = {
   rngState: number;
   clockMs: number;
   wanderRemainingFt: number;
+  wanderBearingDeg: number | null;
 };
 
 /** Mulberry32 — tiny deterministic PRNG so demos and tests replay exactly. */
@@ -59,6 +60,7 @@ export function createWalker(start: PointFt, seed = 1): WalkerState {
     rngState: seed | 0,
     clockMs: 0,
     wanderRemainingFt: 0,
+    wanderBearingDeg: null,
   };
 }
 
@@ -73,8 +75,10 @@ export function stepWalker(
     target: PointFt;
     dtMs: number;
     scenario: WalkerScenario;
-    /** When true this tick, the walker detours straight out sideways ~25 ft. */
+    /** When true this tick, the walker detours ~25 ft off the walk line. */
     startWander?: boolean;
+    /** Direction of that detour; defaults to 90° right of the course. */
+    wanderBearingDeg?: number;
   },
 ): { state: WalkerState; fix: RawFix; headingDeg: number } {
   const { target, dtMs, scenario } = input;
@@ -82,10 +86,15 @@ export function stepWalker(
   const toTarget = bearingDeg(state.truePos, target);
 
   let wanderRemainingFt = state.wanderRemainingFt;
-  if (input.startWander) wanderRemainingFt = 25;
+  let wanderBearingDeg = state.wanderBearingDeg;
+  if (input.startWander) {
+    wanderRemainingFt = 25;
+    wanderBearingDeg = input.wanderBearingDeg ?? toTarget + 90;
+  }
 
-  // Walk course: toward the target, or 90° off while wandering.
-  const courseDeg = wanderRemainingFt > 0 ? toTarget + 90 : toTarget;
+  // Walk course: toward the target, or on the detour bearing while wandering.
+  const courseDeg =
+    wanderRemainingFt > 0 && wanderBearingDeg !== null ? wanderBearingDeg : toTarget;
   const rad = (courseDeg * Math.PI) / 180;
   const remaining = distanceFt(state.truePos, target);
   const advance = wanderRemainingFt > 0 ? stepFt : Math.min(stepFt, remaining);
@@ -96,6 +105,7 @@ export function stepWalker(
   };
   if (wanderRemainingFt > 0) {
     wanderRemainingFt = Math.max(0, wanderRemainingFt - advance);
+    if (wanderRemainingFt === 0) wanderBearingDeg = null;
   }
 
   // Noisy GPS fix.
@@ -118,6 +128,7 @@ export function stepWalker(
       rngState: g2.state,
       clockMs,
       wanderRemainingFt,
+      wanderBearingDeg,
     },
     fix: {
       point: fixPoint,

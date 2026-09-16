@@ -163,11 +163,18 @@ export function createDemoSource(
     demo: controls,
     start(cb) {
       const tick = () => {
+        // "Step outside" walks radially outward from the lot centroid (the
+        // projection origin), which crosses the boundary from anywhere —
+        // including standing on a corner. Pausing auto-walk targets the
+        // walker's own position so the wander still moves at full speed.
+        const outwardDeg =
+          (Math.atan2(walker.truePos.x, walker.truePos.y) * 180) / Math.PI;
         const result = stepWalker(walker, {
-          target,
+          target: autoWalk ? target : walker.truePos,
           dtMs: 1000,
-          scenario: { ...scenario, speedFtS: autoWalk ? scenario.speedFtS : 0 },
+          scenario,
           startWander: pendingWander,
+          wanderBearingDeg: outwardDeg,
         });
         pendingWander = false;
         walker = result.state;
