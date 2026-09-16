@@ -20,6 +20,7 @@ import {
 import { formatFeet, shouldUpdateDistance } from "@/lib/hud/format";
 import { continuousRotation, normalize, stepHeading } from "@/lib/hud/heading";
 import { playArrivalTone, playRetargetTone, unlockAudio, vibrateArrival } from "@/lib/walk/audio";
+import { createWalkLogger, type WalkLogger } from "@/lib/walk/events";
 import { createDemoSource, createSensorSource, type WalkSource } from "@/lib/walk/source";
 import type { WalkConfig } from "@/lib/walk/types";
 import { ArrowRing, CornerStrip, DistanceReadout, StatusLine } from "./hud-parts";
@@ -107,6 +108,19 @@ export function WalkApp({ config }: { config: WalkConfig }) {
   const trackedRef = useRef<string | null>(null);
   const foundRef = useRef<Set<string>>(new Set());
   const stopRef = useRef<(() => void) | null>(null);
+  const loggerRef = useRef<WalkLogger | null>(null);
+
+  // Telemetry (HUD spec §11) — batched, offline-queued, never blocking.
+  useEffect(() => {
+    const logger = createWalkLogger({
+      slug: config.slug,
+      locale,
+      demoKey: config.demo?.key ?? null,
+    });
+    loggerRef.current = logger;
+    logger.log("walk_opened");
+    return () => logger.stop();
+  }, [config.slug, config.demo, locale]);
 
   const source = useMemo<WalkSource>(() => {
     if (config.demo) {
@@ -169,7 +183,10 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       machine.current.cornerStartedAtMs = Date.now();
       boundaryDismissedFor.current = null;
       const corner = config.corners.find((c) => c.id === id);
-      if (corner) source.demo?.setTarget({ lat: corner.lat, lng: corner.lng });
+      if (corner) {
+        source.demo?.setTarget({ lat: corner.lat, lng: corner.lng });
+        loggerRef.current?.log("corner_tracked", { n: corner.n });
+      }
       if (!silent) playRetargetTone();
       updateArrow();
       updateStatus();
@@ -189,7 +206,9 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       // Weak GPS: accuracy > 40 ft sustained 5 s (§8).
       if (f.accuracyFt > 40) {
         m.weakSinceMs = m.weakSinceMs ?? now;
+        const wasWeak = m.weak;
         m.weak = now - m.weakSinceMs >= 5000 || m.weak;
+        if (m.weak && !wasWeak) loggerRef.current?.log("gps_weak");
       } else {
         m.weakSinceMs = null;
         m.weak = false;
@@ -260,6 +279,11 @@ export function WalkApp({ config }: { config: WalkConfig }) {
               ? Math.round((Date.now() - m.cornerStartedAtMs) / 1000)
               : 0;
             setFoundSeconds((prev) => new Map(prev).set(corner.n, seconds));
+            loggerRef.current?.log("corner_found", {
+              n: corner.n,
+              seconds,
+              accuracyFt: Math.round(f.accuracyFt),
+            });
             vibrateArrival();
             playArrivalTone();
             setArrivalFor(tracked);
@@ -276,6 +300,7 @@ export function WalkApp({ config }: { config: WalkConfig }) {
         nowMs: now,
       });
       m.boundary = b.state;
+      if (b.justWarned) loggerRef.current?.log("boundary_exit");
       setBoundaryVisible(
         b.state.warning && boundaryDismissedFor.current !== trackedRef.current,
       );
@@ -291,7 +316,11 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       const m = machine.current;
       m.lastHeadingAtMs = Date.now();
       m.courseMode = false;
+      const wasUnreliable = m.compassUnreliable;
       m.compassUnreliable = accuracyDeg !== null && accuracyDeg > 30;
+      if (m.compassUnreliable && !wasUnreliable) {
+        loggerRef.current?.log("compass_unreliable");
+      }
       m.headingDeg = stepHeading(m.headingDeg, normalize(deg));
       updateArrow();
       updateStatus();
@@ -305,6 +334,7 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       onFix,
       onHeading,
       onPositionError: (code) => {
+        loggerRef.current?.log("permission_denied");
         setScreen(code === "denied" ? "denied" : "settings");
       },
       onHeadingUnavailable: () => {
@@ -369,6 +399,7 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       requestPermission?: () => Promise<"granted" | "denied">;
     };
     const doe = DeviceOrientationEvent as RequestableOrientation;
+    loggerRef.current?.log("permission_granted");
     if (typeof doe.requestPermission === "function") {
       void doe.requestPermission().catch(() => undefined).then(() => startSource());
     } else {
@@ -380,7 +411,9 @@ export function WalkApp({ config }: { config: WalkConfig }) {
     setArrivalFor(null);
     if (foundRef.current.size >= config.corners.length) {
       const m = machine.current;
-      setTotalSeconds(m.startedAtMs ? Math.round((Date.now() - m.startedAtMs) / 1000) : 0);
+      const seconds = m.startedAtMs ? Math.round((Date.now() - m.startedAtMs) / 1000) : 0;
+      setTotalSeconds(seconds);
+      loggerRef.current?.log("walk_completed", { seconds });
       setScreen("done");
       return;
     }

@@ -25,3 +25,6 @@ blob-report/
 *.pem
 .vercel
 .sentryclirc
+# generated service worker
+public/sw.js
+public/swe-worker*.js

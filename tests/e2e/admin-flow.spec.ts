@@ -112,3 +112,15 @@ test("publish stays blocked while Spanish is unreviewed", async ({ page }) => {
   await page.getByTestId("tab-publish").click();
   await expect(page.getByTestId("publish-blocked")).toBeVisible();
 });
+
+test("demo tab launches the simulated walk scenarios", async ({ page }) => {
+  await signIn(page, ADMIN_EMAIL);
+  await page.getByRole("link", { name: new RegExp(E2E_PROPERTY) }).click();
+  await page.getByTestId("tab-demo").click();
+  // Button asChild puts the testid on the anchor itself.
+  await expect(page.getByTestId("launch-demo-clean")).toHaveAttribute(
+    "href",
+    /\/walk\/.+\?demo=clean/,
+  );
+  await expect(page.getByTestId("launch-demo-boundary")).toBeVisible();
+});
