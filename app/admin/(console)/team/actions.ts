@@ -104,3 +104,54 @@ export async function removeInvite(inviteId: string): Promise<ActionResult> {
   revalidatePath("/admin/team");
   return { ok: true };
 }
+
+/**
+ * Remove a team member's access entirely (admin only): the team row (RLS cuts
+ * data access immediately), their invite, and their auth account so existing
+ * sessions die and the invite gate blocks re-sign-in.
+ */
+export async function removeTeamMember(memberId: string): Promise<ActionResult> {
+  const { supabase, me } = await requireAdmin();
+  if (!me) return { ok: false, message: "Only an admin can remove access" };
+  if (me.id === memberId) {
+    return { ok: false, message: "You can't remove your own access" };
+  }
+
+  const { data: member, error: findError } = await supabase
+    .from("team_users")
+    .select("id, email, user_id")
+    .eq("id", memberId)
+    .maybeSingle();
+  if (findError) return { ok: false, message: findError.message };
+  if (!member) return { ok: false, message: "Member not found" };
+
+  const { error: delError } = await supabase
+    .from("team_users")
+    .delete()
+    .eq("id", memberId);
+  if (delError) return { ok: false, message: delError.message };
+
+  await supabase.from("invites").delete().eq("email", member.email);
+
+  if (member.user_id) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const { error: authError } = await createAdminClient().auth.admin.deleteUser(
+      member.user_id,
+    );
+    if (authError) {
+      return {
+        ok: false,
+        message: `Access revoked, but the auth account could not be deleted: ${authError.message}`,
+      };
+    }
+  }
+
+  await supabase.rpc("write_audit", {
+    p_action: "team_member_removed",
+    p_property_id: null as unknown as string,
+    p_detail: { email: member.email },
+  });
+
+  revalidatePath("/admin/team");
+  return { ok: true };
+}

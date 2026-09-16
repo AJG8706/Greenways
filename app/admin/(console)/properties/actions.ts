@@ -286,3 +286,54 @@ export async function setSaleStatus(
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
 }
+
+/**
+ * Delete a property outright (admin only — RLS enforces it; for editors the
+ * delete matches zero rows). Cascades take the corners, media rows, links and
+ * demo scenarios; uploaded photos are removed from Storage via service role.
+ */
+export async function deleteProperty(propertyId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const { data: property, error: findError } = await supabase
+    .from("properties")
+    .select("id, slug")
+    .eq("id", propertyId)
+    .maybeSingle();
+  if (findError) return { ok: false, message: findError.message };
+  if (!property) return { ok: false, message: "Property not found" };
+
+  const { count, error } = await supabase
+    .from("properties")
+    .delete({ count: "exact" })
+    .eq("id", propertyId);
+  if (error) return { ok: false, message: error.message };
+  if (!count) {
+    return { ok: false, message: "Only an admin can delete a property" };
+  }
+
+  // Best-effort storage cleanup; rows are already gone.
+  try {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const paths: string[] = [];
+    for (const folder of [`${propertyId}/corners`, `${propertyId}/property`]) {
+      const { data: files } = await admin.storage.from("property-photos").list(folder);
+      for (const f of files ?? []) paths.push(`${folder}/${f.name}`);
+    }
+    if (paths.length > 0) {
+      await admin.storage.from("property-photos").remove(paths);
+    }
+  } catch {
+    // photos become orphans at worst; nothing user-facing breaks
+  }
+
+  await supabase.rpc("write_audit", {
+    p_action: "property_deleted",
+    p_property_id: propertyId,
+    p_detail: { slug: property.slug },
+  });
+
+  revalidatePath("/admin/properties");
+  redirect("/admin/properties");
+}

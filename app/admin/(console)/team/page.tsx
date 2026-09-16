@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { InviteForm } from "./invite-form";
+import { RemoveAccessButton } from "./remove-button";
 import { ResendInviteButton } from "./resend-button";
 
 export default async function TeamPage() {
@@ -68,13 +69,23 @@ export default async function TeamPage() {
                   </td>
                   {isAdmin ? (
                     <td style={{ textAlign: "right" }}>
-                      {!active ? (
-                        <ResendInviteButton
-                          email={m.email}
-                          label={t("resend")}
-                          sentLabel={t("sent")}
-                        />
-                      ) : null}
+                      <span className="row" style={{ justifyContent: "flex-end" }}>
+                        {!active ? (
+                          <ResendInviteButton
+                            email={m.email}
+                            label={t("resend")}
+                            sentLabel={t("sent")}
+                          />
+                        ) : null}
+                        {m.id !== me?.id ? (
+                          <RemoveAccessButton
+                            target={{ kind: "member", id: m.id }}
+                            name={m.email}
+                            label={t("remove")}
+                            confirmText="Remove all Greenways access for"
+                          />
+                        ) : null}
+                      </span>
                     </td>
                   ) : null}
                 </tr>
@@ -98,11 +109,19 @@ export default async function TeamPage() {
                 </td>
                 {isAdmin ? (
                   <td style={{ textAlign: "right" }}>
-                    <ResendInviteButton
-                      email={i.email}
-                      label={i.last_sent_at ? t("resend") : t("sendInvite")}
-                      sentLabel={t("sent")}
-                    />
+                    <span className="row" style={{ justifyContent: "flex-end" }}>
+                      <ResendInviteButton
+                        email={i.email}
+                        label={i.last_sent_at ? t("resend") : t("sendInvite")}
+                        sentLabel={t("sent")}
+                      />
+                      <RemoveAccessButton
+                        target={{ kind: "invite", id: i.id }}
+                        name={i.email}
+                        label={t("remove")}
+                        confirmText="Remove the invite for"
+                      />
+                    </span>
                   </td>
                 ) : null}
               </tr>
