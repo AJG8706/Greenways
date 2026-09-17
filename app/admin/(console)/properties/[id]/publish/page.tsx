@@ -4,9 +4,11 @@ import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
 import { walkPackSms, walkUrl } from "@/lib/links";
+import { getItemName, isMondayConfigured } from "@/lib/integrations/monday";
 import {
   CopyButton,
   IssueLinkForm,
+  MondayCard,
   PublishToggle,
   RevokeButton,
 } from "@/components/admin/publish-console";
@@ -22,7 +24,7 @@ export default async function PublishPage({
   const [{ data: property }, { data: links }] = await Promise.all([
     supabase
       .from("properties")
-      .select("id, slug, name, status, es_reviewed, test_lot")
+      .select("id, slug, name, status, es_reviewed, test_lot, monday_item_id")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -45,6 +47,9 @@ export default async function PublishPage({
     color: { dark: "#24301F", light: "#F5F3E9" },
   });
   const qrDataUri = `data:image/svg+xml;base64,${Buffer.from(qrSvg).toString("base64")}`;
+  const mondayOn = isMondayConfigured();
+  const mondayItemName =
+    mondayOn && property.monday_item_id ? await getItemName(property.monday_item_id) : null;
 
   return (
     <div className="stack" style={{ gap: "var(--gw-s-5)" }}>
@@ -111,6 +116,25 @@ export default async function PublishPage({
           </div>
         </div>
       </section>
+
+      {mondayOn ? (
+        <MondayCard
+          propertyId={id}
+          linkedItemId={property.monday_item_id}
+          linkedItemName={mondayItemName}
+          labels={{
+            title: t("monday.title"),
+            hint: t("monday.hint"),
+            pick: t("monday.pick"),
+            load: t("monday.load"),
+            save: t("monday.save"),
+            sync: t("monday.sync"),
+            unlink: t("monday.unlink"),
+            linked: t("monday.linked"),
+            synced: t("monday.synced"),
+          }}
+        />
+      ) : null}
 
       <section className="card stack" style={{ gap: "var(--gw-s-3)" }}>
         <div>

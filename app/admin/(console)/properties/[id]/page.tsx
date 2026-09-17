@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
 import { PHOTO_SLOTS_PER_CORNER, PROPERTY_PHOTO_SLOTS } from "@/lib/photos";
 import { DeletePropertyButton } from "@/components/admin/delete-property-button";
+import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 
 // Overview tab: the assemble checklist, computed from real data.
 export default async function OverviewPage({
@@ -43,6 +44,32 @@ export default async function OverviewPage({
     .maybeSingle();
 
   const t = await getTranslations("admin");
+
+  // Property documents (KML/PDF) live in storage under {id}/documents/.
+  const { data: docObjects } = await supabase.storage
+    .from("property-photos")
+    .list(`${id}/documents`, { limit: 100, sortBy: { column: "name", order: "asc" } });
+  const docPaths = (docObjects ?? [])
+    .filter((o) => o.name && !o.name.startsWith("."))
+    .map((o) => ({
+      name: o.name,
+      sizeKb: o.metadata?.size ? Math.round(Number(o.metadata.size) / 1024) : null,
+    }));
+  const docSigned = new Map<string, string>();
+  if (docPaths.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from("property-photos")
+      .createSignedUrls(docPaths.map((d) => `${id}/documents/${d.name}`), 60 * 60);
+    for (const sgn of signed ?? []) {
+      if (sgn.signedUrl && sgn.path) docSigned.set(sgn.path, sgn.signedUrl);
+    }
+  }
+  const documents: PropertyDocument[] = docPaths.map((d) => ({
+    name: d.name,
+    path: `${id}/documents/${d.name}`,
+    signedUrl: docSigned.get(`${id}/documents/${d.name}`) ?? null,
+    sizeKb: d.sizeKb,
+  }));
   const cornerList = corners ?? [];
   const captureSlots = new Set((captures ?? []).map((m) => m.slot));
 
@@ -157,6 +184,22 @@ export default async function OverviewPage({
           </Link>
         </div>
       </section>
+      <div className="lg:col-span-2">
+        <DocumentsCard
+          propertyId={id}
+          documents={documents}
+          labels={{
+            title: t("documents.title"),
+            hint: t("documents.hint"),
+            upload: t("documents.upload"),
+            uploading: t("documents.uploading"),
+            remove: t("documents.remove"),
+            removeConfirm: t("documents.removeConfirm"),
+            empty: t("documents.empty"),
+            badType: t("documents.badType"),
+          }}
+        />
+      </div>
       {me?.role === "admin" ? (
         <section className="card lg:col-span-2" style={{ borderColor: "var(--error)" }}>
           <div className="row between">

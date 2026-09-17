@@ -310,7 +310,18 @@
       "noLinks": "No prospect links yet.",
       "revoke": "Revoke",
       "revoked": "Revoked",
-      "expired": "Expired"
+      "expired": "Expired",
+      "monday": {
+        "title": "Monday.com",
+        "hint": "Pins this property to a row on the Inventory Information board and keeps the \"Greenways Walk\" link column in step with publish status. Nothing else on the board is touched.",
+        "pick": "Board property",
+        "load": "Load board properties",
+        "save": "Pin & sync",
+        "sync": "Sync now",
+        "unlink": "Unpin",
+        "linked": "Pinned to",
+        "synced": "Synced."
+      }
     },
     "analytics": {
       "title": "Walk analytics",
@@ -375,6 +386,16 @@
       "available": "Available",
       "underContract": "Under contract",
       "sold": "Sold"
+    },
+    "documents": {
+      "title": "Documents",
+      "hint": "Surveys, plats and source KML for this property (KML or PDF). Team-internal - never served to buyers.",
+      "upload": "Upload KML / PDF",
+      "uploading": "Uploading...",
+      "remove": "Remove",
+      "removeConfirm": "Really remove?",
+      "empty": "No documents yet.",
+      "badType": "Only .kml and .pdf files belong here."
     }
   }
 }

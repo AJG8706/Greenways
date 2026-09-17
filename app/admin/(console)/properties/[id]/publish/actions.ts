@@ -2,7 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { newLinkToken, publicLinkToken } from "@/lib/links";
+import { newLinkToken, publicLinkToken, walkUrl } from "@/lib/links";
+import {
+  isMondayConfigured,
+  listBoardItems,
+  setWalkLink,
+  type MondayItem,
+} from "@/lib/integrations/monday";
+import { i18nText } from "@/lib/i18n/text";
 
 export type ActionResult = { ok: boolean; message?: string };
 
@@ -50,7 +57,11 @@ export async function publishProperty(propertyId: string): Promise<ActionResult>
   }
 
   revalidatePath(`/admin/properties/${propertyId}`);
-  return { ok: true };
+  // Board link rides publish state; failures are notes, never blockers.
+  const monday = await syncMondayLink(propertyId);
+  return monday.ok
+    ? { ok: true }
+    : { ok: true, message: `Published. Monday sync failed: ${monday.message}` };
 }
 
 export async function unpublishProperty(propertyId: string): Promise<ActionResult> {
@@ -61,7 +72,10 @@ export async function unpublishProperty(propertyId: string): Promise<ActionResul
     .eq("id", propertyId);
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/admin/properties/${propertyId}`);
-  return { ok: true };
+  const monday = await syncMondayLink(propertyId);
+  return monday.ok
+    ? { ok: true }
+    : { ok: true, message: `Unpublished. Monday sync failed: ${monday.message}` };
 }
 
 /** Issue a tokenized prospect link (also used by the n8n booking hook). */
@@ -94,4 +108,71 @@ export async function revokeLink(propertyId: string, linkId: string): Promise<Ac
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
+}
+
+/** Board rows for the Publish tab's Monday picker. */
+export async function listMondayItems(): Promise<
+  { ok: boolean; items?: MondayItem[]; message?: string }
+> {
+  if (!isMondayConfigured()) return { ok: false, message: "Monday is not configured" };
+  try {
+    return { ok: true, items: await listBoardItems() };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Monday API failed" };
+  }
+}
+
+/** Pin this property to a Monday row (empty id unlinks), then sync. */
+export async function linkMondayItem(
+  propertyId: string,
+  itemId: string | null,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: current } = await supabase
+    .from("properties")
+    .select("monday_item_id")
+    .eq("id", propertyId)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("properties")
+    .update({ monday_item_id: itemId })
+    .eq("id", propertyId);
+  if (error) return { ok: false, message: error.message };
+
+  // Unlinking clears the old row's column so the board never keeps a stale link.
+  if (!itemId && current?.monday_item_id && isMondayConfigured()) {
+    await setWalkLink(current.monday_item_id, null);
+  }
+  revalidatePath(`/admin/properties/${propertyId}`);
+  return itemId ? syncMondayLink(propertyId) : { ok: true };
+}
+
+/** Push the walk link (published) or clear it (draft) on the linked row. */
+export async function syncMondayLink(propertyId: string): Promise<ActionResult> {
+  if (!isMondayConfigured()) return { ok: true };
+  const supabase = await createClient();
+  const { data: property } = await supabase
+    .from("properties")
+    .select("slug, name, status, monday_item_id")
+    .eq("id", propertyId)
+    .maybeSingle();
+  if (!property?.monday_item_id) return { ok: true };
+
+  const published = property.status === "published";
+  const name = i18nText(property.name).en || property.slug;
+  const result = await setWalkLink(
+    property.monday_item_id,
+    published ? walkUrl(property.slug) : null,
+    `Greenways walk — ${name}`,
+  );
+  if (result.ok) {
+    await supabase.rpc("write_audit", {
+      p_action: "monday_synced",
+      p_property_id: propertyId,
+      p_detail: { item: property.monday_item_id, published },
+    });
+    revalidatePath(`/admin/properties/${propertyId}`);
+  }
+  return result;
 }

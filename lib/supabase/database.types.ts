@@ -285,6 +285,7 @@ export type Database = {
           acres: number | null;
           entrance_lat: number | null;
           media_brief: Json;
+          monday_item_id: string | null;
           entrance_lng: number | null;
           boundary: Json | null;
           geometry_source: string | null;
@@ -308,6 +309,7 @@ export type Database = {
           acres?: number | null;
           entrance_lat?: number | null;
           media_brief?: Json;
+          monday_item_id?: string | null;
           entrance_lng?: number | null;
           boundary?: Json | null;
           geometry_source?: string | null;
@@ -331,6 +333,7 @@ export type Database = {
           acres?: number | null;
           entrance_lat?: number | null;
           media_brief?: Json;
+          monday_item_id?: string | null;
           entrance_lng?: number | null;
           boundary?: Json | null;
           geometry_source?: string | null;
