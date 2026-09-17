@@ -1,0 +1,51 @@
+name: Diagnose media
+
+# Manually triggered inspection of the media pipeline state for a property:
+# recent generation jobs (status, poll URL, error) and media assets. Optional
+# cancel_active input marks stuck queued/in_progress/completed jobs canceled
+# so the slot's Generate button unlocks.
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: Property slug
+        type: string
+        default: broussard-lot-4
+      cancel_active:
+        description: Cancel this property's active generation jobs
+        type: boolean
+        default: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      SLUG: ${{ inputs.slug }}
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - name: Cancel active jobs
+        if: inputs.cancel_active
+        run: |
+          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" <<SQL
+          update public.generation_jobs g set status = 'canceled', error = coalesce(g.error, 'canceled via diagnose-media')
+            from public.properties p
+           where p.id = g.property_id and p.slug = '$SLUG'
+             and g.status in ('queued', 'in_progress', 'completed');
+          SQL
+
+      - name: Inspect jobs and assets
+        run: |
+          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" <<SQL
+          \x on
+          select g.id, g.slot, g.status, g.provider_request_id, g.status_url,
+                 g.error, g.created_at, g.updated_at
+            from public.generation_jobs g join public.properties p on p.id = g.property_id
+           where p.slug = '$SLUG'
+           order by g.created_at desc limit 8;
+          \x off
+          select m.slot, m.type, m.status, m.storage_path, m.reject_reason, m.created_at
+            from public.media_assets m join public.properties p on p.id = m.property_id
+           where p.slug = '$SLUG'
+           order by m.created_at desc limit 15;
+          SQL
