@@ -94,6 +94,16 @@ test("preview-the-walk plays the stitch order, approved chapters only", async ({
 test("intro plays on start, is skippable, and the C1 clip rides the arrival card", async ({
   page,
 }) => {
+  // The fixture bytes aren't a decodable video, and the overlay is designed
+  // to advance the moment playback errors (media never blocks the walk) —
+  // so hold the intro request open to keep the overlay up until Skip.
+  await page.route(
+    (url) => url.pathname.includes("e2e-intro"),
+    () => {
+      /* never fulfilled: the video stays loading */
+    },
+  );
+
   await page.goto("/walk/broussard-lot-4?demo=clean");
   await page.getByTestId("start-walking").click();
 
