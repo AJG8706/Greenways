@@ -1,12 +1,13 @@
 import "server-only";
 
-import type { Motion } from "@/lib/higgsfield/motion";
+import type { MediaSlotKind } from "@/lib/media/slots";
+import { findMotion, type Motion } from "@/lib/media/provider/motion";
 import {
   parseStatusResponse,
   parseSubmitResponse,
   type ProviderStatus,
   type StatusParse,
-} from "@/lib/higgsfield/parse";
+} from "@/lib/media/provider/parse";
 
 export type { Motion, ProviderStatus };
 
@@ -34,12 +35,30 @@ export type SubmitResult = { requestId: string; statusUrl: string };
 
 export type StatusResult = StatusParse;
 
+/**
+ * Vendor-neutral generation request. Everything the admin actions know:
+ * a prompt, fetchable source frames, a camera-move intent, and a seed.
+ * Endpoint paths, model names and body shapes live inside the provider,
+ * so swapping vendors means implementing MediaProvider in this folder
+ * and switching getProvider() — nothing outside changes.
+ */
+export type GenerationRequest = {
+  slotKey: string;
+  kind: MediaSlotKind;
+  prompt: string;
+  /** Signed source-frame URLs, start first (end frame second when used). */
+  sourceUrls: string[];
+  /** Camera-move intent, e.g. "crane down" — mapped to a vendor preset. */
+  motionQuery: string;
+  targetSeconds: number;
+  seed: number;
+};
+
 
 export interface MediaProvider {
-  submit(endpoint: string, input: Record<string, unknown>): Promise<SubmitResult>;
+  submitGeneration(req: GenerationRequest): Promise<SubmitResult>;
   status(job: { requestId: string; statusUrl: string | null }): Promise<StatusResult>;
   fetchResult(url: string): Promise<{ bytes: Uint8Array; contentType: string }>;
-  motions(): Promise<Motion[]>;
 }
 
 export function isMockProvider(): boolean {
@@ -119,9 +138,37 @@ function authHeaders(): Record<string, string> {
   };
 }
 
+// Higgsfield wire details (the only place they exist).
+const ENDPOINT = "/v1/image2video/dop";
+const MODEL = "dop-turbo";
+
+async function fetchMotions(): Promise<Motion[]> {
+  const res = await fetch(`${BASE_URL}/v1/motions`, {
+    headers: authHeaders(),
+    // Motion catalog is static enough to cache for the deployment.
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return [];
+  const body = (await res.json().catch(() => [])) as unknown;
+  return Array.isArray(body) ? (body as Motion[]) : [];
+}
+
 const realProvider: MediaProvider = {
-  async submit(endpoint, input) {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+  async submitGeneration(req) {
+    const motion = findMotion(await fetchMotions().catch(() => []), req.motionQuery);
+    const input: Record<string, unknown> = {
+      model: MODEL,
+      prompt: req.prompt,
+      // DoP validates input_images to AT MOST ONE item (422 otherwise), so
+      // only the start frame is sent; the corner clips' stake close-up end
+      // frame stays in the request for a vendor/endpoint that supports it,
+      // and the prompt itself carries "ending close on the stake".
+      input_images: req.sourceUrls.slice(0, 1).map((u) => ({ type: "image_url", image_url: u })),
+      seed: req.seed,
+    };
+    if (motion) input.motions = [{ id: motion.id, strength: 0.8 }];
+
+    const res = await fetch(`${BASE_URL}${ENDPOINT}`, {
       method: "POST",
       headers: authHeaders(),
       // v1 endpoints take the generation fields wrapped in `params`.
@@ -161,16 +208,6 @@ const realProvider: MediaProvider = {
     };
   },
 
-  async motions() {
-    const res = await fetch(`${BASE_URL}/v1/motions`, {
-      headers: authHeaders(),
-      // Motion catalog is static enough to cache for the deployment.
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return [];
-    const body = (await res.json().catch(() => [])) as unknown;
-    return Array.isArray(body) ? (body as Motion[]) : [];
-  },
 };
 
 // ---------------------------------------------------------------------------
@@ -186,12 +223,12 @@ const mockJobs: Map<string, MockJob> = ((globalThis as Record<string, unknown>).
 let mockCounter = 0;
 
 const mockProvider: MediaProvider = {
-  async submit(_endpoint, input) {
+  async submitGeneration(req) {
     const requestId = `mock-${Date.now().toString(36)}-${++mockCounter}`;
     mockJobs.set(requestId, {
       polls: 0,
-      prompt: String(input.prompt ?? ""),
-      slot: String(input.mock_slot ?? "asset"),
+      prompt: req.prompt,
+      slot: req.slotKey,
     });
     return { requestId, statusUrl: `mock:${requestId}` };
   },
@@ -223,11 +260,4 @@ const mockProvider: MediaProvider = {
     return { bytes: new TextEncoder().encode(svg), contentType: "image/svg+xml" };
   },
 
-  async motions() {
-    return [
-      { id: "mock-crane-down", name: "Crane Down", start_end_frame: true },
-      { id: "mock-dolly-in", name: "Dolly In", start_end_frame: true },
-      { id: "mock-arc-right", name: "Arc Right" },
-    ];
-  },
 };

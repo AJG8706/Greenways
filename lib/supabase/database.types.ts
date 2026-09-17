@@ -137,7 +137,7 @@ export type Database = {
           status_url: string | null;
           error: string | null;
           seed: number | null;
-          higgsfield_job_id: string | null;
+          provider_request_id: string | null;
           payload: Json;
           created_at: string;
           updated_at: string;
@@ -151,7 +151,7 @@ export type Database = {
           status_url?: string | null;
           error?: string | null;
           seed?: number | null;
-          higgsfield_job_id?: string | null;
+          provider_request_id?: string | null;
           payload?: Json;
           created_at?: string;
           updated_at?: string;
@@ -165,7 +165,7 @@ export type Database = {
           status_url?: string | null;
           error?: string | null;
           seed?: number | null;
-          higgsfield_job_id?: string | null;
+          provider_request_id?: string | null;
           payload?: Json;
           created_at?: string;
           updated_at?: string;
@@ -227,7 +227,7 @@ export type Database = {
           storage_path: string;
           status: Database["public"]["Enums"]["media_status"];
           source_photo: string | null;
-          higgsfield_job_id: string | null;
+          provider_request_id: string | null;
           job_id: string | null;
           reject_reason: string | null;
           created_at: string;
@@ -240,7 +240,7 @@ export type Database = {
           storage_path: string;
           status?: Database["public"]["Enums"]["media_status"];
           source_photo?: string | null;
-          higgsfield_job_id?: string | null;
+          provider_request_id?: string | null;
           job_id?: string | null;
           reject_reason?: string | null;
           created_at?: string;
@@ -253,7 +253,7 @@ export type Database = {
           storage_path?: string;
           status?: Database["public"]["Enums"]["media_status"];
           source_photo?: string | null;
-          higgsfield_job_id?: string | null;
+          provider_request_id?: string | null;
           job_id?: string | null;
           reject_reason?: string | null;
           created_at?: string;

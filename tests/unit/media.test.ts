@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findMotion } from "@/lib/higgsfield/motion";
+import { findMotion } from "@/lib/media/provider/motion";
 import {
   buildPrompt,
   GLOBAL_STYLE_SUFFIX,
@@ -122,7 +122,7 @@ describe("motion lookup", () => {
 });
 
 describe("provider response parsing (v1 job-set + v2 request dialects)", async () => {
-  const { parseStatusResponse, parseSubmitResponse } = await import("@/lib/higgsfield/parse");
+  const { parseStatusResponse, parseSubmitResponse } = await import("@/lib/media/provider/parse");
   const BASE = "https://platform.example";
 
   it("v1 submit: job-set id polls at /v1/job-sets/{id}", () => {

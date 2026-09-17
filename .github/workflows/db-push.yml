@@ -19,7 +19,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned: resolving 'latest' hits the GitHub API unauthenticated and
+          # rate-limits on shared runners (killed a CI run before tests began).
+          version: 2.117.0
       - name: Check secrets
         run: |
           if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then

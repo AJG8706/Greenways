@@ -9,7 +9,7 @@ import {
   refreshJobs,
   rejectAsset,
   saveMediaBrief,
-  testHiggsfield,
+  testMediaProvider,
 } from "@/app/admin/(console)/properties/[id]/media/actions";
 import type { MediaBrief } from "@/lib/media/prompts";
 import { Button } from "@/components/ui/button";
@@ -378,11 +378,11 @@ export function ConnectionTest({ label }: { label: string }) {
         onClick={() => {
           setResult(null);
           startTransition(async () => {
-            const r = await testHiggsfield();
+            const r = await testMediaProvider();
             setResult({ ok: r.ok, message: r.message ?? "" });
           });
         }}
-        data-testid="test-higgsfield"
+        data-testid="test-connection"
       >
         {label}
       </Button>
@@ -390,7 +390,7 @@ export function ConnectionTest({ label }: { label: string }) {
         <span
           className="t-small"
           style={{ color: result.ok ? "var(--gw-trailhead-green)" : "var(--error)" }}
-          data-testid="test-higgsfield-result"
+          data-testid="test-connection-result"
         >
           {result.message}
         </span>

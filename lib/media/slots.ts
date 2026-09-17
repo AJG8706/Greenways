@@ -13,8 +13,8 @@ export type MediaSlot = {
   /** Corner number for corner_approach slots. */
   cornerN?: number;
   /**
-   * Higgsfield motion to search for by name (resolved at submit time against
-   * GET /v1/motions; generation proceeds without a motion when unmatched).
+   * Camera-move intent by name; the active provider (lib/media/provider)
+   * maps it to a vendor preset, or generates without one when unmatched.
    */
   motionQuery: string;
   /** Target clip length in seconds (library spec; provider may quantize). */
