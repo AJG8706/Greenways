@@ -279,7 +279,8 @@
         "entrance": "Entrance / gate description",
         "save": "Save brief",
         "saved": "Saved."
-      }
+      },
+      "testConnection": "Test Higgsfield connection"
     },
     "publish": {
       "title": "Publish",

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getProvider, isMockProvider } from "@/lib/higgsfield/client";
+import { checkCredentials, getProvider, isMockProvider } from "@/lib/higgsfield/client";
 import { findMotion } from "@/lib/higgsfield/motion";
 import { buildPrompt, type MediaBrief } from "@/lib/media/prompts";
 import { canGenerateSlot, mediaSlotsFor, type MediaSlot } from "@/lib/media/slots";
@@ -358,4 +358,13 @@ export async function saveMediaBrief(
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
+}
+
+/** Live Higgsfield credential check for the Media tab (never leaks the secret). */
+export async function testHiggsfield(): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: me } = await supabase.auth.getUser();
+  if (!me.user) return { ok: false, message: "Sign in first" };
+  const result = await checkCredentials();
+  return { ok: result.ok, message: `[${result.mode}] ${result.detail}` };
 }
