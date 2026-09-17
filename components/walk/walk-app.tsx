@@ -119,11 +119,12 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       slug: config.slug,
       locale,
       demoKey: config.demo?.key ?? null,
+      linkToken: config.linkToken,
     });
     loggerRef.current = logger;
     logger.log("walk_opened");
     return () => logger.stop();
-  }, [config.slug, config.demo, locale]);
+  }, [config.slug, config.demo, config.linkToken, locale]);
 
   const source = useMemo<WalkSource>(() => {
     if (config.demo) {
