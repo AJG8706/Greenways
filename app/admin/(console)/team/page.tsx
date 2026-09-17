@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { ApiKeysCard, type ApiKeyRow } from "./api-keys";
 import { InviteForm } from "./invite-form";
 import { RemoveAccessButton } from "./remove-button";
 import { ResendInviteButton } from "./resend-button";
@@ -22,6 +23,15 @@ export default async function TeamPage() {
 
   const me = (members ?? []).find((m) => m.user_id === userRes.data.user?.id);
   const isAdmin = me?.role === "admin";
+
+  let apiKeys: ApiKeyRow[] = [];
+  if (isAdmin) {
+    const { data: keys } = await supabase
+      .from("api_keys")
+      .select("id, name, prefix, created_at, last_used_at, revoked_at")
+      .order("created_at", { ascending: false });
+    apiKeys = keys ?? [];
+  }
   const memberEmails = new Set((members ?? []).map((m) => m.email));
   const pendingInvites = (invites ?? []).filter(
     (i) => !i.accepted_at && !memberEmails.has(i.email),
@@ -149,6 +159,7 @@ export default async function TeamPage() {
       ) : (
         <p className="t-small muted">Only admins can send invites.</p>
       )}
+      {isAdmin ? <ApiKeysCard keys={apiKeys} /> : null}
     </div>
   );
 }

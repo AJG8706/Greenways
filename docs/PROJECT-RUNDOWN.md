@@ -13,8 +13,8 @@ One web app, three surfaces, one database: a desktop **admin console** (English)
 | Gate 0–1 (plan, design system, prototype) | Approved Sep 15 |
 | Gate 2 (Foundation & admin console) | **Approved Sep 16** — `docs/Gate-2-Phase-Report.md` |
 | Gate 3 (Corner Finder PWA + demo mode) | **Built, CI green, deployed. Waiting on the on-site Broussard field test** (HUD spec §12) — `docs/Gate-3-Phase-Report.md` |
-| Gate 4 (Higgsfield media pipeline) | **Pipeline built end-to-end** (queue → poll/ingest → review → approve/reject-regenerate; mock provider proves the path in CI). Acceptance needs `HIGGSFIELD_API_KEY` in Vercel + protocol photos, then the real Broussard asset set through the review queue. |
-| Gate 5 (links/QR, GHL+n8n, analytics UI, Monday.com) | Not started |
+| Gate 4 (Higgsfield media pipeline) | **Live-validated Sep 17**: real credentials, real credits — intro + entrance generated, one reject→regenerate cycle, both approved (style lock open). Formal acceptance = the real Broussard protocol photos through the same queue. Deferred: DoP duration/quality params, panorama outpaint stills. |
+| Gate 5 (media in walk, publish/links/QR, n8n, analytics, Monday, API) | **Built, merged through PR #15**: approved media plays in the buyer walk (intro, arrival clips, preview, homesite) + team clip upload/remove; publish gate + public link/QR + tokenized prospect links + n8n issue endpoint; analytics tab + optional GA4 forwarding; Monday 'Greenways Walk' column sync; KML/PDF documents card; public API v1 (bearer keys, OpenAPI, `docs/API.md`). Gate report pending live acceptance numbers. |
 | Gate 6 (assemble automation, hardening, Lighthouse) | Not started |
 | Gate 7 (pilot & launch) | Not started |
 
@@ -31,6 +31,9 @@ app/
   admin/(console)/properties/[id]/{corners,photos,content,media,publish,analytics,demo}
   walk/[slug]/               # buyer walk (server loads via service role)
   api/walk-events/           # telemetry ingest (service role)
+  api/links/issue/           # n8n/GHL prospect-link webhook (x-webhook-secret)
+  api/v1/                    # public API: properties, links, analytics, openapi.json
+                             #   (bearer keys from the Team tab; docs/API.md)
   auth/confirm/              # magic-link landing (token_hash AND PKCE code)
   sw.ts, manifest.ts, fonts/ # Serwist worker, PWA manifest, self-hosted woff2
 components/
@@ -42,10 +45,14 @@ lib/
          #   test-lot square generator (pure, tested)
   hud/   # position/heading filters, arrival, boundary, simulated walker (pure, tested)
   walk/  # sensor + demo sources, audio, events logger, types
+  media/ # slots, prompts, provider/ — ALL vendor specifics live in provider/ only
+  analytics/ # GA4 sink (vendor-isolated) + walk-aggregate (shared admin tab + API)
+  integrations/monday/ # Monday GraphQL — one folder, one column, one row
+  api/   # bearer-key material + authenticator for /api/v1
   supabase/ (client/server/admin clients; database.types.ts — see gotcha below)
-  kml.ts, i18n/, photos.ts, utils.ts
+  kml.ts, links.ts, links-service.ts, i18n/, photos.ts, utils.ts
 supabase/migrations/         # 3 migrations; seed.sql enters Broussard Lot 4
-tests/unit (Vitest, 50) · tests/e2e (Playwright, 18)
+tests/unit (Vitest, 72) · tests/e2e (Playwright, 35)
 .github/workflows/           # ci, db-push, verify-deploy, diagnose-auth, diagnose-walk
 docs/                        # plan, HUD spec, copy deck, gate reports, this file
 data/                        # lot4_gaines_acres.kml (pilot); lot4 aerial jpg = INTERNAL ONLY
@@ -72,7 +79,7 @@ Tables: `properties` (i18n name jsonb, address, county, acres, entrance lat/lng,
 
 ## Gotchas that will bite you (all learned the hard way)
 
-1. **A 404 on a walk URL usually means unlocked corners** — guardrail #2: the buyer walk refuses unverified geometry. Fix: Corners tab → "CAD-verified" lock (or the diagnose-walk relock input). Check lock state before debugging anything else.
+1. **A 404 on a walk URL means unlocked corners or an unpublished listing** — guardrail #2 plus the Phase 5 publish gate: the walk serves only when every corner is locked AND (`status='published'` OR `demo_mode` OR `test_lot`). Fix: Corners tab lock (or diagnose-walk `relock_corners`), then Publish tab. Check both before debugging anything else.
 2. **Claude Code's cloud sandbox cannot reach `*.supabase.co`, `*.vercel.app`, container registries, or raw TCP 5432** (egress proxy). All verification against live systems goes through GitHub Actions workflows — that's why the diagnose/verify workflows exist. Don't burn time trying to curl production from the sandbox; extend a workflow instead.
 3. **`lib/supabase/database.types.ts` is hand-maintained** to match the migrations (Docker was blocked where it was written). Keep it in sync when you add columns, or regenerate with `pnpm db:types` where Docker works — shapes are identical.
 4. **Corner numbering rule**: corners run clockwise; C1 = the corner immediately *before* the entrance, so C1→C2 crosses the entrance (Lot 4: C1=NW, C2=NE, C3=SE, C4=SW). KML import defaults the entrance to the first edge midpoint; "Move entrance" renumbers, carrying names/stakes/photos with the physical corner.
@@ -87,6 +94,8 @@ Tables: `properties` (i18n name jsonb, address, county, acres, entrance lat/lng,
 
 11. **Higgsfield API**: base `https://platform.higgsfield.ai`, header `Authorization: Key KEY_ID:KEY_SECRET` (single env `HIGGSFIELD_API_KEY` holds `id:secret`), submit `POST /v1/image2video/dop` → `request_id` + `status_url`, poll the `status_url` verbatim (`queued|in_progress|completed|failed|nsfw|canceled`; failed request bodies come back as HTTP 422). Verified against the official `@higgsfield/client` v0.2.4 SDK, not the docs site (egress-blocked in the sandbox). No key (or `mock`) = deterministic mock provider — labeled SVG placeholders through the identical queue/review path; CI E2E runs on it.
 
+13. **Public API v1** (`/api/v1`, guide `docs/API.md`, spec `/api/v1/openapi.json`): bearer keys minted in the Team tab (admin-only), format `gw_live_…`, **only the SHA-256 stored** (`api_keys`, migration `20260918020000`) — the secret is shown once and cannot be recovered; revoke + reissue instead. Slug is the API identifier; `properties.id` is never exposed. `lib/links-service.ts` and `lib/analytics/walk-aggregate.ts` are shared by the admin UI and the API — change the numbers in one place only.
+
 ## Rules that do not bend (from CLAUDE.md — enforce in every change)
 
 Corners only from CAD-verified geometry, locked after verification, unlock = logged admin action. No hard-coded English in buyer components — every buyer string in `messages/en.json` **and** `es.json`. Nothing AI-generated reaches a buyer without a person approving it (`es_reviewed` gates publish; Phase 4 media gets a mandatory review queue). Buyers never need an account or install. One tracked corner at a time, always labeled. GPS honesty copy stays. Brand tokens are the only colors. Secrets in env vars only — never commit. `data/lot4-google-aerial.jpg` is an internal test capture — never serve it to buyers.
@@ -96,7 +105,7 @@ Corners only from CAD-verified geometry, locked after verification, unlock = log
 1. **Gate 3 field test** (Alton, on-site — HUD spec §12). A GPS test target now exists off-site too: `hillmont-gps-test`, a 100 ft-radius square at 7676 Hillmont St, Houston (the office), running live GPS. Needs the `DB push` workflow before it appears on hosted. Feed the measured numbers back into `ARRIVE_RADIUS_FT` (`lib/hud/arrival.ts`), boundary thresholds (`lib/hud/boundary.ts`), and filter constants (`lib/hud/filters.ts`). All marked *tune in field*.
 2. **Team roster activation** — waiting on emails + roles from Alton (Rosalia, Ferdy, Laura, Joseph, Lizzie). Insert `invites` rows (no emails sent unless the admin presses Send/Resend).
 3. **Gate 4 acceptance run** (pipeline is built): add `HIGGSFIELD_API_KEY` to Vercel as `KEY_ID:KEY_SECRET` (from higgsfield.ai API keys), upload the Broussard protocol photos (aerial, gate, homesite, per-corner approach+stake), then in the Media tab: fill the generation brief → generate intro + entrance → review/approve (style lock) → batch corners → review everything against the source photos. Two items deliberately deferred to that run: DoP duration/quality params (unverified against the live API — clips may come back a different length than the library's targets) and panorama outpaint stills (library §5; endpoint unverified). Without the key the tab runs a labeled mock so the flow can be clicked through free.
-4. **Phase 5** — publish flow (public link + QR, tokenized prospect links), GHL/n8n webhook (calendar `xBSMR6gHnlxKqJfB5Pte`), walk analytics UI on `walk_events`, Monday.com inventory-row link (`MONDAY_API_TOKEN`).
+4. **Phase 5 wrap** — `DB push` after the API PR merges (migration `20260918020000`), wire the n8n flow on the GHL Property Tours calendar (`xBSMR6gHnlxKqJfB5Pte`) to `POST /api/links/issue`, then the Gate-5 report once the acceptance numbers are measurable (cold open < 30 s, a booked contact gets a working tokenized link, a full analytics session).
 5. Deferred small items: `language_switched` event on the toggle; per-property declination (constant +1.5°E now); Mapbox satellite variant of the buyer mini-map (Google variant shipped; drawn = offline fallback); Lighthouse-in-CI restated for Phase 6 (Lighthouse dropped its PWA category in v12); walk access tokens (Phase 5) — until then any slug with locked corners serves.
 
 ## Definition of done, every phase
