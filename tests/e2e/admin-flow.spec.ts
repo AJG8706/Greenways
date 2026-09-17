@@ -113,14 +113,28 @@ test("publish stays blocked while Spanish is unreviewed", async ({ page }) => {
   await expect(page.getByTestId("publish-blocked")).toBeVisible();
 });
 
-test("demo tab launches the simulated walk scenarios", async ({ page }) => {
+test("demo mode is off by default and gates the simulated walk scenarios", async ({
+  page,
+}) => {
   await signIn(page, ADMIN_EMAIL);
   await page.getByRole("link", { name: new RegExp(E2E_PROPERTY) }).click();
   await page.getByTestId("tab-demo").click();
+
+  // A newly created property is live-GPS only: no simulation offered.
+  await expect(page.getByTestId("live-gps-banner")).toBeVisible();
+  await expect(page.getByTestId("launch-demo-clean")).toHaveCount(0);
+  await expect(page.getByTestId("launch-live-walk")).toHaveAttribute(
+    "href",
+    /\/walk\/[^?]+$/,
+  );
+
+  // Turning demo mode on brings up the scenario launchers, without a reload.
+  await page.getByTestId("demo-mode-toggle").click();
   // Button asChild puts the testid on the anchor itself.
   await expect(page.getByTestId("launch-demo-clean")).toHaveAttribute(
     "href",
     /\/walk\/.+\?demo=clean/,
   );
   await expect(page.getByTestId("launch-demo-boundary")).toBeVisible();
+  await expect(page.getByTestId("live-gps-banner")).toHaveCount(0);
 });

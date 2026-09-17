@@ -26,7 +26,7 @@ export default async function WalkPage({
 
   const { data: property } = await supabase
     .from("properties")
-    .select("id, slug, name, acres, entrance_lat, entrance_lng")
+    .select("id, slug, name, acres, entrance_lat, entrance_lng, demo_mode")
     .eq("slug", slug)
     .maybeSingle();
   if (!property || property.entrance_lat === null || property.entrance_lng === null) {
@@ -52,8 +52,13 @@ export default async function WalkPage({
     }
   }
 
+  // Demo is opt-in per property. Without demo_mode the walk runs live device
+  // GPS and nothing else, so a stray `?demo=` on a real listing's link can
+  // never swap a buyer's position for a simulation.
   const demoScenario =
-    demo && demo in SCENARIOS ? { key: demo, ...SCENARIOS[demo]! } : null;
+    property.demo_mode && demo && demo in SCENARIOS
+      ? { key: demo, ...SCENARIOS[demo]! }
+      : null;
 
   const config: WalkConfig = {
     slug: property.slug,

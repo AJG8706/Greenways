@@ -3,11 +3,16 @@ import { getTranslations } from "next-intl/server";
 import { ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { DemoModeToggle } from "@/components/admin/demo-mode-toggle";
 import { SCENARIOS } from "@/lib/hud/walker";
 
 /**
  * Demo & QA launcher (locked decision): runs the real buyer walk with the
  * simulated walker through the same code path as the field walk.
+ *
+ * Demo is per-property and off by default. With it off the walk is live device
+ * GPS only and `?demo=` on the link does nothing — that is the mode a field
+ * GPS test runs in, and the mode every real listing should stay in.
  */
 export default async function DemoPage({
   params,
@@ -18,7 +23,11 @@ export default async function DemoPage({
   const supabase = await createClient();
 
   const [{ data: property }, { data: corners }] = await Promise.all([
-    supabase.from("properties").select("id, slug").eq("id", id).maybeSingle(),
+    supabase
+      .from("properties")
+      .select("id, slug, demo_mode, test_lot")
+      .eq("id", id)
+      .maybeSingle(),
     supabase.from("corners").select("id, locked").eq("property_id", id),
   ]);
   if (!property) notFound();
@@ -41,10 +50,42 @@ export default async function DemoPage({
         <p className="muted">{t("body")}</p>
       </div>
 
+      <section className="card">
+        <DemoModeToggle
+          propertyId={property.id}
+          value={property.demo_mode}
+          labels={{
+            on: t("modeOn"),
+            off: t("modeOff"),
+            hint: property.test_lot ? t("modeHintTestLot") : t("modeHint"),
+          }}
+        />
+      </section>
+
       {!ready ? (
         <div className="banner banner-warn" role="status">
           The walk serves only CAD-verified, locked corners (guardrail #2).
           Import and lock the corners first.
+        </div>
+      ) : !property.demo_mode ? (
+        <div className="stack" style={{ gap: "var(--gw-s-3)" }}>
+          <div className="banner" role="status" data-testid="live-gps-banner">
+            {t("liveOnly")}
+          </div>
+          <section className="card">
+            <div className="stack" style={{ gap: "var(--gw-s-3)" }}>
+              <h3>{t("liveWalkTitle")}</h3>
+              <p className="t-small muted">{t("liveWalkBody")}</p>
+              <p className="t-small num">
+                {site}/walk/{property.slug}
+              </p>
+              <Button asChild variant="secondary" data-testid="launch-live-walk">
+                <a href={`/walk/${property.slug}`} target="_blank" rel="noopener">
+                  <ExternalLink size={16} /> {t("openLiveWalk")}
+                </a>
+              </Button>
+            </div>
+          </section>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
@@ -74,7 +115,7 @@ export default async function DemoPage({
         </div>
       )}
 
-      {ready ? (
+      {ready && property.demo_mode ? (
         <p className="t-small muted">
           Phone QA: open{" "}
           <span className="num">

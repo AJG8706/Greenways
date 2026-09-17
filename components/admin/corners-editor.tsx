@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Lock, LockOpen, Upload } from "lucide-react";
+import { Crosshair, LocateFixed, Lock, LockOpen, Upload } from "lucide-react";
 import {
   importKml,
   lockCorners,
   moveCorner,
   moveEntrance,
+  placeTestLot,
   unlockCorners,
 } from "@/app/admin/(console)/properties/actions";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,13 @@ export type CornersLabels = {
   mapDrawn: string;
   mapSatellite: string;
   mapGoogle: string;
+  testLot: string;
+  placeTestSquare: string;
+  placeTestSquarePrompt: string;
+  testLotNote: string;
+  useMyLocation: string;
+  locating: string;
+  noGeolocation: string;
 };
 
 /**
@@ -64,6 +72,7 @@ export function CornersEditor({
   entrance,
   geometrySource,
   isAdmin,
+  isTestLot,
   lastLockEvent,
   labels,
   mapboxToken,
@@ -74,6 +83,8 @@ export function CornersEditor({
   entrance: LatLng | null;
   geometrySource: string | null;
   isAdmin: boolean;
+  /** Generated square for GPS field testing rather than CAD-verified geometry. */
+  isTestLot: boolean;
   lastLockEvent: { action: string; at: string } | null;
   labels: CornersLabels;
   /** Passed from the server so env names stay flexible (browser-safe keys). */
@@ -82,6 +93,8 @@ export function CornersEditor({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [entranceMode, setEntranceMode] = useState(false);
+  const [testLotMode, setTestLotMode] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -134,7 +147,43 @@ export function CornersEditor({
     run(() => moveCorner(cornerId, propertyId, next.lat, next.lng));
   }
 
+  /**
+   * Drop the test square on the device's own position — the quickest way to
+   * stand up a GPS test wherever you are. Desktop positions are coarse; nudge
+   * the square on the satellite map afterwards.
+   */
+  function useMyLocation() {
+    setError(null);
+    if (!navigator.geolocation) {
+      setError(labels.noGeolocation);
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false);
+        run(() =>
+          placeTestLot(propertyId, {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          }),
+        );
+      },
+      () => {
+        setLocating(false);
+        setError(labels.noGeolocation);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
   function onMapClick(p: LatLng) {
+    // A test lot takes the click as the centre of a fresh generated square.
+    if (testLotMode && isTestLot) {
+      setTestLotMode(false);
+      run(() => placeTestLot(propertyId, p));
+      return;
+    }
     if (!entranceMode || !hasGeometry) return;
     // Snap the entrance onto the lot line.
     const ring = corners.map((c) => ({ lat: c.lat, lng: c.lng }));
@@ -153,6 +202,11 @@ export function CornersEditor({
           <span className="pill pill-live">{labels.verified}</span>
         ) : hasGeometry ? (
           <span className="pill pill-working">{labels.verified}?</span>
+        ) : null}
+        {isTestLot ? (
+          <span className="pill pill-draft" data-testid="test-lot-pill">
+            {labels.testLot}
+          </span>
         ) : null}
         {geometrySource ? <span className="t-small muted">{geometrySource}</span> : null}
         {lastLockEvent ? (
@@ -175,14 +229,40 @@ export function CornersEditor({
           data-testid="kml-input"
           onChange={(e) => onKmlChosen(e.target.files?.[0])}
         />
-        <Button
-          variant="secondary"
-          disabled={pending || allLocked}
-          onClick={() => fileRef.current?.click()}
-          data-testid="import-kml"
-        >
-          <Upload size={16} /> {labels.importKml}
-        </Button>
+        {isTestLot ? (
+          <Button
+            variant={testLotMode ? "default" : "secondary"}
+            disabled={pending || allLocked}
+            onClick={() => {
+              setEntranceMode(false);
+              setTestLotMode((v) => !v);
+            }}
+            data-testid="place-test-square"
+          >
+            <Crosshair size={16} />{" "}
+            {testLotMode ? labels.placeTestSquarePrompt : labels.placeTestSquare}
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            disabled={pending || allLocked}
+            onClick={() => fileRef.current?.click()}
+            data-testid="import-kml"
+          >
+            <Upload size={16} /> {labels.importKml}
+          </Button>
+        )}
+        {isTestLot ? (
+          <Button
+            variant="secondary"
+            disabled={pending || allLocked || locating}
+            onClick={useMyLocation}
+            data-testid="test-square-here"
+          >
+            <LocateFixed size={16} />{" "}
+            {locating ? labels.locating : labels.useMyLocation}
+          </Button>
+        ) : null}
         {hasGeometry && !allLocked ? (
           <Button disabled={pending} onClick={() => run(() => lockCorners(propertyId))}>
             <Lock size={16} /> {labels.verified}
@@ -202,12 +282,21 @@ export function CornersEditor({
           <Button
             variant={entranceMode ? "default" : "ghost"}
             disabled={pending}
-            onClick={() => setEntranceMode((v) => !v)}
+            onClick={() => {
+              setTestLotMode(false);
+              setEntranceMode((v) => !v);
+            }}
           >
             {entranceMode ? "Click the lot line…" : "Move entrance"}
           </Button>
         ) : null}
       </div>
+
+      {isTestLot ? (
+        <div className="banner banner-warn" role="status" data-testid="test-lot-note">
+          {labels.testLotNote}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="banner banner-error" role="alert" data-testid="corners-error">
@@ -282,7 +371,9 @@ export function CornersEditor({
           ) : (
             <div className="stack items-center p-8 text-center">
               <p className="muted">
-                No geometry yet. {labels.importKml} — CAD-verified boundaries only.
+                {isTestLot
+                  ? `No geometry yet. ${labels.useMyLocation} to drop the test square where you are standing.`
+                  : `No geometry yet. ${labels.importKml} — CAD-verified boundaries only.`}
               </p>
             </div>
           )}

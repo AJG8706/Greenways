@@ -10,6 +10,12 @@ import {
   normalizeRing,
   orderCornersFromEntrance,
 } from "@/lib/geo/corners";
+import {
+  TEST_LOT_GEOMETRY_SOURCE,
+  TEST_LOT_RADIUS_FT,
+  testLotEntrance,
+  testLotRing,
+} from "@/lib/geo/test-lot";
 import type { LatLng } from "@/lib/geo/types";
 import type { Json } from "@/lib/supabase/database.types";
 
@@ -32,6 +38,9 @@ export async function createProperty(
   const nameEn = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const county = String(formData.get("county") ?? "").trim();
+  // A test lot takes a generated square instead of a CAD-verified KML, and the
+  // DB trigger keeps it from ever being published.
+  const testLot = formData.get("test_lot") === "on";
   if (!nameEn) return { ok: false, message: "Name is required" };
 
   const supabase = await createClient();
@@ -45,6 +54,7 @@ export async function createProperty(
       name: { en: nameEn, es: "" },
       address: address || null,
       county: county || null,
+      test_lot: testLot,
     })
     .select("id")
     .single();
@@ -262,6 +272,122 @@ export async function moveCorner(
         : error.message,
     };
   }
+  revalidatePath(`/admin/properties/${propertyId}`);
+  return { ok: true };
+}
+
+/**
+ * Demo mode. Off means the buyer walk runs live device GPS and nothing else —
+ * a `?demo=` on the link is ignored. On means the Demo tab's simulated-walk
+ * scenarios run, which is how the pilot property has always behaved.
+ */
+export async function setDemoMode(
+  propertyId: string,
+  demoMode: boolean,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("properties")
+    .update({ demo_mode: demoMode })
+    .eq("id", propertyId);
+  if (error) return { ok: false, message: error.message };
+  await supabase.rpc("write_audit", {
+    p_action: "demo_mode_changed",
+    p_property_id: propertyId,
+    p_detail: { to: demoMode },
+  });
+  revalidatePath("/admin/properties");
+  // "layout" so the nested Demo tab re-renders too — the scenario launchers
+  // are server-rendered off this flag, and a page-scoped revalidate would
+  // leave them stale until a manual reload.
+  revalidatePath(`/admin/properties/${propertyId}`, "layout");
+  return { ok: true };
+}
+
+/**
+ * Drop a generated test square on a clicked point — the live-GPS field test
+ * target. Refuses on anything but a property already marked `test_lot`, so
+ * CAD-verified geometry can never be overwritten by a generated square, and
+ * refuses while corners are locked, like every other geometry edit.
+ */
+export async function placeTestLot(
+  propertyId: string,
+  center: LatLng,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+
+  const { data: property, error: propFindError } = await supabase
+    .from("properties")
+    .select("id, test_lot")
+    .eq("id", propertyId)
+    .maybeSingle();
+  if (propFindError) return { ok: false, message: propFindError.message };
+  if (!property) return { ok: false, message: "Property not found" };
+  if (!property.test_lot) {
+    return {
+      ok: false,
+      message:
+        "Only a test lot can take a generated square. Real corners come from a CAD-verified KML.",
+    };
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from("corners")
+    .select("id, locked")
+    .eq("property_id", propertyId);
+  if (existingError) return { ok: false, message: existingError.message };
+  if (existing.some((c) => c.locked)) {
+    return {
+      ok: false,
+      message: "Corners are locked. Unlock (admin) before moving the test square.",
+    };
+  }
+
+  const ring = testLotRing(center, TEST_LOT_RADIUS_FT);
+  const entrance = testLotEntrance(ring);
+  const acres = Math.round(areaAcres(ring) * 100) / 100;
+
+  const boundary: Json = {
+    type: "Polygon",
+    coordinates: [
+      [...ring, ring[0]!].map((p) => [p.lng, p.lat] as unknown as Json),
+    ],
+  } as unknown as Json;
+
+  const { error: propError } = await supabase
+    .from("properties")
+    .update({
+      boundary,
+      acres,
+      entrance_lat: entrance.lat,
+      entrance_lng: entrance.lng,
+      geometry_source: TEST_LOT_GEOMETRY_SOURCE,
+    })
+    .eq("id", propertyId);
+  if (propError) return { ok: false, message: propError.message };
+
+  const { error: delError } = await supabase
+    .from("corners")
+    .delete()
+    .eq("property_id", propertyId);
+  if (delError) return { ok: false, message: delError.message };
+
+  const { error: insError } = await supabase.from("corners").insert(
+    ring.map((p, i) => ({
+      property_id: propertyId,
+      n: i + 1,
+      lat: p.lat,
+      lng: p.lng,
+    })),
+  );
+  if (insError) return { ok: false, message: insError.message };
+
+  await supabase.rpc("write_audit", {
+    p_action: "test_lot_placed",
+    p_property_id: propertyId,
+    p_detail: { lat: center.lat, lng: center.lng, radiusFt: TEST_LOT_RADIUS_FT },
+  });
+
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
 }

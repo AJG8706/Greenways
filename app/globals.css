@@ -29,3 +29,12 @@ body {
 .maplibregl-map {
   font: var(--gw-t-small);
 }
+
+/* Long unbroken strings (email addresses, slugs, tokens) inside narrow fixed-width
+   chrome — the 240px admin sidebar above all — have no break opportunity and spill
+   over the panel. Break them anywhere rather than letting them overlap. */
+.gw-break-anywhere {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
