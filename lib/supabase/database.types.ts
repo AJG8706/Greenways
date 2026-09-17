@@ -132,7 +132,11 @@ export type Database = {
           id: string;
           property_id: string;
           kind: string;
+          slot: string;
           status: string;
+          status_url: string | null;
+          error: string | null;
+          seed: number | null;
           higgsfield_job_id: string | null;
           payload: Json;
           created_at: string;
@@ -142,7 +146,11 @@ export type Database = {
           id?: string;
           property_id: string;
           kind: string;
+          slot?: string;
           status?: string;
+          status_url?: string | null;
+          error?: string | null;
+          seed?: number | null;
           higgsfield_job_id?: string | null;
           payload?: Json;
           created_at?: string;
@@ -152,7 +160,11 @@ export type Database = {
           id?: string;
           property_id?: string;
           kind?: string;
+          slot?: string;
           status?: string;
+          status_url?: string | null;
+          error?: string | null;
+          seed?: number | null;
           higgsfield_job_id?: string | null;
           payload?: Json;
           created_at?: string;
@@ -216,6 +228,7 @@ export type Database = {
           status: Database["public"]["Enums"]["media_status"];
           source_photo: string | null;
           higgsfield_job_id: string | null;
+          job_id: string | null;
           reject_reason: string | null;
           created_at: string;
         };
@@ -228,6 +241,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["media_status"];
           source_photo?: string | null;
           higgsfield_job_id?: string | null;
+          job_id?: string | null;
           reject_reason?: string | null;
           created_at?: string;
         };
@@ -240,10 +254,18 @@ export type Database = {
           status?: Database["public"]["Enums"]["media_status"];
           source_photo?: string | null;
           higgsfield_job_id?: string | null;
+          job_id?: string | null;
           reject_reason?: string | null;
           created_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "media_assets_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "generation_jobs";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "media_assets_property_id_fkey";
             columns: ["property_id"];
@@ -262,6 +284,7 @@ export type Database = {
           county: string | null;
           acres: number | null;
           entrance_lat: number | null;
+          media_brief: Json;
           entrance_lng: number | null;
           boundary: Json | null;
           geometry_source: string | null;
@@ -284,6 +307,7 @@ export type Database = {
           county?: string | null;
           acres?: number | null;
           entrance_lat?: number | null;
+          media_brief?: Json;
           entrance_lng?: number | null;
           boundary?: Json | null;
           geometry_source?: string | null;
@@ -306,6 +330,7 @@ export type Database = {
           county?: string | null;
           acres?: number | null;
           entrance_lat?: number | null;
+          media_brief?: Json;
           entrance_lng?: number | null;
           boundary?: Json | null;
           geometry_source?: string | null;
