@@ -9,6 +9,7 @@ import {
   refreshJobs,
   rejectAsset,
   saveMediaBrief,
+  testHiggsfield,
 } from "@/app/admin/(console)/properties/[id]/media/actions";
 import type { MediaBrief } from "@/lib/media/prompts";
 import { Button } from "@/components/ui/button";
@@ -355,6 +356,44 @@ export function ReviewCard({
         <p className="t-small" style={{ color: "var(--error)" }}>
           {error}
         </p>
+      ) : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Provider connection test                                            */
+/* ------------------------------------------------------------------ */
+
+export function ConnectionTest({ label }: { label: string }) {
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+      <Button
+        size="sm"
+        variant="secondary"
+        disabled={pending}
+        onClick={() => {
+          setResult(null);
+          startTransition(async () => {
+            const r = await testHiggsfield();
+            setResult({ ok: r.ok, message: r.message ?? "" });
+          });
+        }}
+        data-testid="test-higgsfield"
+      >
+        {label}
+      </Button>
+      {result ? (
+        <span
+          className="t-small"
+          style={{ color: result.ok ? "var(--gw-trailhead-green)" : "var(--error)" }}
+          data-testid="test-higgsfield-result"
+        >
+          {result.message}
+        </span>
       ) : null}
     </div>
   );

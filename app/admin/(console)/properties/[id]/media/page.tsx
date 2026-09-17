@@ -6,6 +6,7 @@ import type { MediaBrief } from "@/lib/media/prompts";
 import { canGenerateSlot, mediaSlotsFor, styleLocked } from "@/lib/media/slots";
 import {
   BriefForm,
+  ConnectionTest,
   JobsWatcher,
   ReviewCard,
   SlotCard,
@@ -148,6 +149,7 @@ export default async function MediaPage({ params }: { params: Promise<{ id: stri
         />
       </div>
       <p className="muted">{t("realityRule")}</p>
+      <ConnectionTest label={t("testConnection")} />
       {isMockProvider() ? (
         <div className="banner-warn" data-testid="mock-banner">
           {t("mockNotice")}

@@ -58,6 +58,61 @@ export function getProvider(): MediaProvider {
   return isMockProvider() ? mockProvider : realProvider;
 }
 
+/**
+ * Credential health check for the Media tab. Never returns the secret —
+ * only shape diagnostics and the live auth result from GET /v1/motions.
+ */
+export async function checkCredentials(): Promise<{
+  ok: boolean;
+  mode: "mock" | "real";
+  detail: string;
+}> {
+  if (isMockProvider()) {
+    return {
+      ok: true,
+      mode: "mock",
+      detail: "Mock provider (no HIGGSFIELD_API_KEY set). No credits are spent.",
+    };
+  }
+
+  const raw = process.env.HIGGSFIELD_API_KEY ?? "";
+  const problems: string[] = [];
+  if (raw !== raw.trim()) problems.push("value has leading/trailing whitespace");
+  if (/["']/.test(raw)) problems.push("value contains quote characters");
+  if (/\s/.test(raw.trim())) problems.push("value contains spaces or line breaks");
+  if (/^key\s/i.test(raw.trim())) problems.push('value starts with "Key " — store only ID:SECRET');
+  const parts = raw.trim().split(":");
+  const shape =
+    parts.length === 2
+      ? `key id ${parts[0]!.slice(0, 6)}… (${parts[0]!.length} chars) : secret (${parts[1]!.length} chars)`
+      : `expected exactly one ":" separating KEY_ID:KEY_SECRET — found ${parts.length - 1}`;
+  if (parts.length !== 2) problems.push("missing/multiple colons");
+
+  let live: string;
+  try {
+    const res = await fetch(`${BASE_URL}/v1/motions`, {
+      headers: authHeaders(),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const body = (await res.json().catch(() => [])) as unknown[];
+      live = `auth OK — motions endpoint returned ${Array.isArray(body) ? body.length : "?"} camera moves`;
+    } else {
+      const text = (await res.text().catch(() => "")).slice(0, 160);
+      live = `auth check failed: HTTP ${res.status} ${text}`;
+    }
+  } catch (e) {
+    live = `auth check unreachable: ${e instanceof Error ? e.message : "network error"}`;
+  }
+
+  const ok = problems.length === 0 && live.startsWith("auth OK");
+  return {
+    ok,
+    mode: "real",
+    detail: [shape, ...problems, live].join(" · "),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Real provider
 // ---------------------------------------------------------------------------
@@ -66,6 +121,8 @@ function authHeaders(): Record<string, string> {
   return {
     Authorization: `Key ${process.env.HIGGSFIELD_API_KEY}`,
     "Content-Type": "application/json",
+    // Match the official SDK's UA — the platform expects a server client.
+    "User-Agent": "higgsfield-server-js/2.0",
   };
 }
 
