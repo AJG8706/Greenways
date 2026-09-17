@@ -28,6 +28,7 @@ const ALLOWED_EVENTS = new Set([
 type Body = {
   slug?: string;
   sessionId?: string;
+  token?: string;
   locale?: string;
   device?: string;
   events?: { name?: string; data?: Record<string, unknown>; ts?: number }[];
@@ -61,20 +62,40 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (!property) return NextResponse.json({ error: "unknown walk" }, { status: 404 });
 
-    const token = `phase3-${body.slug}`;
-    const { data: existingLink } = await supabase
-      .from("walk_links")
-      .select("id")
-      .eq("token", token)
-      .maybeSingle();
-    let linkId = existingLink?.id ?? null;
-    if (!linkId) {
-      const { data: link } = await supabase
+    // Prospect token attributes the session; anything else falls back to
+    // the property's stable public link (get-or-created).
+    let linkId: string | null = null;
+    if (body.token) {
+      const { data: prospect } = await supabase
         .from("walk_links")
-        .insert({ property_id: property.id, kind: "public", token })
+        .select("id, revoked_at, expires_at")
+        .eq("property_id", property.id)
+        .eq("token", body.token)
+        .maybeSingle();
+      if (
+        prospect &&
+        !prospect.revoked_at &&
+        (!prospect.expires_at || new Date(prospect.expires_at).getTime() > Date.now())
+      ) {
+        linkId = prospect.id;
+      }
+    }
+    if (!linkId) {
+      const token = `public-${body.slug}`;
+      const { data: existingLink } = await supabase
+        .from("walk_links")
         .select("id")
-        .single();
-      linkId = link?.id ?? null;
+        .eq("token", token)
+        .maybeSingle();
+      linkId = existingLink?.id ?? null;
+      if (!linkId) {
+        const { data: link } = await supabase
+          .from("walk_links")
+          .insert({ property_id: property.id, kind: "public", token })
+          .select("id")
+          .single();
+        linkId = link?.id ?? null;
+      }
     }
 
     const { data: session, error: sessionError } = await supabase

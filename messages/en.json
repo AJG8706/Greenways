@@ -298,7 +298,19 @@
       "copied": "Copied",
       "publishCta": "Publish walk",
       "published": "Published",
-      "unpublish": "Unpublish"
+      "unpublish": "Unpublish",
+      "draft": "Draft",
+      "blockedEs": "Publish is blocked: the Spanish text has not been reviewed by a person (Content tab).",
+      "blockedTestLot": "A generated test lot can never be published — it exists for GPS testing only.",
+      "linkHint": "The link goes live the moment the property is published; until then buyers get a not-found page.",
+      "prospectHint": "Tokenized links tie a walk session to a prospect — issued here or automatically when a Property Tours booking lands (n8n webhook).",
+      "locale": "Language",
+      "contact": "GHL contact",
+      "expiresDays": "Expires (days)",
+      "noLinks": "No prospect links yet.",
+      "revoke": "Revoke",
+      "revoked": "Revoked",
+      "expired": "Expired"
     },
     "analytics": {
       "title": "Walk analytics",

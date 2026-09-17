@@ -18,15 +18,15 @@ export default async function WalkPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ demo?: string }>;
+  searchParams: Promise<{ demo?: string; t?: string }>;
 }) {
   const { slug } = await params;
-  const { demo } = await searchParams;
+  const { demo, t } = await searchParams;
   const supabase = createAdminClient();
 
   const { data: property } = await supabase
     .from("properties")
-    .select("id, slug, name, acres, entrance_lat, entrance_lng, demo_mode")
+    .select("id, slug, name, acres, entrance_lat, entrance_lng, demo_mode, test_lot, status")
     .eq("slug", slug)
     .maybeSingle();
   if (!property || property.entrance_lat === null || property.entrance_lng === null) {
@@ -40,6 +40,31 @@ export default async function WalkPage({
     .order("n");
   // Corners reach buyers only once CAD-verified and locked (guardrail #2).
   if (!corners || corners.length < 3 || corners.some((c) => !c.locked)) notFound();
+
+  // Phase 5 gate: a listing serves buyers only once published. Demo-mode
+  // properties and generated test lots stay reachable for the team.
+  if (property.status !== "published" && !property.demo_mode && !property.test_lot) {
+    notFound();
+  }
+
+  // Prospect token: attribution only (publish status is the gate). Invalid,
+  // revoked or expired tokens degrade to the public link silently.
+  let linkToken: string | null = null;
+  if (t) {
+    const { data: link } = await supabase
+      .from("walk_links")
+      .select("token, revoked_at, expires_at")
+      .eq("property_id", property.id)
+      .eq("token", t)
+      .maybeSingle();
+    if (
+      link &&
+      !link.revoked_at &&
+      (!link.expires_at || new Date(link.expires_at).getTime() > Date.now())
+    ) {
+      linkToken = link.token;
+    }
+  }
 
   // Approved walkthrough clips only (guardrail #3) — newest per slot.
   const { data: approvedMedia } = await supabase
@@ -102,6 +127,7 @@ export default async function WalkPage({
     entrance: { lat: property.entrance_lat, lng: property.entrance_lng },
     declinationDeg: 1.5, // Beaumont ≈ +1.5°E (2026); per-property model in Phase 6
     demo: demoScenario,
+    linkToken,
     googleKey:
       process.env.GOOGLE_MAPS_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? null,
     media: {

@@ -18,6 +18,7 @@ export function createWalkLogger(input: {
   slug: string;
   locale: string;
   demoKey: string | null;
+  linkToken?: string | null;
 }): WalkLogger {
   let queue: QueuedEvent[] = restore();
   let sessionId: string | null = null;
@@ -58,6 +59,7 @@ export function createWalkLogger(input: {
         body: JSON.stringify({
           slug: input.slug,
           sessionId: sessionId ?? undefined,
+          token: input.linkToken ?? undefined,
           locale: input.locale,
           device,
           events: batch,
