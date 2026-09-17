@@ -15,6 +15,47 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          id: string;
+          name: string;
+          key_hash: string;
+          prefix: string;
+          created_by: string | null;
+          created_at: string;
+          last_used_at: string | null;
+          revoked_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          key_hash: string;
+          prefix: string;
+          created_by?: string | null;
+          created_at?: string;
+          last_used_at?: string | null;
+          revoked_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          key_hash?: string;
+          prefix?: string;
+          created_by?: string | null;
+          created_at?: string;
+          last_used_at?: string | null;
+          revoked_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "team_users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       audit_log: {
         Row: {
           id: string;
