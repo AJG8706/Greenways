@@ -28,16 +28,24 @@ export async function recordPropertyPhoto(
   storagePath: string,
 ): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.from("media_assets").upsert(
-    {
-      property_id: propertyId,
-      type: "capture",
-      slot,
-      storage_path: storagePath,
-      status: "approved", // human-shot, not generated — no review queue
-    },
-    { onConflict: "property_id,slot" },
-  );
+  // Not an upsert: capture uniqueness lives on a PARTIAL index
+  // (property_id, slot) WHERE type='capture', which ON CONFLICT column
+  // inference cannot match through PostgREST. Replace the row instead.
+  const { error: delError } = await supabase
+    .from("media_assets")
+    .delete()
+    .eq("property_id", propertyId)
+    .eq("type", "capture")
+    .eq("slot", slot);
+  if (delError) return { ok: false, message: delError.message };
+
+  const { error } = await supabase.from("media_assets").insert({
+    property_id: propertyId,
+    type: "capture",
+    slot,
+    storage_path: storagePath,
+    status: "approved", // human-shot, not generated — no review queue
+  });
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
