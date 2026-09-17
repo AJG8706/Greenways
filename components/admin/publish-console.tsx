@@ -4,8 +4,11 @@ import { useState, useTransition } from "react";
 import { Check, Copy, Globe, Undo2 } from "lucide-react";
 import {
   issueProspectLink,
+  linkMondayItem,
+  listMondayItems,
   publishProperty,
   revokeLink,
+  syncMondayLink,
   unpublishProperty,
 } from "@/app/admin/(console)/properties/[id]/publish/actions";
 import { Button } from "@/components/ui/button";
@@ -167,5 +170,132 @@ export function RevokeButton({
     >
       {label}
     </Button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Monday.com pin + sync                                               */
+/* ------------------------------------------------------------------ */
+
+export function MondayCard({
+  propertyId,
+  linkedItemId,
+  linkedItemName,
+  labels,
+}: {
+  propertyId: string;
+  linkedItemId: string | null;
+  linkedItemName: string | null;
+  labels: {
+    title: string;
+    hint: string;
+    pick: string;
+    load: string;
+    save: string;
+    sync: string;
+    unlink: string;
+    linked: string;
+    synced: string;
+  };
+}) {
+  const [items, setItems] = useState<{ id: string; name: string; group: string }[] | null>(null);
+  const [choice, setChoice] = useState<string>(linkedItemId ?? "");
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function run(fn: () => Promise<{ ok: boolean; message?: string }>, okText: string) {
+    setMessage(null);
+    startTransition(async () => {
+      const result = await fn();
+      setMessage(result.ok ? (result.message ?? okText) : (result.message ?? "Failed"));
+    });
+  }
+
+  return (
+    <section className="card stack" style={{ gap: "var(--gw-s-3)" }} data-testid="monday-card">
+      <div>
+        <h3>{labels.title}</h3>
+        <p className="t-small muted">{labels.hint}</p>
+      </div>
+      {linkedItemId ? (
+        <p className="t-small">
+          {labels.linked}: <strong>{linkedItemName ?? linkedItemId}</strong>
+        </p>
+      ) : null}
+      <div className="row" style={{ gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+        {items === null ? (
+          <Button
+            variant="secondary"
+            disabled={pending}
+            onClick={() => {
+              setMessage(null);
+              startTransition(async () => {
+                const result = await listMondayItems();
+                if (result.ok && result.items) setItems(result.items);
+                else setMessage(result.message ?? "Failed");
+              });
+            }}
+            data-testid="monday-load"
+          >
+            {labels.load}
+          </Button>
+        ) : (
+          <>
+            <label className="stack" style={{ gap: 4 }}>
+              <span className="t-small">{labels.pick}</span>
+              <Select
+                value={choice}
+                onChange={(e) => setChoice(e.target.value)}
+                style={{ minHeight: 36, maxWidth: 320 }}
+                data-testid="monday-item"
+              >
+                <option value="">—</option>
+                {items.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}
+                    {i.group ? ` (${i.group})` : ""}
+                  </option>
+                ))}
+              </Select>
+            </label>
+            <Button
+              variant="secondary"
+              disabled={pending || !choice}
+              onClick={() =>
+                run(() => linkMondayItem(propertyId, choice), labels.synced)
+              }
+              data-testid="monday-save"
+            >
+              {labels.save}
+            </Button>
+          </>
+        )}
+        {linkedItemId ? (
+          <>
+            <Button
+              variant="secondary"
+              disabled={pending}
+              onClick={() =>
+                run(() => syncMondayLink(propertyId), labels.synced)
+              }
+              data-testid="monday-sync"
+            >
+              {labels.sync}
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={pending}
+              onClick={() =>
+                run(() => linkMondayItem(propertyId, null), labels.synced)
+              }
+              data-testid="monday-unlink"
+            >
+              {labels.unlink}
+            </Button>
+          </>
+        ) : null}
+      </div>
+      {message ? <p className="t-small muted">{message}</p> : null}
+    </section>
   );
 }

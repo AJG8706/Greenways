@@ -187,3 +187,19 @@ describe("GA4 payload (analytics sink)", async () => {
     expect(p.events[0]!.params.demo).toBe(1);
   });
 });
+
+describe("Monday link column value", async () => {
+  const { linkColumnValue } = await import("@/lib/integrations/monday/value");
+
+  it("builds {url, text} and clears with an empty object", () => {
+    expect(JSON.parse(linkColumnValue("https://x/walk/lot", "Lot walk"))).toEqual({
+      url: "https://x/walk/lot",
+      text: "Lot walk",
+    });
+    expect(JSON.parse(linkColumnValue("https://x/walk/lot"))).toEqual({
+      url: "https://x/walk/lot",
+      text: "https://x/walk/lot",
+    });
+    expect(linkColumnValue(null)).toBe("{}");
+  });
+});
