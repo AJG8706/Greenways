@@ -1,8 +1,14 @@
 import "server-only";
 
 import type { Motion } from "@/lib/higgsfield/motion";
+import {
+  parseStatusResponse,
+  parseSubmitResponse,
+  type ProviderStatus,
+  type StatusParse,
+} from "@/lib/higgsfield/parse";
 
-export type { Motion };
+export type { Motion, ProviderStatus };
 
 /**
  * Higgsfield platform client (server only — the key never reaches a browser).
@@ -24,22 +30,9 @@ export type { Motion };
 
 const BASE_URL = "https://platform.higgsfield.ai";
 
-export type ProviderStatus =
-  | "queued"
-  | "in_progress"
-  | "completed"
-  | "failed"
-  | "nsfw"
-  | "canceled";
-
 export type SubmitResult = { requestId: string; statusUrl: string };
 
-export type StatusResult = {
-  status: ProviderStatus;
-  /** Media URL once completed. */
-  resultUrl: string | null;
-  error: string | null;
-};
+export type StatusResult = StatusParse;
 
 
 export interface MediaProvider {
@@ -71,7 +64,7 @@ export async function checkCredentials(): Promise<{
     return {
       ok: true,
       mode: "mock",
-      detail: "Mock provider (no HIGGSFIELD_API_KEY set). No credits are spent.",
+      detail: "Test mode — no media API key configured. No credits are spent.",
     };
   }
 
@@ -131,40 +124,32 @@ const realProvider: MediaProvider = {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify(input),
+      // v1 endpoints take the generation fields wrapped in `params`.
+      body: JSON.stringify({ params: input }),
       cache: "no-store",
     });
     const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
       throw new Error(
-        `Higgsfield submit failed (${res.status}): ${JSON.stringify(body).slice(0, 300)}`,
+        `Media generation submit failed (${res.status}): ${JSON.stringify(body).slice(0, 300)}`,
       );
     }
-    const requestId = String(body.request_id ?? body.id ?? "");
-    if (!requestId) throw new Error("Higgsfield submit returned no request id");
-    const statusUrl = String(body.status_url ?? `${BASE_URL}/requests/${requestId}/status`);
-    return { requestId, statusUrl };
+    const parsed = parseSubmitResponse(body, BASE_URL);
+    if (!parsed) throw new Error("Media generation submit returned no request id");
+    return parsed;
   },
 
   async status(job) {
     const url = job.statusUrl ?? `${BASE_URL}/requests/${job.requestId}/status`;
     const res = await fetch(url, { headers: authHeaders(), cache: "no-store" });
-    const body = (await res.json().catch(() => ({}))) as {
-      status?: string;
-      video?: { url?: string };
-      images?: { url?: string }[];
-      error?: unknown;
-      detail?: unknown;
-    };
+    const body = (await res.json().catch(() => ({}))) as Parameters<
+      typeof parseStatusResponse
+    >[0];
     // A FAILED request is served as HTTP 422 with details in the body.
     if (!res.ok && res.status !== 422) {
-      throw new Error(`Higgsfield status failed (${res.status})`);
+      throw new Error(`Media generation status check failed (${res.status})`);
     }
-    const status = (body.status ?? "failed") as ProviderStatus;
-    const resultUrl = body.video?.url ?? body.images?.[0]?.url ?? null;
-    const error =
-      body.error || body.detail ? JSON.stringify(body.error ?? body.detail).slice(0, 300) : null;
-    return { status, resultUrl, error };
+    return parseStatusResponse(body);
   },
 
   async fetchResult(url) {

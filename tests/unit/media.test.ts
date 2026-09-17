@@ -120,3 +120,42 @@ describe("motion lookup", () => {
     expect(findMotion([], "crane down")).toBeNull();
   });
 });
+
+describe("provider response parsing (v1 job-set + v2 request dialects)", async () => {
+  const { parseStatusResponse, parseSubmitResponse } = await import("@/lib/higgsfield/parse");
+  const BASE = "https://platform.example";
+
+  it("v1 submit: job-set id polls at /v1/job-sets/{id}", () => {
+    const r = parseSubmitResponse({ id: "js1", jobs: [{ status: "queued" }] }, BASE);
+    expect(r).toEqual({ requestId: "js1", statusUrl: `${BASE}/v1/job-sets/js1` });
+  });
+
+  it("v2 submit: request_id + status_url pass through verbatim", () => {
+    const r = parseSubmitResponse(
+      { request_id: "r1", status_url: "https://x/requests/r1/status" },
+      BASE,
+    );
+    expect(r).toEqual({ requestId: "r1", statusUrl: "https://x/requests/r1/status" });
+    expect(parseSubmitResponse({}, BASE)).toBeNull();
+  });
+
+  it("v1 status: derives overall status and the completed job's media URL", () => {
+    expect(parseStatusResponse({ jobs: [{ status: "queued" }] }).status).toBe("queued");
+    expect(parseStatusResponse({ jobs: [{ status: "in_progress" }] }).status).toBe("in_progress");
+    const done = parseStatusResponse({
+      jobs: [{ status: "completed", results: { raw: { url: "https://cdn/x.mp4" } } }],
+    });
+    expect(done.status).toBe("completed");
+    expect(done.resultUrl).toBe("https://cdn/x.mp4");
+    expect(parseStatusResponse({ jobs: [{ status: "nsfw" }] }).status).toBe("nsfw");
+    expect(parseStatusResponse({ jobs: [{ status: "failed" }] }).status).toBe("failed");
+  });
+
+  it("v2 status: video/image URLs and error detail", () => {
+    const r = parseStatusResponse({ status: "completed", video: { url: "https://cdn/v.mp4" } });
+    expect(r.resultUrl).toBe("https://cdn/v.mp4");
+    const f = parseStatusResponse({ status: "failed", detail: [{ msg: "boom" }] });
+    expect(f.status).toBe("failed");
+    expect(f.error).toContain("boom");
+  });
+});
