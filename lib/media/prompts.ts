@@ -69,9 +69,12 @@ export function buildPrompt(slot: MediaSlot, ctx: PromptContext): string {
         `facing the entrance from ${b.road}.`;
       break;
     case "entrance":
+      // Library v1.0 wrote this as a vehicle-arrival shot; revised to a
+      // walking arrival after the first live review pass — buyers walk in,
+      // and the generated car was the first real rejection reason.
       body =
-        `Vehicle-perspective arrival shot turning from ${b.road} onto the property ` +
-        `entrance of a rural Texas lot, ${b.entrance}, slowing to a stop facing the land.`;
+        `First-person walking arrival from ${b.road} through the property entrance ` +
+        `of a rural Texas lot, ${b.entrance}, no vehicles, coming to a stop facing the open land.`;
       break;
     case "homesite":
       body =
