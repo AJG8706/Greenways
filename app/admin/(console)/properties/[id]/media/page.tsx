@@ -84,6 +84,7 @@ export default async function MediaPage({ params }: { params: Promise<{ id: stri
     const slotAssets = generatedAssets.filter((a) => a.slot === slot.key);
     const inReview = slotAssets.some((a) => a.status === "generated");
     const isApproved = approved.has(slot.key);
+    const approvedAsset = slotAssets.find((a) => a.status === "approved") ?? null;
 
     return {
       key: slot.key,
@@ -102,6 +103,7 @@ export default async function MediaPage({ params }: { params: Promise<{ id: stri
       missing,
       error: !activeJob && !inReview && !isApproved ? (failedJob?.error ?? null) : null,
       hasHistory: slotAssets.length > 0,
+      approvedAssetId: approvedAsset?.id ?? null,
       canGenerate:
         missing.length === 0 && !activeJob && canGenerateSlot(slot, approved) && !inReview,
       needsStyleLock:
@@ -195,6 +197,10 @@ export default async function MediaPage({ params }: { params: Promise<{ id: stri
                 labels={{
                   generate: t("generateOne"),
                   regenerate: t("regenerate"),
+                  uploadClip: t("uploadClip"),
+                  removeClip: t("removeClip"),
+                  removeConfirm: t("removeConfirm"),
+                  uploading: t("uploading"),
                   styleLock: t("styleLock"),
                   missing: t("missingPrefix"),
                   states: {

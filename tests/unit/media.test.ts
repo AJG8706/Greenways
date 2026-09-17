@@ -159,3 +159,31 @@ describe("provider response parsing (v1 job-set + v2 request dialects)", async (
     expect(f.error).toContain("boom");
   });
 });
+
+describe("GA4 payload (analytics sink)", async () => {
+  const { buildGa4Payload, GA4_MAX_EVENTS } = await import("@/lib/analytics/ga4");
+
+  it("maps walk events to MP events with context params", () => {
+    const p = buildGa4Payload(
+      [
+        { name: "corner_found", data: { n: 2, seconds: 41, accuracyFt: 18 } },
+        { name: "walk_completed", data: { seconds: 300 } },
+      ],
+      { slug: "broussard-lot-4", sessionId: "sess-1", locale: "es", demo: false },
+    );
+    expect(p.client_id).toBe("sess-1");
+    expect(p.events[0]).toEqual({
+      name: "corner_found",
+      params: { property_slug: "broussard-lot-4", locale: "es", demo: 0, n: 2, seconds: 41, accuracyFt: 18 },
+    });
+    expect(p.events[1]!.params.seconds).toBe(300);
+  });
+
+  it("sanitizes names and caps the batch at the MP limit", () => {
+    const many = Array.from({ length: 40 }, () => ({ name: "clip-played!" }));
+    const p = buildGa4Payload(many, { slug: "s", sessionId: "c", locale: "en", demo: true });
+    expect(p.events.length).toBe(GA4_MAX_EVENTS);
+    expect(p.events[0]!.name).toBe("clip_played_");
+    expect(p.events[0]!.params.demo).toBe(1);
+  });
+});

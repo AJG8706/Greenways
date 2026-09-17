@@ -196,3 +196,26 @@ test("approving intro + entrance unlocks the corner batch", async ({ page }) => 
   ]);
   expect(payload.prompt).toContain("surveyor's corner stake");
 });
+
+test("upload your own clip fills a slot; remove clears it", async ({ page }) => {
+  await openMediaTab(page);
+
+  // Homesite has no source photo uploaded in this suite — uploads don't
+  // need one (own footage bypasses generation entirely).
+  await expect(page.getByTestId("slot-homesite-state")).toHaveText(/missing/i);
+  await page.getByTestId("upload-homesite").setInputFiles({
+    name: "homesite.mp4",
+    mimeType: "video/mp4",
+    buffer: Buffer.from("e2e fixture — not a real video"),
+  });
+  await expect(page.getByTestId("slot-homesite-state")).toHaveText(/approved/i, {
+    timeout: 15_000,
+  });
+
+  // Remove is a two-tap confirm; the slot falls back to its photo state.
+  await page.getByTestId("remove-homesite").click();
+  await page.getByTestId("remove-homesite").click();
+  await expect(page.getByTestId("slot-homesite-state")).toHaveText(/missing/i, {
+    timeout: 15_000,
+  });
+});

@@ -2,15 +2,18 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, RefreshCw, Sparkles, X } from "lucide-react";
+import { Check, RefreshCw, Sparkles, Trash2, Upload, X } from "lucide-react";
 import {
   approveAsset,
   queueSlot,
+  recordUploadedClip,
   refreshJobs,
   rejectAsset,
+  removeAsset,
   saveMediaBrief,
   testMediaProvider,
 } from "@/app/admin/(console)/properties/[id]/media/actions";
+import { createClient } from "@/lib/supabase/client";
 import type { MediaBrief } from "@/lib/media/prompts";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
@@ -102,6 +105,7 @@ export type SlotView = {
   missing: string[];
   error: string | null;
   hasHistory: boolean;
+  approvedAssetId: string | null;
   canGenerate: boolean;
   needsStyleLock: boolean;
 };
@@ -125,6 +129,10 @@ export function SlotCard({
   labels: {
     generate: string;
     regenerate: string;
+    uploadClip: string;
+    removeClip: string;
+    removeConfirm: string;
+    uploading: string;
     styleLock: string;
     missing: string;
     states: Record<Exclude<SlotView["state"], never>, string>;
@@ -132,7 +140,31 @@ export function SlotCard({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [uploading, setUploading] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+
+  async function uploadClip(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() ?? "mp4").toLowerCase();
+      const path = `${propertyId}/uploads/${view.key}-${Date.now()}.${ext}`;
+      const supabase = createClient();
+      const { error: upError } = await supabase.storage
+        .from("property-photos")
+        .upload(path, file, { upsert: true, contentType: file.type || "video/mp4" });
+      if (upError) throw new Error(upError.message);
+      const result = await recordUploadedClip(propertyId, view.key, path);
+      if (!result.ok) throw new Error(result.message ?? "Upload failed");
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div className="card stack" style={{ gap: "var(--gw-s-2)" }} data-testid={`slot-${view.key}`}>
@@ -159,7 +191,7 @@ export function SlotCard({
         <Button
           size="sm"
           variant={view.state === "approved" ? "secondary" : "default"}
-          disabled={!view.canGenerate || pending}
+          disabled={!view.canGenerate || pending || uploading}
           onClick={() => {
             setError(null);
             startTransition(async () => {
@@ -173,6 +205,52 @@ export function SlotCard({
           <Sparkles aria-hidden size={14} />
           {view.hasHistory ? labels.regenerate : labels.generate}
         </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          className="sr-only"
+          data-testid={`upload-${view.key}`}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void uploadClip(f);
+            e.target.value = "";
+          }}
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={pending || uploading}
+          onClick={() => fileRef.current?.click()}
+          data-testid={`upload-btn-${view.key}`}
+        >
+          <Upload aria-hidden size={14} />
+          {uploading ? labels.uploading : labels.uploadClip}
+        </Button>
+        {view.approvedAssetId ? (
+          <Button
+            size="sm"
+            variant={confirmRemove ? "danger" : "ghost"}
+            disabled={pending || uploading}
+            onClick={() => {
+              if (!confirmRemove) {
+                setConfirmRemove(true);
+                return;
+              }
+              setConfirmRemove(false);
+              setError(null);
+              startTransition(async () => {
+                const result = await removeAsset(propertyId, view.approvedAssetId!);
+                if (!result.ok) setError(result.message ?? "Remove failed");
+                else router.refresh();
+              });
+            }}
+            data-testid={`remove-${view.key}`}
+          >
+            <Trash2 aria-hidden size={14} />
+            {confirmRemove ? labels.removeConfirm : labels.removeClip}
+          </Button>
+        ) : null}
         {error ? (
           <span className="t-small" style={{ color: "var(--error)" }}>
             {error}

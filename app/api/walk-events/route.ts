@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { forwardWalkEvents } from "@/lib/analytics";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -102,6 +103,18 @@ export async function POST(request: NextRequest) {
       .update({ ended_at: new Date().toISOString() })
       .eq("id", sessionId);
   }
+
+  // Copy to the external analytics sink (GA4 when configured; demo
+  // sessions never forwarded; best-effort, never fails the ingest).
+  await forwardWalkEvents(
+    events.map((e) => ({ name: e.name!, data: e.data })),
+    {
+      slug: body.slug,
+      sessionId,
+      locale,
+      demo: (device ?? "").startsWith("demo:"),
+    },
+  );
 
   return NextResponse.json({ sessionId });
 }
