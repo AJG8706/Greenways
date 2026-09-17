@@ -61,7 +61,7 @@ jobs:
           psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" <<SQL
           select slug, entrance_lat, entrance_lng, demo_mode, test_lot, status
             from public.properties where slug = '$SLUG';
-          select n, locked, round(lat::numeric,5) lat, round(lng::numeric,5) lng, updated_at
+          select n, locked, round(lat::numeric,5) lat, round(lng::numeric,5) lng, c.updated_at
             from public.corners c join public.properties p on p.id = c.property_id
            where p.slug = '$SLUG' order by n;
           SQL
