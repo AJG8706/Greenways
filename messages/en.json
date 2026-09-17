@@ -320,7 +320,16 @@
       "boundary": "Left the lot line",
       "compass": "Compass problems",
       "byCorner": "Time to each corner",
-      "recent": "Recent walks"
+      "recent": "Recent walks",
+      "languages": "Languages",
+      "prospect": "Prospect walks",
+      "demoWalks": "Demo walks",
+      "empty": "No walks yet. Numbers appear as soon as someone opens this property's walk link.",
+      "demoTag": "Demo",
+      "prospectTag": "Prospect",
+      "publicTag": "Public",
+      "cornersShort": "corners",
+      "completedTag": "Completed"
     },
     "demo": {
       "title": "Demo & QA",

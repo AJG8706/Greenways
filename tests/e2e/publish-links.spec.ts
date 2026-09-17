@@ -135,3 +135,40 @@ test("n8n issue endpoint: shared secret gates it; response carries URL + SMS", a
   expect(body.sms.es).toContain("Lote de prueba");
   expect(body.sms.en).toContain("E2E Publish Lot");
 });
+
+test("analytics tab aggregates buyer walks and separates demo", async ({ page, request }) => {
+  // A public buyer session: opens, finds two corners, completes.
+  const first = await request.post("/api/walk-events", {
+    data: {
+      slug: SLUG,
+      locale: "en",
+      device: "e2e-phone",
+      events: [
+        { name: "walk_opened", ts: 1 },
+        { name: "corner_found", data: { n: 1, seconds: 30, accuracyFt: 12 }, ts: 2 },
+        { name: "corner_found", data: { n: 2, seconds: 50, accuracyFt: 15 }, ts: 3 },
+        { name: "walk_completed", data: { seconds: 200 }, ts: 4 },
+      ],
+    },
+  });
+  expect(first.status()).toBe(200);
+
+  // A demo session: never counted as a buyer walk.
+  await request.post("/api/walk-events", {
+    data: {
+      slug: SLUG,
+      locale: "es",
+      device: "demo:clean · e2e",
+      events: [{ name: "walk_opened", ts: 1 }],
+    },
+  });
+
+  await signIn(page, ADMIN_EMAIL);
+  await page.goto(`/admin/properties/${propertyId}`);
+  await page.getByTestId("tab-analytics").click();
+
+  await expect(page.getByTestId("stat-sessions")).toContainText("1");
+  await expect(page.getByTestId("stat-completed")).toContainText("100%");
+  await expect(page.getByTestId("corner-times")).toContainText("Corner 1");
+  await expect(page.getByTestId("recent-walks")).toContainText("Demo");
+});
