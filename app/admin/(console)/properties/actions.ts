@@ -297,7 +297,10 @@ export async function setDemoMode(
     p_detail: { to: demoMode },
   });
   revalidatePath("/admin/properties");
-  revalidatePath(`/admin/properties/${propertyId}`);
+  // "layout" so the nested Demo tab re-renders too — the scenario launchers
+  // are server-rendered off this flag, and a page-scoped revalidate would
+  // leave them stale until a manual reload.
+  revalidatePath(`/admin/properties/${propertyId}`, "layout");
   return { ok: true };
 }
 
