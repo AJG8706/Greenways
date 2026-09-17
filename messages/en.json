@@ -237,6 +237,46 @@
         "terrain": "Wrong terrain / tree line",
         "motion": "Bad motion / horizon",
         "other": "Other"
+      },
+      "generateOne": "Generate",
+      "missingPrefix": "Missing:",
+      "refresh": "Refresh jobs",
+      "styleLock": "Locked until the intro and entrance are approved (style lock).",
+      "mockNotice": "No HIGGSFIELD_API_KEY is set, so the mock provider is running. Placeholders are labeled MOCK and cost no credits.",
+      "emptyReview": "Nothing waiting for review.",
+      "rejectSubmit": "Reject & regenerate",
+      "noCorners": "Import the KML first — the corner clips follow the corners.",
+      "slots": {
+        "intro": "Intro flyover",
+        "entrance": "Entrance clip",
+        "homesite": "Homesite showcase",
+        "cornerApproach": "Approach clip"
+      },
+      "status": {
+        "missing": "Missing sources",
+        "ready": "Ready",
+        "generating": "Generating…",
+        "review": "In review",
+        "approved": "Approved",
+        "failed": "Failed"
+      },
+      "sources": {
+        "aerial": "aerial photo",
+        "gate": "gate photo",
+        "homesite": "homesite photo",
+        "approach": "approach photo",
+        "stake": "stake photo"
+      },
+      "brief": {
+        "title": "Generation brief",
+        "hint": "Fills the Prompt Library templates. Blank fields fall back to defaults derived from the record.",
+        "road": "Road (e.g. Broussard Rd, Beaumont)",
+        "features": "Defining features from the air",
+        "groundCover": "Ground cover underfoot",
+        "homesite": "Homesite description",
+        "entrance": "Entrance / gate description",
+        "save": "Save brief",
+        "saved": "Saved."
       }
     },
     "publish": {
