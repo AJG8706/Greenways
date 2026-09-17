@@ -24,12 +24,13 @@ import { createWalkLogger, type WalkLogger } from "@/lib/walk/events";
 import { createDemoSource, createSensorSource, type WalkSource } from "@/lib/walk/source";
 import type { WalkConfig } from "@/lib/walk/types";
 import { ArrowRing, CornerStrip, DistanceReadout, StatusLine } from "./hud-parts";
+import { hasPreviewMedia, IntroOverlay, PreviewSheet } from "./media";
 import { GoogleMiniMap } from "./google-mini-map";
 import { MiniMap } from "./mini-map";
 import { ArrivalCard, BoundaryBanner, HelpSheet, PickerSheet } from "./sheets";
 import { DemoTray } from "./demo-tray";
 
-type Screen = "welcome" | "permission" | "denied" | "settings" | "hud" | "done";
+type Screen = "welcome" | "intro" | "permission" | "denied" | "settings" | "hud" | "done";
 
 type Machine = {
   posFilter: PositionFilterState;
@@ -104,6 +105,7 @@ export function WalkApp({ config }: { config: WalkConfig }) {
   const boundaryDismissedFor = useRef<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [totalSeconds, setTotalSeconds] = useState(0);
 
   const trackedRef = useRef<string | null>(null);
@@ -384,13 +386,23 @@ export function WalkApp({ config }: { config: WalkConfig }) {
 
   useEffect(() => () => stopRef.current?.(), []);
 
-  function begin() {
+  function afterIntro() {
     if (config.demo) {
       unlockAudio();
       startSource();
     } else {
       setScreen("permission");
     }
+  }
+
+  function begin() {
+    // Intro flyover on first open (skippable; media never blocks the walk).
+    if (config.media.intro) {
+      if (config.demo) unlockAudio();
+      setScreen("intro");
+      return;
+    }
+    afterIntro();
   }
 
   function allowSensors() {
@@ -487,8 +499,30 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           <Button size="lg" className="btn-block" onClick={begin} data-testid="start-walking">
             {t("welcome.start")}
           </Button>
+          {hasPreviewMedia(config.media) ? (
+            <Button
+              variant="secondary"
+              size="lg"
+              className="btn-block"
+              onClick={() => setShowPreview(true)}
+              data-testid="preview-walk"
+            >
+              {t("welcome.preview")}
+            </Button>
+          ) : null}
           <p className="t-small muted">{t("welcome.loadHint")}</p>
         </section>
+      ) : null}
+
+      {screen === "intro" && config.media.intro ? (
+        <IntroOverlay
+          src={config.media.intro}
+          onDone={afterIntro}
+          onSkip={() => {
+            loggerRef.current?.log("intro_skipped");
+            afterIntro();
+          }}
+        />
       ) : null}
 
       {screen === "permission" || screen === "denied" || screen === "settings" ? (
@@ -655,6 +689,22 @@ export function WalkApp({ config }: { config: WalkConfig }) {
               </li>
             </ul>
           </div>
+          {config.media.homesite ? (
+            <div>
+              <p className="t-label" style={{ marginBottom: 6 }}>
+                {t("done.homesite")}
+              </p>
+              <video
+                src={config.media.homesite}
+                controls
+                playsInline
+                className="w-full rounded-2"
+                style={{ maxHeight: 260, background: "var(--gw-pine-3)" }}
+                onPlay={() => loggerRef.current?.log("clip_played", { n: 0 })}
+                data-testid="homesite-clip"
+              />
+            </div>
+          ) : null}
           <Button size="lg" className="btn-block" onClick={restart} data-testid="walk-again">
             {t("done.again")}
           </Button>
@@ -676,6 +726,10 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       {arrivalFor ? (
         <ArrivalCard
           corner={config.corners.find((c) => c.id === arrivalFor)!}
+          clipUrl={
+            config.media.corners[config.corners.find((c) => c.id === arrivalFor)!.n] ?? null
+          }
+          onClipPlay={(n) => loggerRef.current?.log("clip_played", { n })}
           allFound={allFound}
           onNext={nextCorner}
           onStay={() => setArrivalFor(null)}
@@ -683,6 +737,15 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       ) : null}
 
       {showHelp ? <HelpSheet onClose={() => setShowHelp(false)} /> : null}
+
+      {showPreview ? (
+        <PreviewSheet
+          media={config.media}
+          corners={config.corners}
+          onClose={() => setShowPreview(false)}
+          onPlayed={() => loggerRef.current?.log("preview_played")}
+        />
+      ) : null}
 
       {config.demo && screen === "hud" ? (
         <DemoTray source={source} scenarioKey={config.demo.key} />

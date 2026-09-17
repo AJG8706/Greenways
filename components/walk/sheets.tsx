@@ -88,14 +88,19 @@ export function PickerSheet({
   );
 }
 
-/** Arrival card (HUD spec §4): stake description + photo, Next / Stay. */
+/** Arrival card (HUD spec §4): stake description + photo, the corner's
+ * approved approach clip when one exists, Next / Stay. */
 export function ArrivalCard({
   corner,
+  clipUrl,
+  onClipPlay,
   allFound,
   onNext,
   onStay,
 }: {
   corner: WalkCorner;
+  clipUrl: string | null;
+  onClipPlay: (n: number) => void;
   allFound: boolean;
   onNext: () => void;
   onStay: () => void;
@@ -129,6 +134,23 @@ export function ArrivalCard({
               <br />
               {pick(corner.stake, locale)}
             </p>
+          ) : null}
+          {clipUrl ? (
+            <div>
+              <p className="t-label" style={{ marginBottom: 6 }}>
+                {t("arrival.clip")}
+              </p>
+              <video
+                src={clipUrl}
+                controls
+                playsInline
+                preload="metadata"
+                className="w-full rounded-2"
+                style={{ maxHeight: 220, background: "var(--gw-pine-3)" }}
+                onPlay={() => onClipPlay(corner.n)}
+                data-testid="arrival-clip"
+              />
+            </div>
           ) : null}
           <div className="stack" style={{ gap: "var(--gw-s-2)" }}>
             <Button size="lg" className="btn-block" onClick={onNext} data-testid="arrival-next">
