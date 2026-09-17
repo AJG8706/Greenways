@@ -96,7 +96,7 @@ export default async function OverviewPage({
     {
       key: "media",
       label: t("tabs.media"),
-      detail: "Higgsfield generation arrives in Phase 4",
+      detail: "Generate and review walkthrough media in the Media tab",
       state: "later",
     },
     {

@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { checkCredentials, getProvider, isMockProvider } from "@/lib/higgsfield/client";
-import { findMotion } from "@/lib/higgsfield/motion";
+import { checkCredentials, getProvider } from "@/lib/media/provider";
 import { buildPrompt, type MediaBrief } from "@/lib/media/prompts";
 import { canGenerateSlot, mediaSlotsFor, type MediaSlot } from "@/lib/media/slots";
 import { i18nText } from "@/lib/i18n/text";
@@ -11,20 +10,18 @@ import type { Json } from "@/lib/supabase/database.types";
 
 export type ActionResult = { ok: boolean; message?: string };
 
-const ENDPOINT = "/v1/image2video/dop";
-const MODEL = "dop-turbo";
 const SIGN_TTL_S = 60 * 60 * 6;
 
 /**
- * Everything needed to submit (and later re-submit) one generation. Stored in
- * generation_jobs.payload so a rejection regenerates from the SAME source
- * frames and prompt — only the seed changes (Prompt Library workflow).
+ * Everything needed to submit (and later re-submit) one generation, in
+ * vendor-neutral terms (endpoints/models live inside lib/media/provider).
+ * Stored in generation_jobs.payload so a rejection regenerates from the
+ * SAME source frames and prompt — only the seed changes (Prompt Library
+ * workflow).
  */
 type JobSpec = {
-  endpoint: string;
-  model: string;
   prompt: string;
-  motionId: string | null;
+  motionQuery: string;
   /** Storage paths in property-photos; signed fresh at each submit. */
   sourcePaths: string[];
   seed: number;
@@ -37,7 +34,7 @@ function newSeed(): number {
 async function submitSpec(
   supabase: Awaited<ReturnType<typeof createClient>>,
   propertyId: string,
-  slot: { key: string; kind: string },
+  slot: { key: string; kind: MediaSlot["kind"]; targetSeconds: number },
   spec: JobSpec,
 ): Promise<ActionResult> {
   const { data: signed, error: signError } = await supabase.storage
@@ -48,20 +45,18 @@ async function submitSpec(
     return { ok: false, message: "Could not sign the source photos" };
   }
 
-  const input: Record<string, unknown> = {
-    model: spec.model,
-    prompt: spec.prompt,
-    input_images: urls.map((u) => ({ type: "image_url", image_url: u })),
-    seed: spec.seed,
-  };
-  if (spec.motionId) input.motions = [{ id: spec.motionId, strength: 0.8 }];
-  // The mock labels its placeholder with the slot; never sent to the real API.
-  if (isMockProvider()) input.mock_slot = slot.key;
-
   let requestId: string;
   let statusUrl: string;
   try {
-    ({ requestId, statusUrl } = await getProvider().submit(spec.endpoint, input));
+    ({ requestId, statusUrl } = await getProvider().submitGeneration({
+      slotKey: slot.key,
+      kind: slot.kind,
+      prompt: spec.prompt,
+      sourceUrls: urls,
+      motionQuery: spec.motionQuery,
+      targetSeconds: slot.targetSeconds,
+      seed: spec.seed,
+    }));
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Submit failed" };
   }
@@ -71,7 +66,7 @@ async function submitSpec(
     kind: slot.kind,
     slot: slot.key,
     status: "queued",
-    higgsfield_job_id: requestId,
+    provider_request_id: requestId,
     status_url: statusUrl,
     seed: spec.seed,
     payload: spec as unknown as Json,
@@ -172,16 +167,9 @@ export async function queueSlot(propertyId: string, slotKey: string): Promise<Ac
     })),
   });
 
-  const motions = await getProvider()
-    .motions()
-    .catch(() => []);
-  const motion = findMotion(motions, slot.motionQuery);
-
   const result = await submitSpec(supabase, propertyId, slot, {
-    endpoint: ENDPOINT,
-    model: MODEL,
     prompt,
-    motionId: motion?.id ?? null,
+    motionQuery: slot.motionQuery,
     sourcePaths: sources,
     seed: newSeed(),
   });
@@ -197,7 +185,7 @@ export async function refreshJobs(propertyId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: jobs, error } = await supabase
     .from("generation_jobs")
-    .select("id, slot, kind, status, status_url, higgsfield_job_id, payload")
+    .select("id, slot, kind, status, status_url, provider_request_id, payload")
     .eq("property_id", propertyId)
     .in("status", ["queued", "in_progress", "completed"]);
   if (error) return { ok: false, message: error.message };
@@ -206,10 +194,10 @@ export async function refreshJobs(propertyId: string): Promise<ActionResult> {
   let changed = false;
 
   for (const job of jobs ?? []) {
-    if (!job.higgsfield_job_id) continue;
+    if (!job.provider_request_id) continue;
     try {
       const s = await provider.status({
-        requestId: job.higgsfield_job_id,
+        requestId: job.provider_request_id,
         statusUrl: job.status_url,
       });
 
@@ -238,7 +226,7 @@ export async function refreshJobs(propertyId: string): Promise<ActionResult> {
           storage_path: path,
           status: "generated",
           source_photo: spec.sourcePaths?.[0] ?? null,
-          higgsfield_job_id: job.higgsfield_job_id,
+          provider_request_id: job.provider_request_id,
           job_id: job.id,
         });
         // 23505 on media_assets_job_unique: a concurrent poll already
@@ -317,13 +305,20 @@ export async function rejectAsset(
       .select("slot, kind, payload")
       .eq("id", asset.job_id)
       .maybeSingle();
-    const spec = job?.payload as unknown as JobSpec | null;
+    const spec = job?.payload as unknown as (JobSpec & { motionQuery?: string }) | null;
     if (job && spec?.sourcePaths?.length) {
+      const kind = job.kind as MediaSlot["kind"];
+      const defaults = mediaSlotsFor([1]).find((s) => s.kind === kind);
       const resubmit = await submitSpec(
         supabase,
         propertyId,
-        { key: job.slot, kind: job.kind },
-        { ...spec, seed: newSeed() },
+        { key: job.slot, kind, targetSeconds: defaults?.targetSeconds ?? 8 },
+        {
+          prompt: spec.prompt,
+          sourcePaths: spec.sourcePaths,
+          motionQuery: spec.motionQuery ?? defaults?.motionQuery ?? "dolly in",
+          seed: newSeed(),
+        },
       );
       if (!resubmit.ok) {
         return {
@@ -360,8 +355,8 @@ export async function saveMediaBrief(
   return { ok: true };
 }
 
-/** Live Higgsfield credential check for the Media tab (never leaks the secret). */
-export async function testHiggsfield(): Promise<ActionResult> {
+/** Live media-provider credential check for the Media tab (never leaks the secret). */
+export async function testMediaProvider(): Promise<ActionResult> {
   const supabase = await createClient();
   const { data: me } = await supabase.auth.getUser();
   if (!me.user) return { ok: false, message: "Sign in first" };

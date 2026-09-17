@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
-import { isMockProvider } from "@/lib/higgsfield/client";
+import { isMockProvider } from "@/lib/media/provider";
 import type { MediaBrief } from "@/lib/media/prompts";
 import { canGenerateSlot, mediaSlotsFor, styleLocked } from "@/lib/media/slots";
 import {

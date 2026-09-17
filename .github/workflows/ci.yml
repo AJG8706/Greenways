@@ -37,7 +37,9 @@ jobs:
           cache: pnpm
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned: resolving 'latest' hits the GitHub API unauthenticated and
+          # rate-limits on shared runners (killed a CI run before tests began).
+          version: 2.117.0
       - run: pnpm install --frozen-lockfile
       - name: Start local Supabase (migrations + seed)
         run: supabase start -x studio,imgproxy,logflare,vector,edge-runtime
