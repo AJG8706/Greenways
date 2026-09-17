@@ -1,15 +1,19 @@
 name: Diagnose walk
 
-# Manually triggered probe of the deployed buyer walk. The events endpoint
-# uses the same service-role read path as the walk page, so its error body
-# tells apart: missing row / service-key failure ("unknown walk") vs data
-# present (returns a sessionId) vs write failure.
+# Manually triggered probe of the deployed buyer walk for any property slug.
+# The events endpoint uses the same service-role read path as the walk page,
+# so its error body tells apart: missing row / service-key failure ("unknown
+# walk") vs data present (returns a sessionId) vs write failure.
 
 on:
   workflow_dispatch:
     inputs:
+      slug:
+        description: Property slug to probe
+        type: string
+        default: broussard-lot-4
       relock_corners:
-        description: Re-lock broussard-lot-4 corners (guardrail #2 lock)
+        description: Re-lock this property's corners (guardrail #2 lock)
         type: boolean
         default: false
 
@@ -20,37 +24,39 @@ jobs:
       URL: https://greenways-jade.vercel.app
       SUPABASE_URL: https://pdrvinfahqnskuwqumuu.supabase.co
       ANON_KEY: sb_publishable_qYvdo406rkxrs1i89h3LwA_PO4wS8ZG
+      SLUG: ${{ inputs.slug }}
     steps:
       - name: Walk page status + body head
         run: |
-          curl -s -o page.html -w "HTTP %{http_code}\n" "$URL/walk/broussard-lot-4?demo=clean"
+          curl -s -o page.html -w "HTTP %{http_code}\n" "$URL/walk/$SLUG"
           head -c 600 page.html; echo
 
       - name: Events ingest (same service-role read path as the page)
         run: |
           curl -s -o body.json -w "HTTP %{http_code}\n" -X POST "$URL/api/walk-events" \
             -H "Content-Type: application/json" \
-            -d '{"slug":"broussard-lot-4","locale":"en","device":"diagnose","events":[{"name":"walk_opened","ts":0}]}'
+            -d "{\"slug\":\"$SLUG\",\"locale\":\"en\",\"device\":\"diagnose\",\"events\":[{\"name\":\"walk_opened\",\"ts\":0}]}"
           cat body.json; echo
 
       - name: Anon REST sanity (RLS should return [])
         run: |
-          curl -s -w "\nHTTP %{http_code}\n" "$SUPABASE_URL/rest/v1/properties?select=slug&slug=eq.broussard-lot-4" \
+          curl -s -w "\nHTTP %{http_code}\n" "$SUPABASE_URL/rest/v1/properties?select=slug&slug=eq.$SLUG" \
             -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY"
 
-      - name: Re-lock Lot 4 corners
+      - name: Re-lock corners
         if: inputs.relock_corners
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" \
-            -c "update public.corners c set locked = true from public.properties p where p.id = c.property_id and p.slug = 'broussard-lot-4' and not c.locked;"
+            -v slug="$SLUG" \
+            -c "update public.corners c set locked = true from public.properties p where p.id = c.property_id and p.slug = :'slug' and not c.locked;"
 
       - name: Inspect walk data directly (pooler)
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" \
-            -c "select slug, entrance_lat, entrance_lng, sale_status, status from public.properties where slug='broussard-lot-4';" \
-            -c "select n, locked, round(lat::numeric,5) lat, round(lng::numeric,5) lng from public.corners c join public.properties p on p.id=c.property_id where p.slug='broussard-lot-4' order by n;" \
-            -c "select count(*) as corner_rows from public.corners;"
+            -v slug="$SLUG" \
+            -c "select slug, entrance_lat, entrance_lng, demo_mode, test_lot, status from public.properties where slug = :'slug';" \
+            -c "select n, locked, round(lat::numeric,5) lat, round(lng::numeric,5) lng, updated_at from public.corners c join public.properties p on p.id=c.property_id where p.slug = :'slug' order by n;"
