@@ -85,7 +85,10 @@ export function PhotoChecklist({
               <tr key={item.key}>
                 <td className="t-body-m">{item.label}</td>
                 <td>
-                  <span className={`pill ${item.path ? "pill-live" : "pill-draft"}`}>
+                  <span
+                    className={`pill ${item.path ? "pill-live" : "pill-draft"}`}
+                    data-testid={`photo-state-${item.key}`}
+                  >
                     {item.path ? labels.ready : labels.missing}
                   </span>
                 </td>
@@ -95,6 +98,7 @@ export function PhotoChecklist({
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       className="sr-only"
+                      data-testid={`photo-input-${item.key}`}
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) void upload(item, f);

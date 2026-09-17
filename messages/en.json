@@ -174,7 +174,7 @@
       "source": "Geometry source",
       "verified": "CAD-verified",
       "locked": "Locked",
-      "unlock": "Unlock to edit",
+      "unlock": "Unlock to edit — walk goes offline",
       "order": "Numbered clockwise from the road entrance",
       "entrance": "Entrance",
       "stakeDesc": "Stake description",
@@ -195,7 +195,9 @@
       "testLotNote": "Generated 100 ft-radius square for GPS field testing — not CAD-verified geometry, and it can never be published.",
       "useMyLocation": "Use my location",
       "locating": "Reading your position…",
-      "noGeolocation": "Could not read this device's position. Click the map instead, or allow location access."
+      "noGeolocation": "Could not read this device's position. Click the map instead, or allow location access.",
+      "lock": "Lock corners (mark CAD-verified)",
+      "lockHint": "Locks these exact pins as final — it does not change or reset them. The walk link only serves while corners are locked."
     },
     "photos": {
       "title": "Capture protocol",

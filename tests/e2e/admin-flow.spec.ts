@@ -72,11 +72,40 @@ test("create property → import KML → corners numbered clockwise from entranc
   await expect(firstRow).toContainText("-94.1960");
 
   // Verify and lock (CAD-verified); as admin the unlock action appears.
-  await page.getByRole("button", { name: "CAD-verified", exact: true }).click();
+  await page.getByTestId("lock-corners").click();
   await expect(page.getByTestId("unlock-corners")).toBeVisible();
 
   // Re-import while locked must refuse (guardrail #2).
   await expect(page.getByTestId("import-kml")).toBeDisabled();
+});
+
+test("photos tab records a property capture (upload twice = replace)", async ({ page }) => {
+  await signIn(page, ADMIN_EMAIL);
+  await page.getByRole("link", { name: E2E_PROPERTY }).click();
+  await page.getByTestId("tab-photos").click();
+
+  const tinyJpeg = {
+    name: "aerial.jpg",
+    mimeType: "image/jpeg",
+    buffer: Buffer.from(
+      "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a" +
+        "HBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAA" +
+        "AAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==",
+      "base64",
+    ),
+  };
+
+  await expect(page.getByTestId("photo-state-aerial")).toContainText(/missing/i);
+  await page.getByTestId("photo-input-aerial").setInputFiles(tinyJpeg);
+  await expect(page.getByTestId("photo-state-aerial")).toContainText(/ready/i, {
+    timeout: 15_000,
+  });
+
+  // Second upload replaces the capture row (the old upsert 500'd here:
+  // ON CONFLICT cannot match the partial capture unique index).
+  await page.getByTestId("photo-input-aerial").setInputFiles(tinyJpeg);
+  await expect(page.locator(".banner-error")).toHaveCount(0);
+  await expect(page.getByTestId("photo-state-aerial")).toContainText(/ready/i);
 });
 
 test("admin invites a second team member from the Team tab", async ({ page }) => {

@@ -36,6 +36,8 @@ export type CornersLabels = {
   source: string;
   verified: string;
   locked: string;
+  lock: string;
+  lockHint: string;
   unlock: string;
   order: string;
   entrance: string;
@@ -203,6 +205,9 @@ export function CornersEditor({
         ) : hasGeometry ? (
           <span className="pill pill-working">{labels.verified}?</span>
         ) : null}
+        {hasGeometry && !allLocked ? (
+          <span className="t-small muted">{labels.lockHint}</span>
+        ) : null}
         {isTestLot ? (
           <span className="pill pill-draft" data-testid="test-lot-pill">
             {labels.testLot}
@@ -264,8 +269,13 @@ export function CornersEditor({
           </Button>
         ) : null}
         {hasGeometry && !allLocked ? (
-          <Button disabled={pending} onClick={() => run(() => lockCorners(propertyId))}>
-            <Lock size={16} /> {labels.verified}
+          <Button
+            disabled={pending}
+            onClick={() => run(() => lockCorners(propertyId))}
+            title={labels.lockHint}
+            data-testid="lock-corners"
+          >
+            <Lock size={16} /> {labels.lock}
           </Button>
         ) : null}
         {allLocked && isAdmin ? (

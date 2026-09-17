@@ -85,6 +85,8 @@ export default async function CornersPage({
         source: t("source"),
         verified: t("verified"),
         locked: t("locked"),
+        lock: t("lock"),
+        lockHint: t("lockHint"),
         unlock: t("unlock"),
         order: t("order"),
         entrance: t("entrance"),
