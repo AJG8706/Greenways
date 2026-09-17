@@ -41,8 +41,24 @@ export default async function WalkPage({
   // Corners reach buyers only once CAD-verified and locked (guardrail #2).
   if (!corners || corners.length < 3 || corners.some((c) => !c.locked)) notFound();
 
+  // Approved walkthrough clips only (guardrail #3) — newest per slot.
+  const { data: approvedMedia } = await supabase
+    .from("media_assets")
+    .select("slot, storage_path, created_at")
+    .eq("property_id", property.id)
+    .eq("type", "video")
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+  const clipPathBySlot = new Map<string, string>();
+  for (const a of approvedMedia ?? []) {
+    if (!clipPathBySlot.has(a.slot)) clipPathBySlot.set(a.slot, a.storage_path);
+  }
+
   const stakeUrls = new Map<string, string>();
-  const paths = corners.flatMap((c) => (c.stake_photo ? [c.stake_photo] : []));
+  const paths = [
+    ...corners.flatMap((c) => (c.stake_photo ? [c.stake_photo] : [])),
+    ...clipPathBySlot.values(),
+  ];
   if (paths.length > 0) {
     const { data: signed } = await supabase.storage
       .from("property-photos")
@@ -50,6 +66,16 @@ export default async function WalkPage({
     for (const s of signed ?? []) {
       if (s.signedUrl && s.path) stakeUrls.set(s.path, s.signedUrl);
     }
+  }
+
+  const clipUrl = (slot: string): string | null => {
+    const p = clipPathBySlot.get(slot);
+    return p ? (stakeUrls.get(p) ?? null) : null;
+  };
+  const cornerClips: Record<number, string> = {};
+  for (const c of corners) {
+    const url = clipUrl(`corner_${c.n}_approach`);
+    if (url) cornerClips[c.n] = url;
   }
 
   // Demo is opt-in per property. Without demo_mode the walk runs live device
@@ -78,6 +104,12 @@ export default async function WalkPage({
     demo: demoScenario,
     googleKey:
       process.env.GOOGLE_MAPS_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? null,
+    media: {
+      intro: clipUrl("intro"),
+      entrance: clipUrl("entrance"),
+      homesite: clipUrl("homesite"),
+      corners: cornerClips,
+    },
   };
 
   return <WalkApp config={config} />;

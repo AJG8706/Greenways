@@ -363,3 +363,70 @@ export async function testMediaProvider(): Promise<ActionResult> {
   const result = await checkCredentials();
   return { ok: result.ok, message: `[${result.mode}] ${result.detail}` };
 }
+
+const SLOT_KEY_RE = /^(intro|entrance|homesite|corner_\d+_approach)$/;
+const VIDEO_EXT_RE = /\.(mp4|webm|mov|m4v)$/i;
+
+/**
+ * Record a team-uploaded clip for a slot (browser uploads to storage first,
+ * same as the Photos tab). Human-shot media is approved on upload — the
+ * review queue exists for AI-generated media (guardrail #3); an upload is
+ * the team's own footage, same trust level as capture photos.
+ */
+export async function recordUploadedClip(
+  propertyId: string,
+  slot: string,
+  storagePath: string,
+): Promise<ActionResult> {
+  if (!SLOT_KEY_RE.test(slot)) return { ok: false, message: "Unknown slot" };
+  if (!storagePath.startsWith(`${propertyId}/uploads/`) || !VIDEO_EXT_RE.test(storagePath)) {
+    return { ok: false, message: "Upload a video file (mp4, webm or mov)" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("media_assets").insert({
+    property_id: propertyId,
+    type: "video",
+    slot,
+    storage_path: storagePath,
+    status: "approved",
+  });
+  if (error) return { ok: false, message: error.message };
+
+  await supabase.rpc("write_audit", {
+    p_action: "media_uploaded",
+    p_property_id: propertyId,
+    p_detail: { slot, path: storagePath },
+  });
+  revalidatePath(`/admin/properties/${propertyId}`);
+  return { ok: true };
+}
+
+/** Remove a generated or uploaded clip (never capture photos). Audited. */
+export async function removeAsset(propertyId: string, assetId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: asset, error: findError } = await supabase
+    .from("media_assets")
+    .select("id, slot, type, status, storage_path")
+    .eq("id", assetId)
+    .eq("property_id", propertyId)
+    .maybeSingle();
+  if (findError) return { ok: false, message: findError.message };
+  if (!asset) return { ok: false, message: "Asset not found" };
+  if (asset.type === "capture") {
+    return { ok: false, message: "Capture photos are replaced from the Photos tab" };
+  }
+
+  const { error } = await supabase.from("media_assets").delete().eq("id", assetId);
+  if (error) return { ok: false, message: error.message };
+  // Best-effort storage cleanup; the row is the source of truth.
+  await supabase.storage.from("property-photos").remove([asset.storage_path]);
+
+  await supabase.rpc("write_audit", {
+    p_action: "media_removed",
+    p_property_id: propertyId,
+    p_detail: { slot: asset.slot, status: asset.status, path: asset.storage_path },
+  });
+  revalidatePath(`/admin/properties/${propertyId}`);
+  return { ok: true };
+}

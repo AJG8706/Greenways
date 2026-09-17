@@ -30,4 +30,18 @@ export type WalkConfig = {
   demo: (WalkerScenario & { key: string }) | null;
   /** Browser key for the Google satellite mini-map; drawn fallback when null. */
   googleKey: string | null;
+  /**
+   * Approved walkthrough clips (guardrail #3: only status='approved' assets
+   * ever reach a buyer), as signed URLs. Null slots simply don't play —
+   * media never blocks the HUD.
+   */
+  media: WalkMedia;
+};
+
+export type WalkMedia = {
+  intro: string | null;
+  entrance: string | null;
+  homesite: string | null;
+  /** Corner number → approach clip URL. */
+  corners: Record<number, string>;
 };

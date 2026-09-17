@@ -280,7 +280,11 @@
         "save": "Save brief",
         "saved": "Saved."
       },
-      "testConnection": "Test connection"
+      "testConnection": "Test connection",
+      "uploadClip": "Upload clip",
+      "removeClip": "Remove",
+      "removeConfirm": "Really remove?",
+      "uploading": "Uploading…"
     },
     "publish": {
       "title": "Publish",
