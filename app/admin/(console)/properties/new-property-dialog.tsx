@@ -13,6 +13,7 @@ const initialState: ActionResult = { ok: true };
 export function NewPropertyDialog() {
   const t = useTranslations("admin.properties");
   const [open, setOpen] = useState(false);
+  const [testLot, setTestLot] = useState(false);
   const [state, formAction, pending] = useActionState(createProperty, initialState);
 
   return (
@@ -36,10 +37,19 @@ export function NewPropertyDialog() {
             {t("cols.county")}
             <Input name="county" placeholder="Jefferson" />
           </label>
+          {!testLot ? (
+            <label className="field">
+              {t("kml")}
+              <Input type="file" name="kml" accept=".kml" data-testid="new-property-kml" />
+              <span className="t-small muted">{t("kmlHint")}</span>
+            </label>
+          ) : null}
           <label className="row" style={{ gap: "var(--gw-s-3)", cursor: "pointer" }}>
             <input
               type="checkbox"
               name="test_lot"
+              checked={testLot}
+              onChange={(e) => setTestLot(e.target.checked)}
               data-testid="new-property-test-lot"
               style={{ width: 18, height: 18 }}
             />

@@ -219,3 +219,60 @@ test("upload your own clip fills a slot; remove clears it", async ({ page }) => 
     timeout: 15_000,
   });
 });
+
+test("Generate remaining queues every ready slot in one click", async ({ page }) => {
+  // Seed the sources that were deliberately missing above, so homesite and
+  // the C2 approach become ready while C3/C4 stay missing.
+  const supabase = adminApi();
+  await supabase
+    .from("media_assets")
+    .delete()
+    .eq("property_id", propertyId)
+    .eq("type", "capture")
+    .eq("slot", "homesite");
+  const homesitePath = `${propertyId}/property/homesite.jpg`;
+  await supabase.storage
+    .from("property-photos")
+    .upload(homesitePath, TINY_JPEG, { upsert: true, contentType: "image/jpeg" });
+  await supabase.from("media_assets").insert({
+    property_id: propertyId,
+    type: "capture",
+    slot: "homesite",
+    storage_path: homesitePath,
+  });
+  for (const slot of ["approach", "stake"] as const) {
+    await supabase.storage
+      .from("property-photos")
+      .upload(`${propertyId}/corners/c2-${slot}.jpg`, TINY_JPEG, {
+        upsert: true,
+        contentType: "image/jpeg",
+      });
+  }
+  await supabase
+    .from("corners")
+    .update({
+      approach_photo: `${propertyId}/corners/c2-approach.jpg`,
+      stake_photo: `${propertyId}/corners/c2-stake.jpg`,
+    })
+    .eq("property_id", propertyId)
+    .eq("n", 2);
+
+  await openMediaTab(page);
+
+  // Style lock is open (intro + entrance approved earlier in this suite),
+  // so the batch button appears with the count of ready slots.
+  const button = page.getByTestId("generate-remaining");
+  await expect(button).toBeVisible();
+  await expect(button).toContainText("2");
+  await button.click();
+
+  await expect(page.getByTestId("slot-homesite-state")).toHaveText(/generating|in review/i, {
+    timeout: 20_000,
+  });
+  await expect(page.getByTestId("slot-corner_2_approach-state")).toHaveText(
+    /generating|in review/i,
+    { timeout: 20_000 },
+  );
+  // Slots without their protocol photos were not queued.
+  await expect(page.getByTestId("slot-corner_3_approach-state")).toHaveText(/missing/i);
+});

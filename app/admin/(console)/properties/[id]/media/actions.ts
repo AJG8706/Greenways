@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { checkCredentials, getProvider } from "@/lib/media/provider";
 import { buildPrompt, type MediaBrief } from "@/lib/media/prompts";
-import { canGenerateSlot, mediaSlotsFor, type MediaSlot } from "@/lib/media/slots";
+import { canGenerateSlot, mediaSlotsFor, styleLocked, type MediaSlot } from "@/lib/media/slots";
 import { i18nText } from "@/lib/i18n/text";
 import type { Json } from "@/lib/supabase/database.types";
 
@@ -175,6 +175,60 @@ export async function queueSlot(propertyId: string, slotKey: string): Promise<Ac
   });
   if (result.ok) revalidatePath(`/admin/properties/${propertyId}`);
   return result;
+}
+
+/**
+ * Assemble flow: queue every slot that still needs a clip, in one click.
+ * Only runs once the style lock is open (intro + entrance approved); skips
+ * slots with an approved asset or an active job. Each slot goes through the
+ * same guarded path as a single Generate, so credits discipline holds.
+ */
+export async function queueRemainingSlots(propertyId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const [{ data: corners }, { data: assets }, { data: jobs }] = await Promise.all([
+    supabase.from("corners").select("n").eq("property_id", propertyId).order("n"),
+    supabase
+      .from("media_assets")
+      .select("slot, status")
+      .eq("property_id", propertyId)
+      .neq("type", "capture"),
+    supabase
+      .from("generation_jobs")
+      .select("slot, status")
+      .eq("property_id", propertyId)
+      .in("status", ["queued", "in_progress", "completed"]),
+  ]);
+
+  const approved = new Set(
+    (assets ?? []).filter((a) => a.status === "approved").map((a) => a.slot),
+  );
+  if (!styleLocked(approved)) {
+    return {
+      ok: false,
+      message: "Style lock first: approve the intro and entrance before batching.",
+    };
+  }
+  const active = new Set((jobs ?? []).map((j) => j.slot));
+  const remaining = mediaSlotsFor((corners ?? []).map((c) => c.n)).filter(
+    (s) => !approved.has(s.key) && !active.has(s.key),
+  );
+  if (remaining.length === 0) return { ok: false, message: "Nothing left to generate" };
+
+  const failures: string[] = [];
+  let queued = 0;
+  for (const slot of remaining) {
+    const result = await queueSlot(propertyId, slot.key);
+    if (result.ok) queued += 1;
+    else failures.push(`${slot.key}: ${result.message}`);
+  }
+  revalidatePath(`/admin/properties/${propertyId}`);
+  if (failures.length > 0) {
+    return {
+      ok: queued > 0,
+      message: `Queued ${queued}. Skipped — ${failures.join(" · ")}`,
+    };
+  }
+  return { ok: true, message: `Queued ${queued} slot${queued === 1 ? "" : "s"}` };
 }
 
 /**

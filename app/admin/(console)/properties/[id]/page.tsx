@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
-import { PHOTO_SLOTS_PER_CORNER, PROPERTY_PHOTO_SLOTS } from "@/lib/photos";
+import { assemblyStages } from "@/lib/assembly";
 import { DeletePropertyButton } from "@/components/admin/delete-property-button";
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 
@@ -16,11 +16,13 @@ export default async function OverviewPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: property }, { data: corners }, { data: captures }, userRes] =
+  const [{ data: property }, { data: corners }, { data: media }, userRes] =
     await Promise.all([
       supabase
         .from("properties")
-        .select("id, boundary, geometry_source, status, es_reviewed, published_at, name")
+        .select(
+          "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot",
+        )
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -30,9 +32,8 @@ export default async function OverviewPage({
         .order("n"),
       supabase
         .from("media_assets")
-        .select("slot")
-        .eq("property_id", id)
-        .eq("type", "capture"),
+        .select("slot, type, status")
+        .eq("property_id", id),
       supabase.auth.getUser(),
     ]);
   if (!property) notFound();
@@ -71,94 +72,106 @@ export default async function OverviewPage({
     sizeKb: d.sizeKb,
   }));
   const cornerList = corners ?? [];
-  const captureSlots = new Set((captures ?? []).map((m) => m.slot));
+  const mediaRows = media ?? [];
 
-  const kmlDone = property.boundary !== null;
-  const cornersLocked = cornerList.length > 0 && cornerList.every((c) => c.locked);
-  const totalPhotos =
-    cornerList.length * PHOTO_SLOTS_PER_CORNER.length + PROPERTY_PHOTO_SLOTS.length;
-  const havePhotos =
-    cornerList.reduce(
-      (sum, c) => sum + (c.approach_photo ? 1 : 0) + (c.stake_photo ? 1 : 0),
-      0,
-    ) + captureSlots.size;
-  const contentDone =
-    cornerList.length > 0 &&
-    cornerList.every((c) => i18nText(c.stake).en && i18nText(c.stake).es) &&
-    Boolean(i18nText(property.name).es);
-  const esReviewed = property.es_reviewed;
+  const { stages, next } = assemblyStages({
+    corners: cornerList.map((c) => ({
+      n: c.n,
+      locked: c.locked,
+      approachPhoto: Boolean(c.approach_photo),
+      stakePhoto: Boolean(c.stake_photo),
+    })),
+    captureSlots: mediaRows.filter((m) => m.type === "capture").map((m) => m.slot),
+    briefSaved:
+      property.media_brief !== null && Object.keys(property.media_brief as object).length > 0,
+    approvedGeneratedSlots: mediaRows
+      .filter((m) => m.type !== "capture" && m.status === "approved")
+      .map((m) => m.slot),
+    esReviewed: property.es_reviewed,
+    published: property.status === "published",
+  });
 
-  const items: { key: string; label: string; detail: string; state: "done" | "open" | "later" }[] = [
-    {
-      key: "kml",
+  // Where each stage gets done, and what to tell the person standing at it.
+  const stageMeta: Record<
+    (typeof stages)[number]["key"],
+    { label: string; tab: string; todo: string }
+  > = {
+    geometry: {
       label: "KML imported",
-      detail: property.geometry_source ?? "Import the CAD-verified KML on the Corners tab",
-      state: kmlDone ? "done" : "open",
+      tab: "corners",
+      todo: property.geometry_source
+        ? "Re-import the CAD-verified KML on the Corners tab."
+        : "Import the CAD-verified KML (or attach it when creating the property).",
     },
-    {
-      key: "corners",
+    verify: {
       label: "Corners verified and locked",
-      detail:
-        cornerList.length > 0
-          ? `${cornerList.length} corners, ${t("corners.order").toLowerCase()}`
-          : "Corners appear after KML import",
-      state: cornersLocked ? "done" : "open",
+      tab: "corners",
+      todo: "Check each corner against the survey on the map, then lock (CAD-verified).",
     },
-    {
-      key: "photos",
-      label: t("photos.title"),
-      detail: `${havePhotos} of ${totalPhotos || "—"}`,
-      state: totalPhotos > 0 && havePhotos >= totalPhotos ? "done" : "open",
+    photos: {
+      label: "Protocol photos",
+      tab: "photos",
+      todo: "Upload the capture-protocol photos: aerial, gate, homesite, and each corner's approach + stake.",
     },
-    {
-      key: "content",
-      label: "Buyer text in English and Spanish",
-      detail: esReviewed
-        ? "Spanish reviewed by a person"
-        : contentDone
-          ? "Spanish drafted — needs a person's review before publish"
-          : "Fill the paired EN/ES fields on the Content tab",
-      state: contentDone && esReviewed ? "done" : "open",
+    brief: {
+      label: "Generation brief",
+      tab: "media",
+      todo: "Fill and save the generation brief on the Media tab (road, terrain, season).",
     },
-    {
-      key: "media",
-      label: t("tabs.media"),
-      detail: "Generate and review walkthrough media in the Media tab",
-      state: "later",
+    style: {
+      label: "Intro + entrance approved (style lock)",
+      tab: "media",
+      todo: "Generate the intro and entrance, then review and approve both to open the style lock.",
     },
-    {
-      key: "publish",
-      label: t("publish.title"),
-      detail:
-        property.status === "published"
-          ? `Published ${property.published_at ? new Date(property.published_at).toLocaleDateString() : ""}`
-          : "Publish + links + QR arrive in Phase 5",
-      state: property.status === "published" ? "done" : "later",
+    batch: {
+      label: "Corner + homesite clips approved",
+      tab: "media",
+      todo: "One click: Generate remaining on the Media tab, then review each clip against its source photos.",
     },
-  ];
+    spanish: {
+      label: "Spanish reviewed by a person",
+      tab: "content",
+      todo: "Draft-translate on the Content tab, then have a person review and mark it.",
+    },
+    publish: {
+      label: "Published — link, QR, walk pack",
+      tab: "publish",
+      todo: "Publish on the Publish tab; the public link, QR and SMS snippets are generated there.",
+    },
+  };
+
+  const nextMeta = next ? stageMeta[next] : null;
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-      <section className="card">
+      <section className="card" data-testid="assembly-checklist">
         <div className="stack">
-          <h2>Assemble status</h2>
+          <h2>Assembly</h2>
+          {property.test_lot ? (
+            <p className="t-small muted">
+              Test lot: GPS field testing only — it can never publish, so the pipeline ends at
+              locked corners.
+            </p>
+          ) : null}
           <ul className="stack" style={{ gap: "var(--gw-s-4)" }}>
-            {items.map((item) => (
-              <li key={item.key} className="row" style={{ alignItems: "flex-start" }}>
+            {stages.map((stage) => (
+              <li key={stage.key} className="row" style={{ alignItems: "flex-start" }}>
                 <span
                   className={`pill ${
-                    item.state === "done"
-                      ? "pill-live"
-                      : item.state === "open"
-                        ? "pill-working"
-                        : "pill-draft"
+                    stage.done ? "pill-live" : stage.key === next ? "pill-working" : "pill-draft"
                   }`}
+                  data-testid={`stage-${stage.key}`}
                 >
-                  {item.state === "done" ? "Done" : item.state === "open" ? "Open" : "Later"}
+                  {stage.done ? "Done" : stage.key === next ? "Next" : "Later"}
                 </span>
                 <div className="grow">
-                  <p className="t-body-m">{item.label}</p>
-                  <p className="t-small muted">{item.detail}</p>
+                  <Link
+                    href={`/admin/properties/${id}/${stageMeta[stage.key].tab}`}
+                    className="t-body-m"
+                  >
+                    {stageMeta[stage.key].label}
+                  </Link>
+                  {stage.detail ? <p className="t-small muted">{stage.detail}</p> : null}
                 </div>
               </li>
             ))}
@@ -168,19 +181,15 @@ export default async function OverviewPage({
       <section className="card">
         <div className="stack">
           <h2>Next step</h2>
-          <p className="muted">
-            {!kmlDone
-              ? "Import the CAD-verified KML on the Corners tab."
-              : !cornersLocked
-                ? "Verify corner positions against the survey, then lock them."
-                : havePhotos < totalPhotos
-                  ? "Capture and upload the protocol photos."
-                  : !esReviewed
-                    ? "Have a person review the Spanish text on the Content tab."
-                    : "Ready for Phase 4 media generation."}
+          <p className="muted" data-testid="next-step">
+            {nextMeta ? nextMeta.todo : "Walk is live. Share the link or QR from the Publish tab."}
           </p>
-          <Link href={`/admin/properties/${id}/corners`} className="t-body-m">
-            {t("tabs.corners")} →
+          <Link
+            href={`/admin/properties/${id}/${nextMeta ? nextMeta.tab : "publish"}`}
+            className="t-body-m"
+            data-testid="next-step-link"
+          >
+            {nextMeta ? stageMeta[next!].label : t("publish.title")} →
           </Link>
         </div>
       </section>
