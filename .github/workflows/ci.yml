@@ -47,8 +47,13 @@ jobs:
         # authenticated pulls use a per-identity bucket.
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
       - name: Start local Supabase (migrations + seed)
-        # The CLI retries a throttled pull instantly, which lands in the same
-        # throttle window — so back off for real between attempts.
+        # setup-cli pins image pulls to ghcr.io, which throttled runners for
+        # 45+ minutes straight (Sep 23) — pull from Supabase's AWS public ECR
+        # mirror instead. The CLI also retries a throttled pull instantly,
+        # which lands in the same throttle window — so back off for real
+        # between attempts.
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
         run: |
           for i in 1 2 3; do
             supabase start -x studio,imgproxy,logflare,vector,edge-runtime && exit 0
