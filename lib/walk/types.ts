@@ -47,3 +47,10 @@ export type WalkMedia = {
   /** Corner number → approach clip URL. */
   corners: Record<number, string>;
 };
+
+/** Whether any approved clip exists (lives here so media.tsx can lazy-load). */
+export function hasPreviewMedia(media: WalkMedia): boolean {
+  return Boolean(
+    media.intro || media.entrance || media.homesite || Object.keys(media.corners).length > 0,
+  );
+}
