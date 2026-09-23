@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, RefreshCw, Sparkles, Trash2, Upload, X } from "lucide-react";
 import {
   approveAsset,
+  queueRemainingSlots,
   queueSlot,
   recordUploadedClip,
   refreshJobs,
@@ -264,6 +265,41 @@ export function SlotCard({
 /* ------------------------------------------------------------------ */
 /* Jobs watcher — polls the provider while anything is in flight       */
 /* ------------------------------------------------------------------ */
+
+/** Assemble flow: one click queues every slot still needing a clip (post style lock). */
+export function GenerateRemaining({
+  propertyId,
+  count,
+  label,
+}: {
+  propertyId: string;
+  count: number;
+  label: string;
+}) {
+  const router = useRouter();
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  return (
+    <div className="row" style={{ gap: 8, alignItems: "center" }}>
+      {message ? <span className="t-small muted">{message}</span> : null}
+      <Button
+        size="sm"
+        disabled={pending}
+        onClick={() => {
+          setMessage(null);
+          startTransition(async () => {
+            const result = await queueRemainingSlots(propertyId);
+            setMessage(result.message ?? null);
+            router.refresh();
+          });
+        }}
+        data-testid="generate-remaining"
+      >
+        <Sparkles size={14} aria-hidden /> {label} ({count})
+      </Button>
+    </div>
+  );
+}
 
 export function JobsWatcher({
   propertyId,

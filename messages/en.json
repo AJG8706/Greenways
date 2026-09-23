@@ -158,7 +158,9 @@
       "modeLive": "Live GPS",
       "modeTestLot": "Test lot",
       "testLot": "GPS test lot (no CAD geometry)",
-      "testLotHint": "For field-testing the live GPS walk. Corners come from a generated 100 ft square you drop on a map or on your own position — never buyer-facing, and it can never be published."
+      "testLotHint": "For field-testing the live GPS walk. Corners come from a generated 100 ft square you drop on a map or on your own position — never buyer-facing, and it can never be published.",
+      "kml": "CAD-verified KML (optional)",
+      "kmlHint": "Attach the buyer-lot-map KML and the corners import in the same step — verify and lock them on the Corners tab."
     },
     "status": {
       "draft": "Draft",
@@ -250,6 +252,7 @@
         "other": "Other"
       },
       "generateOne": "Generate",
+      "generateRemaining": "Generate remaining",
       "missingPrefix": "Missing:",
       "refresh": "Refresh jobs",
       "styleLock": "Locked until the intro and entrance are approved (style lock).",

@@ -43,6 +43,24 @@ export async function createProperty(
   const testLot = formData.get("test_lot") === "on";
   if (!nameEn) return { ok: false, message: "Name is required" };
 
+  // Assemble flow: an attached KML seeds the geometry in the same step.
+  // Parse before inserting anything so a bad file never leaves a bare row.
+  const kmlFile = formData.get("kml");
+  let parsedKml: ReturnType<typeof parseKml> | null = null;
+  let kmlName = "";
+  if (kmlFile instanceof File && kmlFile.size > 0) {
+    if (testLot) {
+      return { ok: false, message: "A test lot takes a generated square, not a KML" };
+    }
+    if (kmlFile.size > 1024 * 1024) return { ok: false, message: "KML too large (max 1 MB)" };
+    try {
+      parsedKml = parseKml(await kmlFile.text());
+      kmlName = kmlFile.name;
+    } catch (e) {
+      return { ok: false, message: e instanceof Error ? e.message : "Could not parse KML" };
+    }
+  }
+
   const supabase = await createClient();
   const slug = slugify(nameEn);
   if (!slug) return { ok: false, message: "Name must contain letters or numbers" };
@@ -65,7 +83,70 @@ export async function createProperty(
       message: error.code === "23505" ? "A property with that name already exists" : error.message,
     };
   }
+
+  if (parsedKml) {
+    const applied = await applyParsedKml(supabase, data.id, parsedKml, kmlName);
+    if (!applied.ok) {
+      // The property exists; geometry can be retried from the Corners tab.
+      return { ok: false, message: `Property created, but KML import failed: ${applied.message}` };
+    }
+  }
   redirect(`/admin/properties/${data.id}`);
+}
+
+/** Apply parsed KML geometry to a property (shared by create + Corners tab). */
+async function applyParsedKml(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  propertyId: string,
+  parsed: ReturnType<typeof parseKml>,
+  fileName: string,
+): Promise<ActionResult> {
+  const ring = normalizeRing(parsed.ring);
+  const entrance = defaultEntrance(ring);
+  const ordered = orderCornersFromEntrance(ring, entrance);
+  const acres = Math.round(areaAcres(ring) * 100) / 100;
+
+  const boundary: Json = {
+    type: "Polygon",
+    coordinates: [
+      [...ordered, ordered[0]!].map((p) => [p.lng, p.lat] as unknown as Json),
+    ],
+  } as unknown as Json;
+
+  const { error: propError } = await supabase
+    .from("properties")
+    .update({
+      boundary,
+      acres,
+      entrance_lat: entrance.lat,
+      entrance_lng: entrance.lng,
+      geometry_source: `${fileName} · ${parsed.name ?? "KML polygon"}`,
+    })
+    .eq("id", propertyId);
+  if (propError) return { ok: false, message: propError.message };
+
+  const { error: delError } = await supabase
+    .from("corners")
+    .delete()
+    .eq("property_id", propertyId);
+  if (delError) return { ok: false, message: delError.message };
+
+  const { error: insError } = await supabase.from("corners").insert(
+    ordered.map((p, i) => ({
+      property_id: propertyId,
+      n: i + 1,
+      lat: p.lat,
+      lng: p.lng,
+    })),
+  );
+  if (insError) return { ok: false, message: insError.message };
+
+  await supabase.rpc("write_audit", {
+    p_action: "kml_imported",
+    p_property_id: propertyId,
+    p_detail: { file: fileName, corners: ordered.length },
+  });
+  return { ok: true };
 }
 
 /**
@@ -106,51 +187,8 @@ export async function importKml(
     };
   }
 
-  const ring = normalizeRing(parsed.ring);
-  const entrance = defaultEntrance(ring);
-  const ordered = orderCornersFromEntrance(ring, entrance);
-  const acres = Math.round(areaAcres(ring) * 100) / 100;
-
-  const boundary: Json = {
-    type: "Polygon",
-    coordinates: [
-      [...ordered, ordered[0]!].map((p) => [p.lng, p.lat] as unknown as Json),
-    ],
-  } as unknown as Json;
-
-  const { error: propError } = await supabase
-    .from("properties")
-    .update({
-      boundary,
-      acres,
-      entrance_lat: entrance.lat,
-      entrance_lng: entrance.lng,
-      geometry_source: `${file.name} · ${parsed.name ?? "KML polygon"}`,
-    })
-    .eq("id", propertyId);
-  if (propError) return { ok: false, message: propError.message };
-
-  const { error: delError } = await supabase
-    .from("corners")
-    .delete()
-    .eq("property_id", propertyId);
-  if (delError) return { ok: false, message: delError.message };
-
-  const { error: insError } = await supabase.from("corners").insert(
-    ordered.map((p, i) => ({
-      property_id: propertyId,
-      n: i + 1,
-      lat: p.lat,
-      lng: p.lng,
-    })),
-  );
-  if (insError) return { ok: false, message: insError.message };
-
-  await supabase.rpc("write_audit", {
-    p_action: "kml_imported",
-    p_property_id: propertyId,
-    p_detail: { file: file.name, corners: ordered.length },
-  });
+  const applied = await applyParsedKml(supabase, propertyId, parsed, file.name);
+  if (!applied.ok) return applied;
 
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };

@@ -7,6 +7,7 @@ import { canGenerateSlot, mediaSlotsFor, styleLocked } from "@/lib/media/slots";
 import {
   BriefForm,
   ConnectionTest,
+  GenerateRemaining,
   JobsWatcher,
   ReviewCard,
   SlotCard,
@@ -175,7 +176,16 @@ export default async function MediaPage({ params }: { params: Promise<{ id: stri
       />
 
       <section className="stack" style={{ gap: "var(--gw-s-3)" }}>
-        <h3>{t("queue")}</h3>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+          <h3>{t("queue")}</h3>
+          {locked && views.some((v) => v.state === "ready") ? (
+            <GenerateRemaining
+              propertyId={id}
+              count={views.filter((v) => v.state === "ready").length}
+              label={t("generateRemaining")}
+            />
+          ) : null}
+        </div>
         {(corners ?? []).length === 0 ? (
           <div className="card">
             <p className="muted">{t("noCorners")}</p>

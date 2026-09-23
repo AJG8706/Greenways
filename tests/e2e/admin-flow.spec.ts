@@ -79,6 +79,26 @@ test("create property → import KML → corners numbered clockwise from entranc
   await expect(page.getByTestId("import-kml")).toBeDisabled();
 });
 
+test("assemble: KML attached at creation imports corners in the same step", async ({ page }) => {
+  await signIn(page, ADMIN_EMAIL);
+
+  await page.getByTestId("new-property").click();
+  await page.getByRole("textbox").first().fill("E2E Assemble Lot");
+  await page.getByPlaceholder("Jefferson").fill("Jefferson");
+  await page.getByTestId("new-property-kml").setInputFiles(KML_PATH);
+  await page.getByTestId("create-property").click();
+  await expect(page.getByTestId("property-title")).toHaveText("E2E Assemble Lot");
+
+  // Overview checklist: geometry landed with creation, verify is the next step.
+  await expect(page.getByTestId("assembly-checklist")).toBeVisible();
+  await expect(page.getByTestId("stage-geometry")).toHaveText(/done/i);
+  await expect(page.getByTestId("stage-verify")).toHaveText(/next/i);
+  await expect(page.getByTestId("next-step")).toContainText(/lock/i);
+
+  await page.getByTestId("tab-corners").click();
+  await expect(page.getByTestId("corners-table").locator("tbody tr")).toHaveCount(4);
+});
+
 test("photos tab records a property capture (upload twice = replace)", async ({ page }) => {
   await signIn(page, ADMIN_EMAIL);
   await page.getByRole("link", { name: E2E_PROPERTY }).click();
