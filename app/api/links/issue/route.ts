@@ -1,5 +1,13 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import { clientIp, rateLimitAllowed, rateLimitedResponse } from "@/lib/api/rate-limit";
 import { issueProspectLinkForSlug } from "@/lib/links-service";
+
+function secretMatches(given: string, expected: string): boolean {
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 /**
  * Prospect-link issuance for the GHL Property Tours booking flow (plan §3
@@ -13,8 +21,15 @@ import { issueProspectLinkForSlug } from "@/lib/links-service";
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.N8N_WEBHOOK_SECRET;
-  if (!secret || request.headers.get("x-webhook-secret") !== secret) {
+  if (!secret || !secretMatches(request.headers.get("x-webhook-secret") ?? "", secret)) {
+    // Failed auth attempts burn a per-IP budget so the secret can't be brute-forced.
+    if (!(await rateLimitAllowed(`webhook-auth:${clientIp(request)}`, 20, 60))) {
+      return rateLimitedResponse(60);
+    }
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  if (!(await rateLimitAllowed("webhook:links", 60, 60))) {
+    return rateLimitedResponse(60);
   }
 
   let body: { slug?: string; ghl_contact_id?: string; locale?: string; expires_days?: number };
