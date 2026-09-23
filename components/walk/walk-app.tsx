@@ -27,7 +27,7 @@ import { ArrowRing, CornerStrip, DistanceReadout, StatusLine } from "./hud-parts
 import { hasPreviewMedia, IntroOverlay, PreviewSheet } from "./media";
 import { GoogleMiniMap } from "./google-mini-map";
 import { MiniMap } from "./mini-map";
-import { ArrivalCard, BoundaryBanner, HelpSheet, PickerSheet } from "./sheets";
+import { ArrivalCard, BoundaryBanner, HelpSheet, PickerSheet, TermsSheet } from "./sheets";
 import { DemoTray } from "./demo-tray";
 
 type Screen = "welcome" | "intro" | "permission" | "denied" | "settings" | "hud" | "done";
@@ -106,6 +106,7 @@ export function WalkApp({ config }: { config: WalkConfig }) {
   const [showPicker, setShowPicker] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [totalSeconds, setTotalSeconds] = useState(0);
 
   const trackedRef = useRef<string | null>(null);
@@ -397,6 +398,8 @@ export function WalkApp({ config }: { config: WalkConfig }) {
   }
 
   function begin() {
+    // Starting is agreeing — the timestamped event is the receipt (walk terms).
+    loggerRef.current?.log("disclaimer_acknowledged");
     // Intro flyover on first open (skippable; media never blocks the walk).
     if (config.media.intro) {
       if (config.demo) unlockAudio();
@@ -500,6 +503,20 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           <Button size="lg" className="btn-block" onClick={begin} data-testid="start-walking">
             {t("welcome.start")}
           </Button>
+          <p className="t-small muted">
+            {t.rich("terms.agree", {
+              link: (chunks) => (
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => setShowTerms(true)}
+                  data-testid="terms-link"
+                >
+                  {chunks}
+                </button>
+              ),
+            })}
+          </p>
           {hasPreviewMedia(config.media) ? (
             <Button
               variant="secondary"
@@ -738,6 +755,8 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       ) : null}
 
       {showHelp ? <HelpSheet onClose={() => setShowHelp(false)} /> : null}
+
+      {showTerms ? <TermsSheet onClose={() => setShowTerms(false)} /> : null}
 
       {showPreview ? (
         <PreviewSheet

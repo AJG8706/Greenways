@@ -41,8 +41,27 @@ jobs:
           # rate-limits on shared runners (killed a CI run before tests began).
           version: 2.117.0
       - run: pnpm install --frozen-lockfile
+      - name: Log in to ghcr.io
+        # Anonymous pulls share the runner IP's rate limit and get throttled
+        # (toomanyrequests killed supabase start twice on one commit);
+        # authenticated pulls use a per-identity bucket.
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
       - name: Start local Supabase (migrations + seed)
-        run: supabase start -x studio,imgproxy,logflare,vector,edge-runtime
+        # setup-cli pins image pulls to ghcr.io, which throttled runners for
+        # 45+ minutes straight (Sep 23) — pull from Supabase's AWS public ECR
+        # mirror instead. The CLI also retries a throttled pull instantly,
+        # which lands in the same throttle window — so back off for real
+        # between attempts.
+        env:
+          SUPABASE_INTERNAL_IMAGE_REGISTRY: public.ecr.aws
+        run: |
+          for i in 1 2 3; do
+            supabase start -x studio,imgproxy,logflare,vector,edge-runtime && exit 0
+            echo "supabase start failed (attempt $i); backing off"
+            supabase stop --no-backup >/dev/null 2>&1 || true
+            sleep $((i * 30))
+          done
+          exit 1
       - name: Export Supabase env
         run: |
           eval "$(supabase status -o env)"

@@ -98,7 +98,7 @@ Top to bottom: found-count chip and language toggle (40 px targets); tracking la
 
 ## 11. Analytics events (walk_events)
 
-`walk_opened`, `permission_granted|denied`, `intro_skipped`, `corner_tracked {n}`, `corner_found {n, seconds, accuracyFt}`, `clip_played {n}`, `boundary_exit {edge}`, `compass_unreliable`, `gps_weak`, `language_switched {to}`, `walk_completed {seconds}`, `preview_played {chapter}`. Batched and sent when online; queued in IndexedDB when not. Per-prospect tokens attach the GHL contact id server-side; public links stay anonymous.
+`walk_opened`, `disclaimer_acknowledged` (Start tap = agreement to the walk terms; the timestamped event is the per-session receipt), `permission_granted|denied`, `intro_skipped`, `corner_tracked {n}`, `corner_found {n, seconds, accuracyFt}`, `clip_played {n}`, `boundary_exit {edge}`, `compass_unreliable`, `gps_weak`, `language_switched {to}`, `walk_completed {seconds}`, `preview_played {chapter}`. Batched and sent when online; queued in IndexedDB when not. Per-prospect tokens attach the GHL contact id server-side; public links stay anonymous.
 
 ## 12. Field test protocol (Gate 3)
 
