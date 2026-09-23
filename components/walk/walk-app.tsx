@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { HelpCircle, Map as MapIcon, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,13 +23,20 @@ import { continuousRotation, normalize, stepHeading } from "@/lib/hud/heading";
 import { playArrivalTone, playRetargetTone, unlockAudio, vibrateArrival } from "@/lib/walk/audio";
 import { createWalkLogger, type WalkLogger } from "@/lib/walk/events";
 import { createDemoSource, createSensorSource, type WalkSource } from "@/lib/walk/source";
-import type { WalkConfig } from "@/lib/walk/types";
+import { hasPreviewMedia, type WalkConfig } from "@/lib/walk/types";
 import { ArrowRing, CornerStrip, DistanceReadout, StatusLine } from "./hud-parts";
-import { hasPreviewMedia, IntroOverlay, PreviewSheet } from "./media";
-import { GoogleMiniMap } from "./google-mini-map";
-import { MiniMap } from "./mini-map";
 import { ArrivalCard, BoundaryBanner, HelpSheet, PickerSheet, TermsSheet } from "./sheets";
-import { DemoTray } from "./demo-tray";
+
+// Heavy or later-screen components load on demand so the welcome screen ships
+// (and executes) less JS on a phone — the Lighthouse gate watches this.
+const IntroOverlay = dynamic(() => import("./media").then((m) => m.IntroOverlay), { ssr: false });
+const PreviewSheet = dynamic(() => import("./media").then((m) => m.PreviewSheet), { ssr: false });
+const GoogleMiniMap = dynamic(
+  () => import("./google-mini-map").then((m) => m.GoogleMiniMap),
+  { ssr: false },
+);
+const MiniMap = dynamic(() => import("./mini-map").then((m) => m.MiniMap), { ssr: false });
+const DemoTray = dynamic(() => import("./demo-tray").then((m) => m.DemoTray), { ssr: false });
 
 type Screen = "welcome" | "intro" | "permission" | "denied" | "settings" | "hud" | "done";
 

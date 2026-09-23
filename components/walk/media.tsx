@@ -161,8 +161,3 @@ export function PreviewSheet({
   );
 }
 
-export function hasPreviewMedia(media: WalkMedia): boolean {
-  return Boolean(
-    media.intro || media.entrance || media.homesite || Object.keys(media.corners).length > 0,
-  );
-}

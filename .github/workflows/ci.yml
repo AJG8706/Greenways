@@ -109,6 +109,10 @@ jobs:
             }
             const lcpEl = r.audits['largest-contentful-paint-element']?.details?.items?.[0]?.items?.[0]?.node?.selector;
             if (lcpEl) console.log('LCP element:', lcpEl);
+            for (const it of (r.audits['bootup-time']?.details?.items ?? []).slice(0, 5))
+              console.log('bootup', Math.round(it.total) + 'ms', it.url.split('/').pop());
+            for (const it of (r.audits['unused-javascript']?.details?.items ?? []).slice(0, 5))
+              console.log('unused-js', Math.round(it.wastedBytes / 1024) + 'KB of', Math.round(it.totalBytes / 1024) + 'KB', it.url.split('/').pop());
             const over = [
               ...(r.audits['performance-budget']?.details?.items ?? []).filter(i => i.sizeOverBudget || i.countOverBudget),
               ...(r.audits['timing-budget']?.details?.items ?? []).filter(i => i.overBudget),
