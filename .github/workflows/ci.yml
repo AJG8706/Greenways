@@ -118,10 +118,12 @@ jobs:
               ...(r.audits['timing-budget']?.details?.items ?? []).filter(i => i.overBudget),
             ];
             if (over.length) { console.error('over budget:', JSON.stringify(over, null, 2)); process.exit(1); }
-            // Regression floor. First measured run: perf 0.62, a11y 1.0.
-            // Ratchet perf toward 0.80 alongside dedicated perf work — raise
-            // this number in the same PR that earns it, never lower it.
-            if (perf < 0.55) { console.error('performance score below the 0.55 floor'); process.exit(1); }
+            // Regression floor. Measured: 0.62 before the walk code-split,
+            // 0.79 after (TTI 6.7s → 4.3s). Floor sits below measurement to
+            // absorb runner variance — raise it in the PR that earns it,
+            // never lower it. Next target: 0.80+ via the shared vendor chunk
+            // (the bootup/unused-js lines above point at it).
+            if (perf < 0.70) { console.error('performance score below the 0.70 floor'); process.exit(1); }
             if (a11y < 0.95) { console.error('accessibility score below 0.95'); process.exit(1); }
           "
       - uses: actions/upload-artifact@v4
