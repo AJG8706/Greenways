@@ -190,6 +190,38 @@ export function BoundaryBanner({ onDismiss }: { onDismiss: () => void }) {
 }
 
 /** Help sheet (§ help catalog). */
+export function TermsSheet({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("terms");
+  return (
+    <div className="fixed inset-0 z-40 flex flex-col justify-end" role="dialog" aria-modal>
+      <button
+        type="button"
+        aria-label={t("close")}
+        className="absolute inset-0"
+        style={{ background: "rgba(27,36,26,.6)" }}
+        onClick={onClose}
+      />
+      <div
+        className="relative rounded-t-3 p-5"
+        style={{ background: "var(--bg)", maxHeight: "85dvh", overflowY: "auto" }}
+        data-testid="walk-terms"
+      >
+        <div className="stack">
+          <h2>{t("title")}</h2>
+          {(["risk", "gps", "liability", "emergency"] as const).map((k) => (
+            <p key={k} className="muted">
+              {t(k)}
+            </p>
+          ))}
+          <Button variant="secondary" onClick={onClose} data-testid="terms-close">
+            {t("close")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HelpSheet({ onClose }: { onClose: () => void }) {
   const t = useTranslations("help");
   const tc = useTranslations("common");

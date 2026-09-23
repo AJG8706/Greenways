@@ -26,6 +26,15 @@
     "loadHint": "Funciona mejor en el terreno. Abra este enlace antes de salir del pavimento para que cargue todo.",
     "saved": "Guardado sin conexión · {mb} MB"
   },
+  "terms": {
+    "agree": "Al comenzar, usted acepta los <link>términos del recorrido</link>.",
+    "title": "Términos y seguridad del recorrido",
+    "risk": "Usted camina bajo su propio riesgo. Este es campo abierto: terreno desigual, hoyos, cercas, maleza, insectos, fauna silvestre y clima forman parte de él. Mire cada paso y mantenga a los niños cerca.",
+    "gps": "La flecha es una guía, no una garantía. La precisión del GPS varía; las estacas marcan las esquinas exactas. Nunca siga la flecha por encima de una cerca, a través de una carretera, hacia el agua ni hacia ningún lugar que parezca inseguro.",
+    "liability": "En la máxima medida permitida por la ley, Texas Greener Pastures LLC y sus propietarios, empleados y representantes no son responsables de lesiones, extravíos ni daños a la propiedad derivados de su visita o del uso de esta guía.",
+    "emergency": "En caso de emergencia, llame al 911. El marcador de entrada del mapa muestra el camino de regreso al portón.",
+    "close": "Entendido"
+  },
   "permission": {
     "title": "Greenways necesita su ubicación y su brújula",
     "body": "Así la flecha le señala cada estaca. No se guarda nada sobre usted.",

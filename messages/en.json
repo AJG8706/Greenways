@@ -26,6 +26,15 @@
     "loadHint": "Best on site. Open this link before you leave pavement so everything loads.",
     "saved": "Saved for offline · {mb} MB"
   },
+  "terms": {
+    "agree": "By starting, you agree to the <link>walk terms</link>.",
+    "title": "Walk terms & safety",
+    "risk": "You walk at your own risk. This is open rural land — uneven ground, holes, fences, brush, insects, wildlife, and weather are all part of it. Watch every step and keep children close.",
+    "gps": "The arrow is a guide, not a guarantee. GPS accuracy varies; the stakes mark the exact corners. Never follow the arrow over a fence, across a road, into water, or anywhere that looks unsafe.",
+    "liability": "To the fullest extent allowed by law, Texas Greener Pastures LLC and its owners, employees, and representatives are not liable for injury, becoming lost, or property damage arising from your visit or your use of this guide.",
+    "emergency": "In an emergency, call 911. The map's entrance marker shows the way back to the gate.",
+    "close": "Got it"
+  },
   "permission": {
     "title": "Greenways needs your location and compass",
     "body": "That's how the arrow points you to each stake. Nothing about you is stored.",

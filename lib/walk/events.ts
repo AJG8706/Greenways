@@ -91,7 +91,9 @@ export function createWalkLogger(input: {
     log(name, data) {
       queue.push({ name, data, ts: Date.now() });
       persist();
-      if (name === "walk_completed" || name === "walk_opened") void flush();
+      // Session bookends and the terms receipt land server-side immediately.
+      if (name === "walk_completed" || name === "walk_opened" || name === "disclaimer_acknowledged")
+        void flush();
     },
     stop() {
       if (interval !== null) window.clearInterval(interval);

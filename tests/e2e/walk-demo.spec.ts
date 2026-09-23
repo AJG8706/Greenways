@@ -37,6 +37,31 @@ test("demo walk completes on a phone viewport", async ({ page }) => {
   await completeWalk(page);
 });
 
+test("walk terms: sheet opens from the welcome line; Start records agreement", async ({
+  page,
+}) => {
+  await page.goto("/walk/broussard-lot-4?demo=clean");
+  await expect(page.getByTestId("start-walking")).toBeVisible();
+
+  // Full terms open from the agree line and close without starting the walk.
+  await page.getByTestId("terms-link").click();
+  await expect(page.getByTestId("walk-terms")).toBeVisible();
+  await expect(page.getByTestId("walk-terms")).toContainText(/own risk/i);
+  await expect(page.getByTestId("walk-terms")).toContainText(/not liable/i);
+  await page.getByTestId("terms-close").click();
+  await expect(page.getByTestId("walk-terms")).toHaveCount(0);
+
+  // Starting is agreeing: the acknowledgment event goes out with the batch.
+  const ack = page.waitForRequest(
+    (req) =>
+      req.url().includes("/api/walk-events") &&
+      (req.postData() ?? "").includes("disclaimer_acknowledged"),
+  );
+  await page.getByTestId("start-walking").click();
+  await expect(page.getByTestId("hud-arrow")).toBeVisible();
+  await ack;
+});
+
 test("map mode shows the lot line, pins and distance badge", async ({ page }) => {
   await page.goto("/walk/broussard-lot-4?demo=clean");
   await page.getByTestId("start-walking").click();
