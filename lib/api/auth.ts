@@ -2,7 +2,11 @@ import "server-only";
 
 import { NextResponse, type NextRequest } from "next/server";
 import { hashApiKey, KEY_PREFIX } from "@/lib/api/keys";
+import { rateLimitAllowed, rateLimitedResponse } from "@/lib/api/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+/** Per-key budget: generous for tools, cheap to raise, hard to abuse. */
+const KEY_LIMIT_PER_MINUTE = 120;
 
 /**
  * Bearer-key authentication for /api/v1. Keys are admin-issued (Team tab),
@@ -40,6 +44,10 @@ export async function authenticateApiKey(request: NextRequest): Promise<ApiAuth>
         { status: 401 },
       ),
     };
+  }
+
+  if (!(await rateLimitAllowed(`key:${key.id}`, KEY_LIMIT_PER_MINUTE, 60))) {
+    return { ok: false, response: rateLimitedResponse(60) };
   }
 
   void supabase

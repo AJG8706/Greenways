@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { forwardWalkEvents } from "@/lib/analytics";
+import { clientIp, rateLimitAllowed, rateLimitedResponse } from "@/lib/api/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -11,6 +12,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 const ALLOWED_EVENTS = new Set([
   "walk_opened",
+  "disclaimer_acknowledged",
   "permission_granted",
   "permission_denied",
   "intro_skipped",
@@ -35,6 +37,12 @@ type Body = {
 };
 
 export async function POST(request: NextRequest) {
+  // Generous per-IP budget: a real walk flushes every 15 s (~4 req/min) plus
+  // immediate bookends — 120/min only stops floods, never a buyer.
+  if (!(await rateLimitAllowed(`walk:${clientIp(request)}`, 120, 60))) {
+    return rateLimitedResponse(30);
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

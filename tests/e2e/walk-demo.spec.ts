@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { adminApi } from "./helpers";
 
 /**
  * Simulated-walk E2E (Gate 3 acceptance: demo mode plays a full walk).
@@ -60,6 +61,18 @@ test("walk terms: sheet opens from the welcome line; Start records agreement", a
   await page.getByTestId("start-walking").click();
   await expect(page.getByTestId("hud-arrow")).toBeVisible();
   await ack;
+
+  // The receipt must actually land in walk_events, not just leave the phone
+  // (the ingest route whitelists event names).
+  const supabase = adminApi();
+  await expect(async () => {
+    const { data } = await supabase
+      .from("walk_events")
+      .select("name")
+      .eq("name", "disclaimer_acknowledged")
+      .limit(1);
+    expect(data?.length).toBe(1);
+  }).toPass({ timeout: 15_000 });
 });
 
 test("map mode shows the lot line, pins and distance badge", async ({ page }) => {

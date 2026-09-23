@@ -172,3 +172,18 @@ test("analytics tab aggregates buyer walks and separates demo", async ({ page, r
   await expect(page.getByTestId("corner-times")).toContainText("Corner 1");
   await expect(page.getByTestId("recent-walks")).toContainText("Demo");
 });
+
+test("webhook brute-force burns a per-IP budget and hits 429", async ({ request }) => {
+  // Wrong-secret attempts are limited to 20/min per IP; a flood must start
+  // seeing 429 instead of an unbounded stream of 401 oracle responses.
+  let sawTooMany = false;
+  for (let i = 0; i < 25 && !sawTooMany; i++) {
+    const res = await request.post("/api/links/issue", {
+      headers: { "x-webhook-secret": "wrong-secret-attempt" },
+      data: { slug: SLUG },
+    });
+    if (res.status() === 429) sawTooMany = true;
+    else expect(res.status()).toBe(401);
+  }
+  expect(sawTooMany).toBe(true);
+});

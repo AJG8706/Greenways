@@ -129,6 +129,7 @@
     "nav": {
       "properties": "Properties",
       "team": "Team",
+      "activity": "Activity",
       "settings": "Settings",
       "signOut": "Sign out"
     },

@@ -35,6 +35,7 @@ Failure modes:
 |---|---|
 | `401 {"error":"unauthorized"}` | Missing header, malformed key, unknown key, or revoked key (`detail` says which) |
 | `404 {"error":"unknown property"}` | The `slug` doesn't exist |
+| `429 {"error":"rate_limited"}` | Over the per-key budget (120 requests/minute). Honor the `Retry-After` header |
 | `500 {"error": "…"}` | Server-side failure — safe to retry with backoff |
 
 ## Endpoints
@@ -161,7 +162,8 @@ from `slug`, `sale_status`, `corners.locked`, `walk_url`.
 - One key per tool; revoke on any suspicion — reissuing takes seconds.
 - Keys are server-side credentials: never embed one in a browser page,
   a shared doc, or a client app.
-- No hard rate limit is enforced today; keep polling ≥ 1 minute apart.
-  Abusive patterns will get keys revoked before they get limits built.
+- Each key gets **120 requests/minute**; over-budget requests get `429`
+  with a `Retry-After` header. Keep polling ≥ 1 minute apart and the
+  budget is a non-issue. (The n8n webhook door has its own 60/min budget.)
 - Buyer-facing rules still hold end to end: the API never exposes
   unapproved media, and walk URLs only work for published properties.

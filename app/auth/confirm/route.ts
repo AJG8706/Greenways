@@ -22,13 +22,32 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) redirect(target);
+    if (!error) {
+      await logSignIn(supabase);
+      redirect(target);
+    }
   }
 
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash });
-    if (!error) redirect(target);
+    if (!error) {
+      await logSignIn(supabase);
+      redirect(target);
+    }
   }
 
   redirect("/admin/sign-in?error=link");
+}
+
+/** Sign-ins join the audit trail (Activity page). Best-effort — never blocks the login. */
+async function logSignIn(supabase: Awaited<ReturnType<typeof createClient>>) {
+  try {
+    await supabase.rpc("write_audit", {
+      p_action: "signed_in",
+      p_property_id: null as unknown as string,
+      p_detail: {},
+    });
+  } catch {
+    // the session is set either way
+  }
 }

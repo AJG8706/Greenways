@@ -153,6 +153,30 @@ test("invited editor signs in and edits content, but cannot unlock corners", asy
   await page.getByTestId("tab-corners").click();
   await expect(page.getByTestId("corners-table")).toBeVisible();
   await expect(page.getByTestId("unlock-corners")).toHaveCount(0);
+
+  // The activity trail is admin-only: no nav entry, and the page bounces.
+  await expect(page.getByRole("link", { name: "Activity" })).toHaveCount(0);
+  await page.goto("/admin/activity");
+  await expect(page).toHaveURL(/\/admin\/properties/);
+});
+
+test("activity page shows sign-ins and the audit trail (admin only)", async ({ page }) => {
+  await signIn(page, ADMIN_EMAIL);
+  await page.getByRole("link", { name: "Activity" }).click();
+
+  // Sign-ins land in the trail via /auth/confirm, so this very session shows.
+  const signIns = page.getByTestId("sign-ins-card");
+  await expect(signIns).toContainText(new RegExp(ADMIN_EMAIL.split("@")[0]!, "i"), {
+    timeout: 15_000,
+  });
+  await expect(signIns).toContainText(/last signed in/i);
+
+  // Earlier tests locked corners and imported KML — those actions are here,
+  // attributed and readable.
+  const table = page.getByTestId("activity-table");
+  await expect(table).toContainText("Signed in");
+  await expect(table).toContainText("Imported KML geometry");
+  await expect(table).toContainText("Locked a corner");
 });
 
 test("publish stays blocked while Spanish is unreviewed", async ({ page }) => {

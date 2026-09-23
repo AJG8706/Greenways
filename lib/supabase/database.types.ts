@@ -559,6 +559,10 @@ export type Database = {
         Args: { p_action: string; p_property_id: string; p_detail?: Json };
         Returns: undefined;
       };
+      rate_limit_hit: {
+        Args: { p_bucket: string; p_limit: number; p_window_seconds: number };
+        Returns: boolean;
+      };
     };
     Enums: {
       team_role: "admin" | "editor";

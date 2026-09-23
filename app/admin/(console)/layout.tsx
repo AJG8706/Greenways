@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { Home, Settings, Users } from "lucide-react";
+import { History, Home, Settings, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/admin/sign-out-button";
 
@@ -51,6 +51,11 @@ export default async function AdminLayout({
           <SidebarLink href="/admin/team" icon={<Users size={18} />}>
             {t("team")}
           </SidebarLink>
+          {teamUser?.role === "admin" ? (
+            <SidebarLink href="/admin/activity" icon={<History size={18} />}>
+              {t("activity")}
+            </SidebarLink>
+          ) : null}
           <SidebarLink href="/admin/settings" icon={<Settings size={18} />}>
             {t("settings")}
           </SidebarLink>
