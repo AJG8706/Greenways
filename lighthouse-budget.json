@@ -1,0 +1,16 @@
+[
+  {
+    "path": "/walk/*",
+    "resourceSizes": [
+      { "resourceType": "script", "budget": 400 },
+      { "resourceType": "stylesheet", "budget": 60 },
+      { "resourceType": "font", "budget": 300 },
+      { "resourceType": "total", "budget": 1500 }
+    ],
+    "timings": [
+      { "metric": "largest-contentful-paint", "budget": 4000 },
+      { "metric": "total-blocking-time", "budget": 800 },
+      { "metric": "interactive", "budget": 6500 }
+    ]
+  }
+]
