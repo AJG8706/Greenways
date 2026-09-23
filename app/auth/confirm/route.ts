@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       await logSignIn(supabase);
-      redirect(target);
+      redirect(await landingFor(supabase, target));
     }
   }
 
@@ -32,11 +32,39 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash });
     if (!error) {
       await logSignIn(supabase);
-      redirect(target);
+      redirect(await landingFor(supabase, target));
     }
   }
 
   redirect("/admin/sign-in?error=link");
+}
+
+/**
+ * A teammate's very first sign-in (the invite email is a sign-in link, which
+ * surprises people expecting a "confirmation" step) lands on a welcome that
+ * explains the model instead of a bare property list.
+ */
+async function landingFor(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  target: string,
+): Promise<string> {
+  try {
+    const { data: userRes } = await supabase.auth.getUser();
+    const { data: me } = await supabase
+      .from("team_users")
+      .select("first_signed_in_at")
+      .eq("user_id", userRes.user?.id ?? "")
+      .maybeSingle();
+    const first = me?.first_signed_in_at ? new Date(me.first_signed_in_at).getTime() : null;
+    // The invite-acceptance trigger stamps first_signed_in_at during this
+    // very request, so "just now" means this is their first session.
+    if (first !== null && Date.now() - first < 2 * 60_000) {
+      return "/admin/properties?welcome=1";
+    }
+  } catch {
+    // fall through to the normal target
+  }
+  return target;
 }
 
 /** Sign-ins join the audit trail (Activity page). Best-effort — never blocks the login. */

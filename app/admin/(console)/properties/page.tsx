@@ -6,7 +6,12 @@ import { Pill, statusTone } from "@/components/ui/pill";
 import { saleTone } from "@/components/admin/sale-status-select";
 import { NewPropertyDialog } from "./new-property-dialog";
 
-export default async function PropertiesPage() {
+export default async function PropertiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ welcome?: string }>;
+}) {
+  const { welcome } = await searchParams;
   const t = await getTranslations("admin.properties");
   const tStatus = await getTranslations("admin.status");
   const tSale = await getTranslations("admin.sale");
@@ -23,6 +28,15 @@ export default async function PropertiesPage() {
 
   return (
     <div className="stack" style={{ gap: "var(--gw-s-6)" }}>
+      {welcome ? (
+        <section className="card" data-testid="welcome-card">
+          <div className="stack" style={{ gap: "var(--gw-s-2)" }}>
+            <h2>{t("welcomeTitle")}</h2>
+            <p className="muted">{t("welcomeBody")}</p>
+            <p className="t-small muted">{t("welcomeSignIn")}</p>
+          </div>
+        </section>
+      ) : null}
       <div className="row between">
         <h1>{t("title")}</h1>
         <NewPropertyDialog />

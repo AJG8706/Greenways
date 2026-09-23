@@ -5,7 +5,7 @@ Greenways is Texas Greener Pastures' property walkthrough web app: a desktop **a
 This file is the standing brief for Claude Code. Read it before touching the repo. The full plan with gates is `docs/TGP-Walkthrough-Project-Plan-v1.md`; the HUD behavior is `docs/greenways-hud-interaction-spec.md`; the Gate 1 prototype (`phase1/dist/greenways-prototype.html`) is the visual and interaction reference.
 
 ## Locked decisions (do not relitigate without Alton)
-- Full platform: Next.js 15 App Router + TypeScript, Supabase (Postgres, Auth magic links invite-only, Storage, RLS), Vercel. Build on free tiers; move to Vercel Pro / Supabase Pro at launch (Gate 6 decision; R2 for media is the alternative).
+- Full platform: Next.js 15 App Router + TypeScript, Supabase (Postgres, Auth magic links invite-only, Storage, RLS), Vercel. **On Vercel Pro + Supabase Pro since Sep 23, 2026** (Gate 6 launch-cost decision made by Alton; R2 revisit only if media egress consistently exceeds ~200 GB/mo).
 - Higgsfield media is generated **via API** with a human review queue; nothing reaches a buyer unapproved.
 - Links: one public link + QR per property **and** tokenized per-prospect links issued from the GHL Property Tours booking (calendar `xBSMR6gHnlxKqJfB5Pte`) through n8n.
 - Admin = desktop, English only. Buyer = mobile-first (Android + iPhone, mostly Chrome), **EN + ES from day one** (next-intl, cookie locale, no path prefix — one link serves both).

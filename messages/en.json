@@ -160,6 +160,9 @@
       "modeTestLot": "Test lot",
       "testLot": "GPS test lot (no CAD geometry)",
       "testLotHint": "For field-testing the live GPS walk. Corners come from a generated 100 ft square you drop on a map or on your own position — never buyer-facing, and it can never be published.",
+      "welcomeTitle": "You're in — welcome to Greenways",
+      "welcomeBody": "That email link was your sign-in. No password, no account to set up, nothing else to confirm — this console is where the team builds each property's self-guided walkthrough.",
+      "welcomeSignIn": "Next time: enter your work email at the sign-in page and tap the fresh link it sends. Links are personal — don't forward them.",
       "kml": "CAD-verified KML (optional)",
       "kmlHint": "Attach the buyer-lot-map KML and the corners import in the same step — verify and lock them on the Corners tab."
     },

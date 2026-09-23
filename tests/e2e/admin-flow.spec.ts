@@ -143,6 +143,11 @@ test("invited editor signs in and edits content, but cannot unlock corners", asy
   await signIn(page, EDITOR_EMAIL);
   await expect(page).toHaveURL(/\/admin\/properties/);
 
+  // First-ever sign-in lands on the welcome explaining the link-is-your-sign-in
+  // model (the invite email confused people expecting a confirmation step).
+  await expect(page.getByTestId("welcome-card")).toBeVisible();
+  await expect(page.getByTestId("welcome-card")).toContainText(/no password/i);
+
   await page.getByRole("link", { name: E2E_PROPERTY }).click();
   await page.getByTestId("tab-content").click();
   await page.getByRole("textbox").first().fill(`${E2E_PROPERTY} (edited)`);
