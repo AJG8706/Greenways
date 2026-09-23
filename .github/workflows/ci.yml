@@ -96,16 +96,23 @@ jobs:
           # 710ms vs 3410ms on identical code), so the perf floor gates the
           # BEST of three — a real regression sinks all three, one noisy
           # neighbor can't fail the build. Budgets/a11y are stable per-run.
+          # A single run may die before measuring (Chrome launch flakes on
+          # shared runners: 'Unable to connect to Chrome') — tolerate it and
+          # gate on whatever runs completed, requiring at least one.
           for i in 1 2 3; do
             npx --yes lighthouse@12 http://localhost:3000/walk/broussard-lot-4 \
               --budget-path=lighthouse-budget.json \
               --output=json --output-path=./lighthouse-walk-$i.json \
               --chrome-flags="--headless=new --no-sandbox" \
               --only-categories=performance,accessibility,best-practices \
-              --form-factor=mobile --throttling-method=simulate --quiet
+              --form-factor=mobile --throttling-method=simulate --quiet \
+              || echo "lighthouse run $i did not complete"
           done
           node -e "
-            const reports = [1, 2, 3].map(i => require('./lighthouse-walk-' + i + '.json'));
+            const reports = [1, 2, 3].flatMap(i => {
+              try { return [require('./lighthouse-walk-' + i + '.json')]; } catch { return []; }
+            });
+            if (reports.length === 0) { console.error('no Lighthouse run completed'); process.exit(1); }
             const scores = reports.map(x => x.categories.performance.score);
             const perf = Math.max(...scores);
             const r = reports[scores.indexOf(perf)];
