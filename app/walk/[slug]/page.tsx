@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { getLocale } from "next-intl/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { i18nText } from "@/lib/i18n/text";
 import type { WalkConfig } from "@/lib/walk/types";
 import { SCENARIOS } from "@/lib/hud/walker";
 import { WalkApp } from "@/components/walk/walk-app";
+import { LotPicker, type PickerLot } from "@/components/walk/lot-picker";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +28,42 @@ export default async function WalkPage({
 
   const { data: property } = await supabase
     .from("properties")
-    .select("id, slug, name, acres, entrance_lat, entrance_lng, demo_mode, test_lot, status")
+    .select(
+      "id, slug, name, acres, entrance_lat, entrance_lng, demo_mode, test_lot, status, parent_id",
+    )
     .eq("slug", slug)
     .maybeSingle();
-  if (!property || property.entrance_lat === null || property.entrance_lng === null) {
+  if (!property) notFound();
+
+  // Master tract: the QR at the gate opens a lot picker instead of a walk.
+  // Buyers only ever see lots that are individually walkable — published
+  // (or team-reachable demo/test), CAD-locked corners, entrance set.
+  const { data: children } = await supabase
+    .from("properties")
+    .select("slug, name, acres, status, sale_status, demo_mode, test_lot, entrance_lat, corners(locked)")
+    .eq("parent_id", property.id)
+    .order("created_at");
+  if (children && children.length > 0) {
+    const lots: PickerLot[] = children
+      .filter((lot) => {
+        const corners = lot.corners ?? [];
+        const walkable =
+          corners.length >= 3 && corners.every((c) => c.locked) && lot.entrance_lat !== null;
+        const visible = lot.status === "published" || lot.demo_mode || lot.test_lot;
+        return walkable && visible;
+      })
+      .map((lot) => ({
+        slug: lot.slug,
+        name: i18nText(lot.name),
+        acres: lot.acres === null ? null : Number(lot.acres),
+        saleStatus: lot.sale_status,
+      }));
+    return (
+      <LotPicker masterName={i18nText(property.name)} locale={await getLocale()} lots={lots} />
+    );
+  }
+
+  if (property.entrance_lat === null || property.entrance_lng === null) {
     notFound();
   }
 
@@ -111,6 +145,17 @@ export default async function WalkPage({
       ? { key: demo, ...SCENARIOS[demo]! }
       : null;
 
+  // Lot of a master tract: the welcome screen links back to the lot picker.
+  let master: { slug: string } | null = null;
+  if (property.parent_id) {
+    const { data: parent } = await supabase
+      .from("properties")
+      .select("slug")
+      .eq("id", property.parent_id)
+      .maybeSingle();
+    if (parent) master = { slug: parent.slug };
+  }
+
   const config: WalkConfig = {
     slug: property.slug,
     name: i18nText(property.name),
@@ -127,6 +172,7 @@ export default async function WalkPage({
     entrance: { lat: property.entrance_lat, lng: property.entrance_lng },
     declinationDeg: 1.5, // Beaumont ≈ +1.5°E (2026); per-property model in Phase 6
     demo: demoScenario,
+    master,
     linkToken,
     googleKey:
       process.env.GOOGLE_MAPS_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? null,

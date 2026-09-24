@@ -47,6 +47,38 @@ export default async function PublishPage({
     color: { dark: "#24301F", light: "#F5F3E9" },
   });
   const qrDataUri = `data:image/svg+xml;base64,${Buffer.from(qrSvg).toString("base64")}`;
+
+  // Master tract: its link/QR opens the buyer lot picker, which only ever
+  // lists lots that are individually published. Nothing to publish here —
+  // the per-lot publish gates stay the only way anything reaches a buyer.
+  const { count: lotCount } = await supabase
+    .from("properties")
+    .select("id", { count: "exact", head: true })
+    .eq("parent_id", id);
+  if ((lotCount ?? 0) > 0) {
+    return (
+      <div className="stack" style={{ gap: "var(--gw-s-5)" }}>
+        <h2>{t("title")}</h2>
+        <div className="banner" role="status" data-testid="master-publish-hint">
+          {t("masterHint", { n: lotCount ?? 0 })}
+        </div>
+        <section className="card stack" style={{ gap: "var(--gw-s-3)" }}>
+          <h3>{t("masterLink")}</h3>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <code className="t-small" style={{ wordBreak: "break-all" }} data-testid="public-url">
+              {publicUrl}
+            </code>
+            <CopyButton text={publicUrl} labels={{ copy: t("copy"), copied: t("copied") }} />
+          </div>
+          <div className="stack" style={{ gap: 6 }}>
+            <span className="t-label">{t("qr")}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrDataUri} alt={t("qr")} width={160} height={160} data-testid="qr-image" />
+          </div>
+        </section>
+      </div>
+    );
+  }
   const mondayOn = isMondayConfigured();
   const mondayItemName =
     mondayOn && property.monday_item_id ? await getItemName(property.monday_item_id) : null;
