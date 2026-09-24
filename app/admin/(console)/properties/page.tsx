@@ -2,8 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
-import { Pill, statusTone } from "@/components/ui/pill";
-import { saleTone } from "@/components/admin/sale-status-select";
+import { Pill, saleTone, statusTone } from "@/components/ui/pill";
 import { NewPropertyDialog } from "./new-property-dialog";
 
 export default async function PropertiesPage({

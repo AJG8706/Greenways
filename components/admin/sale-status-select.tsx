@@ -3,14 +3,7 @@
 import { useState, useTransition } from "react";
 import { setSaleStatus } from "@/app/admin/(console)/properties/actions";
 import { Select } from "@/components/ui/input";
-
-export type SaleStatus = "available" | "under_contract" | "sold";
-
-export const saleTone: Record<SaleStatus, "available" | "contract" | "sold"> = {
-  available: "available",
-  under_contract: "contract",
-  sold: "sold",
-};
+import { saleTone, type SaleStatus } from "@/components/ui/pill";
 
 export function SaleStatusSelect({
   propertyId,

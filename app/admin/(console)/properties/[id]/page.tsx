@@ -7,7 +7,8 @@ import { assemblyStages } from "@/lib/assembly";
 import { DeletePropertyButton } from "@/components/admin/delete-property-button";
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
-import { Pill, statusTone } from "@/components/ui/pill";
+import { LotsBulkEdit } from "@/components/admin/lots-bulk-edit";
+import { Pill, saleTone, statusTone } from "@/components/ui/pill";
 
 // Overview tab: the assemble checklist, computed from real data.
 export default async function OverviewPage({
@@ -32,7 +33,7 @@ export default async function OverviewPage({
       supabase
         .from("properties")
         .select(
-          "id, slug, name, acres, status, es_reviewed, media_brief, corners(n, locked, approach_photo, stake_photo), media_assets(slot, type, status)",
+          "id, slug, name, acres, status, sale_status, es_reviewed, media_brief, corners(n, locked, approach_photo, stake_photo), media_assets(slot, type, status)",
         )
         .eq("parent_id", id)
         .order("created_at"),
@@ -190,6 +191,7 @@ export default async function OverviewPage({
       name: i18nText(lot.name).en || lot.slug,
       acres: lot.acres,
       status: lot.status,
+      saleStatus: lot.sale_status,
       next: lotNext,
     };
   });
@@ -230,6 +232,7 @@ export default async function OverviewPage({
                     <th>Lot</th>
                     <th>Acres</th>
                     <th>Status</th>
+                    <th>Sale</th>
                     <th>Next step</th>
                   </tr>
                 </thead>
@@ -245,6 +248,13 @@ export default async function OverviewPage({
                       <td>
                         <Pill tone={statusTone[lot.status] ?? "draft"}>{t(`status.${lot.status}`)}</Pill>
                       </td>
+                      <td>
+                        <Pill tone={saleTone[lot.saleStatus]}>
+                          {t(
+                            `sale.${lot.saleStatus === "under_contract" ? "underContract" : lot.saleStatus}`,
+                          )}
+                        </Pill>
+                      </td>
                       <td className="t-small muted">
                         {lot.next ? stageMeta[lot.next].label : "Walk is live"}
                       </td>
@@ -255,6 +265,11 @@ export default async function OverviewPage({
             </div>
           </div>
         </section>
+      ) : null}
+      {isMaster ? (
+        <div className="lg:col-span-2">
+          <LotsBulkEdit masterId={id} lotCount={lotRows.length} />
+        </div>
       ) : null}
       {!isMaster ? (
       <>

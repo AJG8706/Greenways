@@ -29,3 +29,14 @@ export const statusTone: Record<string, PillTone> = {
   published: "live",
   error: "error",
 };
+
+export type SaleStatus = "available" | "under_contract" | "sold";
+
+// Lives here (no "use client") so server components get the real object.
+// Imported from a client module, it becomes a client reference and every
+// lookup silently returns undefined — pills render as pill-undefined.
+export const saleTone: Record<SaleStatus, PillTone> = {
+  available: "available",
+  under_contract: "contract",
+  sold: "sold",
+};
