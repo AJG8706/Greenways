@@ -17,14 +17,29 @@ export default async function PropertiesPage({
   const tSale = await getTranslations("admin.sale");
   const supabase = await createClient();
 
-  const { data: properties, error } = await supabase
+  // Code deploys on merge; migrations reach the hosted DB in a separate db-push
+  // step. Until migration 20260924100000 lands there, parent_id doesn't exist —
+  // fall back to the legacy shape so the console keeps working in the gap.
+  const res = await supabase
     .from("properties")
     .select(
       "id, slug, name, county, status, sale_status, demo_mode, test_lot, parent_id, created_at, updated_at, corners(id, locked)",
     )
     .order("updated_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
+  let properties: NonNullable<typeof res.data>;
+  if (res.error) {
+    if (!/parent_id/.test(res.error.message)) throw new Error(res.error.message);
+    const legacy = await supabase
+      .from("properties")
+      .select(
+        "id, slug, name, county, status, sale_status, demo_mode, test_lot, created_at, updated_at, corners(id, locked)",
+      )
+      .order("updated_at", { ascending: false });
+    if (legacy.error) throw new Error(legacy.error.message);
+    properties = legacy.data.map((p) => ({ ...p, parent_id: null }));
+  } else {
+    properties = res.data;
+  }
 
   // Masters group their lots: lots render indented under the master row, in
   // creation (plat) order. A lot whose master is gone falls back to top level.

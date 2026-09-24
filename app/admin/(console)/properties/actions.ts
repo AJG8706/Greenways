@@ -149,7 +149,14 @@ export async function importSubdivisionKml(
     .select("id, slug, name, address, county, parent_id")
     .eq("id", masterId)
     .maybeSingle();
-  if (masterError) return { ok: false, message: masterError.message };
+  if (masterError) {
+    return {
+      ok: false,
+      message: /parent_id/.test(masterError.message)
+        ? "The property-hierarchy migration (20260924100000) has not reached the database yet — run the DB push workflow, then retry."
+        : masterError.message,
+    };
+  }
   if (!master) return { ok: false, message: "Property not found" };
   if (master.parent_id) {
     return { ok: false, message: "This property is a lot — masters hold the subdivision KML." };
@@ -202,6 +209,13 @@ async function createLotsUnderMaster(
       .select("id")
       .single();
     if (error) {
+      if (/parent_id/.test(error.message)) {
+        return {
+          ok: false,
+          message:
+            "The property-hierarchy migration (20260924100000) has not reached the database yet — run the DB push workflow, then retry.",
+        };
+      }
       return {
         ok: false,
         message:

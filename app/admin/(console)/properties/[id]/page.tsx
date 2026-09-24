@@ -18,7 +18,7 @@ export default async function OverviewPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: property }, { data: lots }, { data: corners }, { data: media }, userRes] =
+  const [propertyRes, { data: lots }, { data: corners }, { data: media }, userRes] =
     await Promise.all([
       supabase
         .from("properties")
@@ -27,6 +27,8 @@ export default async function OverviewPage({
         )
         .eq("id", id)
         .maybeSingle(),
+      // Errors (e.g. parent_id not migrated on the hosted DB yet) leave lots
+      // null, which renders as "no lots" — the safe degradation.
       supabase
         .from("properties")
         .select(
@@ -45,6 +47,18 @@ export default async function OverviewPage({
         .eq("property_id", id),
       supabase.auth.getUser(),
     ]);
+  // Same deploy-before-db-push gap as the list page: retry without parent_id.
+  let property = propertyRes.data;
+  if (!property && propertyRes.error && /parent_id/.test(propertyRes.error.message)) {
+    const legacy = await supabase
+      .from("properties")
+      .select(
+        "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    property = legacy.data ? { ...legacy.data, parent_id: null } : null;
+  }
   if (!property) notFound();
 
   const { data: me } = await supabase
