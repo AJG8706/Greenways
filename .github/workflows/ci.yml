@@ -76,6 +76,15 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
+      - name: Print Playwright error contexts
+        # The report artifact isn't reachable from every network, so put the
+        # per-failure page snapshots straight into the job log.
+        if: failure()
+        run: |
+          find test-results -name 'error-context.md' | while read -r f; do
+            echo "===== $f ====="
+            cat "$f"
+          done
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

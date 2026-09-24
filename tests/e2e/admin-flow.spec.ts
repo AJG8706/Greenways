@@ -115,21 +115,17 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   await expect(page.getByTestId("lots-table").locator("tbody tr")).toHaveCount(10);
 
   // Bulk edit: one apply touches every lot; each stays editable on its own.
+  // A successful apply reloads the page — the flipped pills are the receipt.
   await page.getByTestId("bulk-sale-select").selectOption("under_contract");
   await page.getByTestId("bulk-apply").click();
-  await expect(page.getByTestId("bulk-result")).toContainText(/10 lots/i);
-  // First the DB (did the update apply?), then the UI (did the page refresh?)
-  // — so a failure names which layer broke.
+  await expect(page.getByTestId("lots-table").locator("tbody .pill-contract")).toHaveCount(10, {
+    timeout: 15_000,
+  });
   const { data: lotRows } = await adminApi()
     .from("properties")
     .select("sale_status")
     .like("slug", "e2e-warren-master-lot-%");
   expect(lotRows?.map((r) => r.sale_status)).toEqual(Array(10).fill("under_contract"));
-  // Generous timeout like the media suite's post-refresh assertions — the
-  // 1-worker CI runner re-renders this heavy page slowly.
-  await expect(page.getByTestId("lots-table").locator("tbody .pill-contract")).toHaveCount(10, {
-    timeout: 15_000,
-  });
 
   // A lot is a full property with corners of its own and a way back up.
   await page

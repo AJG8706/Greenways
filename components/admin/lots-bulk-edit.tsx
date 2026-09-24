@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { updateAllLots } from "@/app/admin/(console)/properties/actions";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -15,12 +14,11 @@ export function LotsBulkEdit({ masterId, lotCount }: { masterId: string; lotCoun
   const formRef = useRef<HTMLFormElement>(null);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, setPending] = useState(false);
-  const router = useRouter();
 
-  // Plain async handler with router.refresh() OUTSIDE any transition — the
-  // media console's uploadClip shape, the one flow whose E2E proves a
-  // server-rendered element repaints after a client-invoked action. A
-  // refresh() inside the action's startTransition gets dropped by the router.
+  // After a successful apply the whole page reloads: four CI rounds proved
+  // the DB updates but no soft refresh (revalidatePath or router.refresh, in
+  // or out of a transition) repaints this page's server-rendered Lots table.
+  // A reload is deterministic, and the flipped pills are the confirmation.
   async function apply() {
     const form = formRef.current;
     if (!form) return;
@@ -28,11 +26,11 @@ export function LotsBulkEdit({ masterId, lotCount }: { masterId: string; lotCoun
     setPending(true);
     try {
       const res = await updateAllLots(masterId, new FormData(form));
-      setResult({ ok: res.ok, message: res.message ?? (res.ok ? "Applied." : "Update failed") });
       if (res.ok) {
-        form.reset();
-        router.refresh();
+        window.location.reload();
+        return;
       }
+      setResult({ ok: false, message: res.message ?? "Update failed" });
     } finally {
       setPending(false);
     }
