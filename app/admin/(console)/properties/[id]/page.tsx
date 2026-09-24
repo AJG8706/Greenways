@@ -8,8 +8,7 @@ import { DeletePropertyButton } from "@/components/admin/delete-property-button"
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
 import { LotsBulkEdit } from "@/components/admin/lots-bulk-edit";
-import { Pill, statusTone } from "@/components/ui/pill";
-import { saleTone } from "@/components/admin/sale-status-select";
+import { Pill, saleTone, statusTone } from "@/components/ui/pill";
 
 // Overview tab: the assemble checklist, computed from real data.
 export default async function OverviewPage({
