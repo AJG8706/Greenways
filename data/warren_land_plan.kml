@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>gh.kml</name>
+	<LookAt>
+		<longitude>-94.35939635</longitude>
+		<latitude>30.58896752</latitude>
+		<altitude>0</altitude>
+		<heading>0</heading>
+		<tilt>0</tilt>
+		<range>871</range>
+	</LookAt>
+	<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.7.1155"></atom:link>
+	<Style id="Line_SUBDIVISION_BOUNDARY_6_ff00ff_03">
+		<BalloonStyle>
+			<text><![CDATA[<style>td{font-size:1.5em; } table{border-collapse:collapse; border:1px;}</style><b><font color="#eb6b0b" size="+5">$[name]</font></b><br /><br /><font size="+3">$[description]</font><br /><br /><table width="1000px" border="1px"><tr style="background-color:FFFFFF"><td width="20%">Type</td><td>$[Type]</td></tr><tr style="background-color:D8E6E6"><td width="20%">Number of Trackpoints</td><td>$[Number of Trackpoints]</td></tr></table></body>]]></text>
+		</BalloonStyle>
+		<LineStyle>
+			<color>ff00ffff</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>ffff00ff</color>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<StyleMap id="Line_SUBDIVISION_BOUNDARY_6_ff00ff_030">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_031</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_03</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="Line_SUBDIVISION_BOUNDARY_6_ff00ff_031">
+		<BalloonStyle>
+			<text><![CDATA[<style>td{font-size:1.5em; } table{border-collapse:collapse; border:1px;}</style><b><font color="#eb6b0b" size="+5">$[name]</font></b><br /><br /><font size="+3">$[description]</font><br /><br /><table width="1000px" border="1px"><tr style="background-color:FFFFFF"><td width="20%">Type</td><td>$[Type]</td></tr><tr style="background-color:D8E6E6"><td width="20%">Number of Trackpoints</td><td>$[Number of Trackpoints]</td></tr></table></body>]]></text>
+		</BalloonStyle>
+		<LineStyle>
+			<color>ff00ffff</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>ffff00ff</color>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+	<Folder>
+		<name>Shapes</name>
+		<Folder>
+			<name>SUBDIVISION BOUNDARY 6</name>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35869946</longitude>
+					<latitude>30.58582921</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>259</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>8</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35750825999999,30.58623565,0 -94.35746463,30.58567163,0 -94.35743549999999,30.58544333,0 -94.35978806,30.58542277,0 -94.35978806,30.58542277,0 -94.35982289,30.58557619,0 -94.35996342999999,30.5862142,0 -94.35750825999999,30.58623565,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35881922999999</longitude>
+					<latitude>30.58660393</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>266</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>6</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35756689999999,30.58699365,0 -94.35750825999999,30.58623565,0 -94.35996342999999,30.5862142,0 -94.35996342999999,30.5862142,0 -94.36013020000001,30.58697125,0 -94.35756689999999,30.58699365,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35892856</longitude>
+					<latitude>30.5873461</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>274</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>5</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35762316999998,30.58772095,0 -94.35756689999999,30.58699365,0 -94.36013020000001,30.58697125,0 -94.36029022,30.58769763999999,0 -94.35762316999998,30.58772095,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35903478</longitude>
+					<latitude>30.58805926</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>282</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>7</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35767731999999,30.58842087,0 -94.35762316999998,30.58772095,0 -94.36029022,30.58769763999999,0 -94.36029022,30.58769763999999,0 -94.36037073,30.58806308,0 -94.36044639000001,30.58839667,0 -94.35767731999999,30.58842087,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35913825999999</longitude>
+					<latitude>30.58874609</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>291</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>6</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35772951,30.5890955,0 -94.35767731999999,30.58842087,0 -94.36044639000001,30.58839667,0 -94.36044639000001,30.58839667,0 -94.36059921,30.58907042,0 -94.35772951,30.5890955,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35923818000001</longitude>
+					<latitude>30.58940884</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>299</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>6</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35777993999999,30.58974727,0 -94.35772951,30.5890955,0 -94.36059921,30.58907042,0 -94.36059921,30.58907042,0 -94.36074684999998,30.58972133,0 -94.35777993999999,30.58974727,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35933487</longitude>
+					<latitude>30.59004984</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>307</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>6</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35782876000002,30.59037835,0 -94.35777993999999,30.58974727,0 -94.36074684999998,30.58972133,0 -94.36074684999998,30.58972133,0 -94.36088981,30.59035159,0 -94.35782876000002,30.59037835,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35942863</longitude>
+					<latitude>30.59067109</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>315</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>6</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35787612999999,30.5909906,0 -94.35782876000002,30.59037835,0 -94.36088981,30.59035159,0 -94.36088981,30.59035159,0 -94.36102851,30.59096303,0 -94.35787612999999,30.5909906,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.35951821</longitude>
+					<latitude>30.59127446</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>322</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>7</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.35792219,30.59158588,0 -94.35787612999999,30.5909906,0 -94.36102851,30.59096303,0 -94.36102851,30.59096303,0 -94.36103278999998,30.59098191,0 -94.36116029,30.59155756,0 -94.35792219,30.59158588,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+			<Placemark>
+				<LookAt>
+					<longitude>-94.3596397</longitude>
+					<latitude>30.59203492</latitude>
+					<altitude>0</altitude>
+					<heading>0</heading>
+					<tilt>0</tilt>
+					<range>346</range>
+				</LookAt>
+				<styleUrl>#Line_SUBDIVISION_BOUNDARY_6_ff00ff_030</styleUrl>
+				<ExtendedData>
+					<Data name="Type">
+						<value>SUBDIVISION BOUNDARY 6</value>
+					</Data>
+					<Data name="Number of Trackpoints">
+						<value>8</value>
+					</Data>
+				</ExtendedData>
+				<Polygon>
+					<outerBoundaryIs>
+						<LinearRing>
+							<coordinates>
+								-94.36116029,30.59155756,0 -94.36135720999999,30.5924466,0 -94.35997747,30.59246737,0 -94.35802243999998,30.59251227,0 -94.35798323,30.59229155,0 -94.35793867,30.59179886,0 -94.35792219,30.59158588,0 -94.36116029,30.59155756,0 
+							</coordinates>
+						</LinearRing>
+					</outerBoundaryIs>
+				</Polygon>
+			</Placemark>
+		</Folder>
+	</Folder>
+</Document>
+</kml>

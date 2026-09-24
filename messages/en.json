@@ -164,7 +164,8 @@
       "welcomeBody": "That email link was your sign-in. No password, no account to set up, nothing else to confirm — this console is where the team builds each property's self-guided walkthrough.",
       "welcomeSignIn": "Next time: enter your work email at the sign-in page and tap the fresh link it sends. Links are personal — don't forward them.",
       "kml": "CAD-verified KML (optional)",
-      "kmlHint": "Attach the buyer-lot-map KML and the corners import in the same step — verify and lock them on the Corners tab."
+      "kmlHint": "Attach the buyer-lot-map KML and the corners import in the same step — verify and lock them on the Corners tab. A master KML with several lots creates the master plus one property per lot.",
+      "master": "Master tract"
     },
     "status": {
       "draft": "Draft",
@@ -412,6 +413,13 @@
       "removeConfirm": "Really remove?",
       "empty": "No documents yet.",
       "badType": "Only .kml and .pdf files belong here."
+    },
+    "subdivision": {
+      "title": "Subdivision KML",
+      "hint": "Master tract? Upload the surveyor's master KML here and each lot becomes its own property under this one. The file itself is filed under Documents.",
+      "upload": "Split master KML",
+      "uploading": "Splitting...",
+      "badType": "Only a .kml file can be split into lots."
     }
   }
 }

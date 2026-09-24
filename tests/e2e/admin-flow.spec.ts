@@ -3,6 +3,7 @@ import path from "node:path";
 import { ADMIN_EMAIL, adminApi, signIn } from "./helpers";
 
 const KML_PATH = path.join(__dirname, "../../data/lot4_gaines_acres.kml");
+const MASTER_KML_PATH = path.join(__dirname, "../../data/warren_land_plan.kml");
 const EDITOR_EMAIL = "e2e-editor@texasgreenerpastures.com";
 const E2E_PROPERTY = "E2E Broussard Lot 4";
 
@@ -95,6 +96,33 @@ test("assemble: KML attached at creation imports corners in the same step", asyn
   await expect(page.getByTestId("stage-verify")).toHaveText(/next/i);
   await expect(page.getByTestId("next-step")).toContainText(/lock/i);
 
+  await page.getByTestId("tab-corners").click();
+  await expect(page.getByTestId("corners-table").locator("tbody tr")).toHaveCount(4);
+});
+
+test("assemble: a master KML at creation splits into lot properties", async ({ page }) => {
+  await signIn(page, ADMIN_EMAIL);
+
+  await page.getByTestId("new-property").click();
+  await page.getByRole("textbox").first().fill("E2E Warren Master");
+  await page.getByTestId("new-property-kml").setInputFiles(MASTER_KML_PATH);
+  await page.getByTestId("create-property").click();
+  await expect(page.getByTestId("property-title")).toHaveText("E2E Warren Master");
+
+  // Master overview shows the lots table instead of the assembly checklist.
+  await expect(page.getByTestId("lots-card")).toBeVisible();
+  await expect(page.getByTestId("assembly-checklist")).toHaveCount(0);
+  await expect(page.getByTestId("lots-table").locator("tbody tr")).toHaveCount(10);
+
+  // A lot is a full property with corners of its own and a way back up.
+  await page
+    .getByTestId("lots-table")
+    .locator("tbody tr")
+    .first()
+    .getByRole("link")
+    .click();
+  await expect(page.getByTestId("lot-breadcrumb")).toContainText("E2E Warren Master");
+  await expect(page.getByTestId("assembly-checklist")).toBeVisible();
   await page.getByTestId("tab-corners").click();
   await expect(page.getByTestId("corners-table").locator("tbody tr")).toHaveCount(4);
 });
