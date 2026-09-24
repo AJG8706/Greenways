@@ -128,6 +128,7 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   expect(lotRows?.map((r) => r.sale_status)).toEqual(Array(10).fill("under_contract"));
 
   // A lot is a full property with corners of its own and a way back up.
+  const masterUrl = page.url();
   await page
     .getByTestId("lots-table")
     .locator("tbody tr")
@@ -140,7 +141,9 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   await expect(page.getByTestId("corners-table").locator("tbody tr")).toHaveCount(4);
 
   // Folder semantics: deleting the master deletes its lots with it.
-  await page.getByTestId("lot-breadcrumb").getByRole("link").click();
+  // (The breadcrumb lives on the Overview tab; we're on Corners — go direct.)
+  await page.goto(masterUrl);
+  await expect(page.getByTestId("lots-card")).toBeVisible();
   await page.getByTestId("delete-property").click();
   await page.getByTestId("delete-confirm-input").fill("E2E Warren Master");
   await page.getByTestId("delete-confirm").click();
