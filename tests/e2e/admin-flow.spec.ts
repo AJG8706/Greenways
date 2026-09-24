@@ -114,6 +114,14 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   await expect(page.getByTestId("assembly-checklist")).toHaveCount(0);
   await expect(page.getByTestId("lots-table").locator("tbody tr")).toHaveCount(10);
 
+  // Bulk edit: one apply touches every lot; each stays editable on its own.
+  await page.getByTestId("bulk-sale-select").selectOption("under_contract");
+  await page.getByTestId("bulk-apply").click();
+  await expect(page.getByTestId("bulk-result")).toContainText(/10 lots/i);
+  await expect(
+    page.getByTestId("lots-table").locator("tbody .pill-contract"),
+  ).toHaveCount(10);
+
   // A lot is a full property with corners of its own and a way back up.
   await page
     .getByTestId("lots-table")

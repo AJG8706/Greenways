@@ -18,7 +18,7 @@ import {
   testLotRing,
 } from "@/lib/geo/test-lot";
 import type { LatLng } from "@/lib/geo/types";
-import type { Json } from "@/lib/supabase/database.types";
+import type { Database, Json } from "@/lib/supabase/database.types";
 
 export type ActionResult = { ok: boolean; message?: string };
 
@@ -600,6 +600,52 @@ export async function placeTestLot(
 
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
+}
+
+/**
+ * Bulk edit shared attributes across every lot of a master. Empty fields
+ * are left unchanged; only the lots are touched, never the master row.
+ * Each attribute stays individually editable on the lot afterwards.
+ */
+export async function updateAllLots(
+  masterId: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  const address = String(formData.get("address") ?? "").trim();
+  const county = String(formData.get("county") ?? "").trim();
+  const sale = String(formData.get("sale_status") ?? "");
+  const demo = String(formData.get("demo_mode") ?? "");
+
+  const patch: Database["public"]["Tables"]["properties"]["Update"] = {};
+  if (address) patch.address = address;
+  if (county) patch.county = county;
+  if (sale === "available" || sale === "under_contract" || sale === "sold") {
+    patch.sale_status = sale;
+  }
+  if (demo === "on") patch.demo_mode = true;
+  if (demo === "off") patch.demo_mode = false;
+  if (Object.keys(patch).length === 0) {
+    return { ok: false, message: "Nothing to apply — set at least one field." };
+  }
+
+  const supabase = await createClient();
+  const { data: lots, error } = await supabase
+    .from("properties")
+    .update(patch)
+    .eq("parent_id", masterId)
+    .select("id");
+  if (error) return { ok: false, message: error.message };
+  if (!lots || lots.length === 0) return { ok: false, message: "This property has no lots." };
+
+  await supabase.rpc("write_audit", {
+    p_action: "lots_bulk_updated",
+    p_property_id: masterId,
+    p_detail: { fields: Object.keys(patch), lots: lots.length },
+  });
+  revalidatePath("/admin/properties");
+  // "layout" so each lot's tabs (Demo included) re-render off the new flags.
+  revalidatePath(`/admin/properties/${masterId}`, "layout");
+  return { ok: true, message: `Applied to ${lots.length} lots.` };
 }
 
 /** Notate the lot's sale state: available | under_contract | sold. */
