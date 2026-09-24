@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateAllLots } from "@/app/admin/(console)/properties/actions";
 import { Button } from "@/components/ui/button";
@@ -14,24 +14,28 @@ import { Input, Select } from "@/components/ui/input";
 export function LotsBulkEdit({ masterId, lotCount }: { masterId: string; lotCount: number }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const router = useRouter();
 
-  // Plain onClick + startTransition, the same shape as the corners editor's
-  // run() — the one mutation→UI path this repo's E2E has proven live-updates.
-  function apply() {
+  // Plain async handler with router.refresh() OUTSIDE any transition — the
+  // media console's uploadClip shape, the one flow whose E2E proves a
+  // server-rendered element repaints after a client-invoked action. A
+  // refresh() inside the action's startTransition gets dropped by the router.
+  async function apply() {
     const form = formRef.current;
     if (!form) return;
-    const formData = new FormData(form);
     setResult(null);
-    startTransition(async () => {
-      const res = await updateAllLots(masterId, formData);
+    setPending(true);
+    try {
+      const res = await updateAllLots(masterId, new FormData(form));
       setResult({ ok: res.ok, message: res.message ?? (res.ok ? "Applied." : "Update failed") });
       if (res.ok) {
         form.reset();
         router.refresh();
       }
-    });
+    } finally {
+      setPending(false);
+    }
   }
 
   return (

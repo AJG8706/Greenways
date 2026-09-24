@@ -125,9 +125,11 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
     .select("sale_status")
     .like("slug", "e2e-warren-master-lot-%");
   expect(lotRows?.map((r) => r.sale_status)).toEqual(Array(10).fill("under_contract"));
-  await expect(
-    page.getByTestId("lots-table").locator("tbody .pill-contract"),
-  ).toHaveCount(10);
+  // Generous timeout like the media suite's post-refresh assertions — the
+  // 1-worker CI runner re-renders this heavy page slowly.
+  await expect(page.getByTestId("lots-table").locator("tbody .pill-contract")).toHaveCount(10, {
+    timeout: 15_000,
+  });
 
   // A lot is a full property with corners of its own and a way back up.
   await page
