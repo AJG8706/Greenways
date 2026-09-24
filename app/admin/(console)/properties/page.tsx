@@ -20,11 +20,31 @@ export default async function PropertiesPage({
   const { data: properties, error } = await supabase
     .from("properties")
     .select(
-      "id, slug, name, county, status, sale_status, demo_mode, test_lot, updated_at, corners(id, locked)",
+      "id, slug, name, county, status, sale_status, demo_mode, test_lot, parent_id, created_at, updated_at, corners(id, locked)",
     )
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
+
+  // Masters group their lots: lots render indented under the master row, in
+  // creation (plat) order. A lot whose master is gone falls back to top level.
+  const knownIds = new Set(properties.map((p) => p.id));
+  const topLevel = properties.filter((p) => !p.parent_id || !knownIds.has(p.parent_id));
+  const lotsByMaster = new Map<string, typeof properties>();
+  for (const p of properties) {
+    if (p.parent_id && knownIds.has(p.parent_id)) {
+      const list = lotsByMaster.get(p.parent_id) ?? [];
+      list.push(p);
+      lotsByMaster.set(p.parent_id, list);
+    }
+  }
+  for (const list of lotsByMaster.values()) {
+    list.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }
+  const rows = topLevel.flatMap((p) => [
+    { p, isLot: false },
+    ...(lotsByMaster.get(p.id) ?? []).map((lot) => ({ p: lot, isLot: true })),
+  ]);
 
   return (
     <div className="stack" style={{ gap: "var(--gw-s-6)" }}>
@@ -61,15 +81,29 @@ export default async function PropertiesPage({
               </tr>
             </thead>
             <tbody>
-              {properties.map((p) => {
+              {rows.map(({ p, isLot }) => {
                 const corners = p.corners ?? [];
                 const locked = corners.filter((c) => c.locked).length;
+                const isMaster = lotsByMaster.has(p.id);
                 return (
-                  <tr key={p.id}>
+                  <tr key={p.id} data-lot={isLot ? "true" : undefined}>
                     <td>
-                      <Link href={`/admin/properties/${p.id}`} className="t-body-m">
-                        {i18nText(p.name).en || p.slug}
-                      </Link>
+                      <span
+                        className="row"
+                        style={{ gap: 6, paddingLeft: isLot ? "var(--gw-s-5)" : 0 }}
+                      >
+                        {isLot ? (
+                          <span aria-hidden className="muted">
+                            ↳
+                          </span>
+                        ) : null}
+                        <Link href={`/admin/properties/${p.id}`} className="t-body-m">
+                          {i18nText(p.name).en || p.slug}
+                        </Link>
+                        {isMaster ? (
+                          <Pill tone="draft">{t("master")}</Pill>
+                        ) : null}
+                      </span>
                     </td>
                     <td>{p.county ?? "—"}</td>
                     <td className="num">

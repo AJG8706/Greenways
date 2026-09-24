@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { parseKml } from "@/lib/kml";
+import { parseKml, parseKmlMulti } from "@/lib/kml";
+import { splitSubdivision, type SubdivisionLot } from "@/lib/geo/subdivision";
 import {
   areaAcres,
   defaultEntrance,
@@ -45,17 +46,25 @@ export async function createProperty(
 
   // Assemble flow: an attached KML seeds the geometry in the same step.
   // Parse before inserting anything so a bad file never leaves a bare row.
+  // A multi-polygon (master tract) KML creates the master AND its lots.
   const kmlFile = formData.get("kml");
   let parsedKml: ReturnType<typeof parseKml> | null = null;
+  let subdivisionLots: SubdivisionLot[] | null = null;
   let kmlName = "";
   if (kmlFile instanceof File && kmlFile.size > 0) {
     if (testLot) {
       return { ok: false, message: "A test lot takes a generated square, not a KML" };
     }
-    if (kmlFile.size > 1024 * 1024) return { ok: false, message: "KML too large (max 1 MB)" };
+    if (kmlFile.size > 2 * 1024 * 1024) return { ok: false, message: "KML too large (max 2 MB)" };
     try {
-      parsedKml = parseKml(await kmlFile.text());
+      const xml = await kmlFile.text();
+      const multi = parseKmlMulti(xml);
       kmlName = kmlFile.name;
+      if (multi.polygons.length > 1) {
+        subdivisionLots = splitSubdivision(multi.polygons);
+      } else {
+        parsedKml = parseKml(xml);
+      }
     } catch (e) {
       return { ok: false, message: e instanceof Error ? e.message : "Could not parse KML" };
     }
@@ -91,7 +100,156 @@ export async function createProperty(
       return { ok: false, message: `Property created, but KML import failed: ${applied.message}` };
     }
   }
+
+  if (subdivisionLots) {
+    const created = await createLotsUnderMaster(
+      supabase,
+      { id: data.id, slug, nameEn, address: address || null, county: county || null },
+      subdivisionLots,
+      kmlFile instanceof File ? kmlFile : null,
+      kmlName,
+    );
+    if (!created.ok) {
+      return { ok: false, message: `Master created, but lot split failed: ${created.message}` };
+    }
+  }
   redirect(`/admin/properties/${data.id}`);
+}
+
+/**
+ * Master-tract KML on an existing property: split the file into lots as
+ * children of the master. The master keeps no geometry of its own — it is
+ * the folder; each lot walks through the assembly pipeline individually.
+ */
+export async function importSubdivisionKml(
+  masterId: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  const file = formData.get("kml");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Choose a .kml file" };
+  if (file.size > 2 * 1024 * 1024) return { ok: false, message: "KML too large (max 2 MB)" };
+
+  let lots: SubdivisionLot[];
+  try {
+    const multi = parseKmlMulti(await file.text());
+    if (multi.polygons.length < 2) {
+      return {
+        ok: false,
+        message: "This KML has a single boundary — import it on the Corners tab instead.",
+      };
+    }
+    lots = splitSubdivision(multi.polygons);
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Could not parse KML" };
+  }
+
+  const supabase = await createClient();
+  const { data: master, error: masterError } = await supabase
+    .from("properties")
+    .select("id, slug, name, address, county, parent_id")
+    .eq("id", masterId)
+    .maybeSingle();
+  if (masterError) return { ok: false, message: masterError.message };
+  if (!master) return { ok: false, message: "Property not found" };
+  if (master.parent_id) {
+    return { ok: false, message: "This property is a lot — masters hold the subdivision KML." };
+  }
+  const { count: existing } = await supabase
+    .from("properties")
+    .select("id", { count: "exact", head: true })
+    .eq("parent_id", masterId);
+  if ((existing ?? 0) > 0) {
+    return {
+      ok: false,
+      message: "This master already has lots. Delete them first to re-import the subdivision.",
+    };
+  }
+
+  const nameEn =
+    typeof master.name === "object" && master.name !== null
+      ? String((master.name as Record<string, unknown>).en ?? master.slug)
+      : master.slug;
+  const result = await createLotsUnderMaster(
+    supabase,
+    { id: master.id, slug: master.slug, nameEn, address: master.address, county: master.county },
+    lots,
+    file,
+    file.name,
+  );
+  if (result.ok) revalidatePath(`/admin/properties/${masterId}`);
+  return result;
+}
+
+/** Create child lot properties (+ geometry) and file the master KML in Documents. */
+async function createLotsUnderMaster(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  master: { id: string; slug: string; nameEn: string; address: string | null; county: string | null },
+  lots: SubdivisionLot[],
+  file: File | null,
+  fileName: string,
+): Promise<ActionResult> {
+  for (const lot of lots) {
+    const lotLabel = lot.name?.trim() || `Lot ${lot.n}`;
+    const { data: child, error } = await supabase
+      .from("properties")
+      .insert({
+        slug: `${master.slug}-lot-${lot.n}`,
+        name: { en: `${master.nameEn} — ${lotLabel}`, es: "" },
+        address: master.address,
+        county: master.county,
+        parent_id: master.id,
+      })
+      .select("id")
+      .single();
+    if (error) {
+      return {
+        ok: false,
+        message:
+          error.code === "23505"
+            ? `Lot ${lot.n}: slug ${master.slug}-lot-${lot.n} already exists`
+            : `Lot ${lot.n}: ${error.message}`,
+      };
+    }
+    const applied = await applyParsedKml(
+      supabase,
+      child.id,
+      { name: `lot ${lot.n}`, description: null, ring: lot.ring, point: null },
+      fileName,
+    );
+    if (!applied.ok) return { ok: false, message: `Lot ${lot.n}: ${applied.message}` };
+  }
+
+  // Master totals + audit; the source file lands in the master's Documents.
+  const totalAcres = Math.round(lots.reduce((s, l) => s + l.acres, 0) * 100) / 100;
+  await supabase.from("properties").update({ acres: totalAcres }).eq("id", master.id);
+  if (file) {
+    const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const { error: upError } = await supabase.storage
+      .from("property-photos")
+      .upload(`${master.id}/documents/${safeName}`, await file.arrayBuffer(), {
+        upsert: true,
+        contentType: "application/vnd.google-earth.kml+xml",
+      });
+    if (!upError) {
+      await supabase.rpc("write_audit", {
+        p_action: "document_uploaded",
+        p_property_id: master.id,
+        p_detail: { path: `${master.id}/documents/${safeName}` },
+      });
+    }
+  }
+  await supabase.rpc("write_audit", {
+    p_action: "subdivision_imported",
+    p_property_id: master.id,
+    p_detail: {
+      file: fileName,
+      lots: lots.length,
+      acres: totalAcres,
+      pruned: lots.reduce((s, l) => s + l.prunedVertices, 0),
+    },
+  });
+  revalidatePath("/admin/properties");
+  return { ok: true };
 }
 
 /** Apply parsed KML geometry to a property (shared by create + Corners tab). */

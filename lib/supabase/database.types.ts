@@ -323,6 +323,7 @@ export type Database = {
           name: Json;
           address: string | null;
           county: string | null;
+          parent_id: string | null;
           acres: number | null;
           entrance_lat: number | null;
           media_brief: Json;
@@ -347,6 +348,7 @@ export type Database = {
           name?: Json;
           address?: string | null;
           county?: string | null;
+          parent_id?: string | null;
           acres?: number | null;
           entrance_lat?: number | null;
           media_brief?: Json;
@@ -371,6 +373,7 @@ export type Database = {
           name?: Json;
           address?: string | null;
           county?: string | null;
+          parent_id?: string | null;
           acres?: number | null;
           entrance_lat?: number | null;
           media_brief?: Json;

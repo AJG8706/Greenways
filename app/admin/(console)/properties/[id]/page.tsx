@@ -6,6 +6,8 @@ import { i18nText } from "@/lib/i18n/text";
 import { assemblyStages } from "@/lib/assembly";
 import { DeletePropertyButton } from "@/components/admin/delete-property-button";
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
+import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
+import { Pill, statusTone } from "@/components/ui/pill";
 
 // Overview tab: the assemble checklist, computed from real data.
 export default async function OverviewPage({
@@ -16,15 +18,22 @@ export default async function OverviewPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: property }, { data: corners }, { data: media }, userRes] =
+  const [{ data: property }, { data: lots }, { data: corners }, { data: media }, userRes] =
     await Promise.all([
       supabase
         .from("properties")
         .select(
-          "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot",
+          "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot, parent_id",
         )
         .eq("id", id)
         .maybeSingle(),
+      supabase
+        .from("properties")
+        .select(
+          "id, slug, name, acres, status, es_reviewed, media_brief, corners(n, locked, approach_photo, stake_photo), media_assets(slot, type, status)",
+        )
+        .eq("parent_id", id)
+        .order("created_at"),
       supabase
         .from("corners")
         .select("id, n, locked, approach_photo, stake_photo, stake")
@@ -142,8 +151,99 @@ export default async function OverviewPage({
 
   const nextMeta = next ? stageMeta[next] : null;
 
+  // Master/lot hierarchy: a master's Overview shows its lots instead of the
+  // assembly checklist — assembly happens per lot.
+  const lotRows = (lots ?? []).map((lot) => {
+    const lotCorners = lot.corners ?? [];
+    const lotMedia = lot.media_assets ?? [];
+    const { next: lotNext } = assemblyStages({
+      corners: lotCorners.map((c) => ({
+        n: c.n,
+        locked: c.locked,
+        approachPhoto: Boolean(c.approach_photo),
+        stakePhoto: Boolean(c.stake_photo),
+      })),
+      captureSlots: lotMedia.filter((m) => m.type === "capture").map((m) => m.slot),
+      briefSaved: lot.media_brief !== null && Object.keys(lot.media_brief as object).length > 0,
+      approvedGeneratedSlots: lotMedia
+        .filter((m) => m.type !== "capture" && m.status === "approved")
+        .map((m) => m.slot),
+      esReviewed: lot.es_reviewed,
+      published: lot.status === "published",
+    });
+    return {
+      id: lot.id,
+      name: i18nText(lot.name).en || lot.slug,
+      acres: lot.acres,
+      status: lot.status,
+      next: lotNext,
+    };
+  });
+  const isMaster = lotRows.length > 0;
+
+  const parent = property.parent_id
+    ? (
+        await supabase
+          .from("properties")
+          .select("id, name, slug")
+          .eq("id", property.parent_id)
+          .maybeSingle()
+      ).data
+    : null;
+
   return (
     <div className="grid gap-5 lg:grid-cols-2">
+      {parent ? (
+        <p className="t-small muted lg:col-span-2" data-testid="lot-breadcrumb">
+          Part of{" "}
+          <Link href={`/admin/properties/${parent.id}`}>
+            {i18nText(parent.name).en || parent.slug}
+          </Link>
+        </p>
+      ) : null}
+      {isMaster ? (
+        <section className="card lg:col-span-2" data-testid="lots-card">
+          <div className="stack">
+            <h2>Lots</h2>
+            <p className="t-small muted">
+              This is a master tract — each lot below is its own property and walks through
+              assembly individually.
+            </p>
+            <div className="table-wrap">
+              <table data-testid="lots-table">
+                <thead>
+                  <tr>
+                    <th>Lot</th>
+                    <th>Acres</th>
+                    <th>Status</th>
+                    <th>Next step</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lotRows.map((lot) => (
+                    <tr key={lot.id}>
+                      <td>
+                        <Link href={`/admin/properties/${lot.id}`} className="t-body-m">
+                          {lot.name}
+                        </Link>
+                      </td>
+                      <td className="num">{lot.acres ?? "—"}</td>
+                      <td>
+                        <Pill tone={statusTone[lot.status] ?? "draft"}>{t(`status.${lot.status}`)}</Pill>
+                      </td>
+                      <td className="t-small muted">
+                        {lot.next ? stageMeta[lot.next].label : "Walk is live"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      ) : null}
+      {!isMaster ? (
+      <>
       <section className="card" data-testid="assembly-checklist">
         <div className="stack">
           <h2>Assembly</h2>
@@ -193,6 +293,22 @@ export default async function OverviewPage({
           </Link>
         </div>
       </section>
+      </>
+      ) : null}
+      {!isMaster && !property.parent_id && !property.test_lot ? (
+        <div className="lg:col-span-2">
+          <SubdivisionImportCard
+            propertyId={id}
+            labels={{
+              title: t("subdivision.title"),
+              hint: t("subdivision.hint"),
+              upload: t("subdivision.upload"),
+              uploading: t("subdivision.uploading"),
+              badType: t("subdivision.badType"),
+            }}
+          />
+        </div>
+      ) : null}
       <div className="lg:col-span-2">
         <DocumentsCard
           propertyId={id}
