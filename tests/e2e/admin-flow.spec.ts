@@ -138,6 +138,19 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   await expect(page.getByTestId("assembly-checklist")).toBeVisible();
   await page.getByTestId("tab-corners").click();
   await expect(page.getByTestId("corners-table").locator("tbody tr")).toHaveCount(4);
+
+  // Folder semantics: deleting the master deletes its lots with it.
+  await page.getByTestId("lot-breadcrumb").getByRole("link").click();
+  await page.getByTestId("delete-property").click();
+  await page.getByTestId("delete-confirm-input").fill("E2E Warren Master");
+  await page.getByTestId("delete-confirm").click();
+  await expect(page).toHaveURL(/\/admin\/properties$/);
+  await expect(page.getByTestId("properties-table")).not.toContainText("E2E Warren Master");
+  const { data: leftovers } = await adminApi()
+    .from("properties")
+    .select("id")
+    .like("slug", "e2e-warren-master%");
+  expect(leftovers).toEqual([]);
 });
 
 test("photos tab records a property capture (upload twice = replace)", async ({ page }) => {

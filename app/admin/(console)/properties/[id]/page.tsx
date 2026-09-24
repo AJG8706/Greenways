@@ -367,6 +367,7 @@ export default async function OverviewPage({
             <DeletePropertyButton
               propertyId={id}
               propertyName={i18nText(property.name).en || "this property"}
+              lotCount={lotRows.length}
             />
           </div>
         </section>

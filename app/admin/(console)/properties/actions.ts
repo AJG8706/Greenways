@@ -686,6 +686,23 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
   if (findError) return { ok: false, message: findError.message };
   if (!property) return { ok: false, message: "Property not found" };
 
+  // A master takes its lots with it — deleting the folder deletes the
+  // contents. The DB's on-delete-set-null stays as the backstop only.
+  const { data: lots } = await supabase
+    .from("properties")
+    .select("id, slug")
+    .eq("parent_id", propertyId);
+  if (lots && lots.length > 0) {
+    const { count: lotCount, error: lotError } = await supabase
+      .from("properties")
+      .delete({ count: "exact" })
+      .eq("parent_id", propertyId);
+    if (lotError) return { ok: false, message: lotError.message };
+    if (!lotCount) {
+      return { ok: false, message: "Only an admin can delete a property" };
+    }
+  }
+
   const { count, error } = await supabase
     .from("properties")
     .delete({ count: "exact" })
@@ -700,9 +717,11 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const admin = createAdminClient();
     const paths: string[] = [];
-    for (const folder of [`${propertyId}/corners`, `${propertyId}/property`]) {
-      const { data: files } = await admin.storage.from("property-photos").list(folder);
-      for (const f of files ?? []) paths.push(`${folder}/${f.name}`);
+    for (const id of [propertyId, ...(lots ?? []).map((l) => l.id)]) {
+      for (const folder of [`${id}/corners`, `${id}/property`, `${id}/documents`, `${id}/uploads`]) {
+        const { data: files } = await admin.storage.from("property-photos").list(folder);
+        for (const f of files ?? []) paths.push(`${folder}/${f.name}`);
+      }
     }
     if (paths.length > 0) {
       await admin.storage.from("property-photos").remove(paths);
@@ -714,7 +733,10 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
   await supabase.rpc("write_audit", {
     p_action: "property_deleted",
     p_property_id: propertyId,
-    p_detail: { slug: property.slug },
+    p_detail: {
+      slug: property.slug,
+      lots: (lots ?? []).length > 0 ? (lots ?? []).map((l) => l.slug) : undefined,
+    },
   });
 
   revalidatePath("/admin/properties");
