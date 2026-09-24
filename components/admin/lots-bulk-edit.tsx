@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { updateAllLots } from "@/app/admin/(console)/properties/actions";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
@@ -14,13 +15,19 @@ export function LotsBulkEdit({ masterId, lotCount }: { masterId: string; lotCoun
   const formRef = useRef<HTMLFormElement>(null);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   function submit(formData: FormData) {
     setResult(null);
     startTransition(async () => {
       const res = await updateAllLots(masterId, formData);
       setResult({ ok: res.ok, message: res.message ?? (res.ok ? "Applied." : "Update failed") });
-      if (res.ok) formRef.current?.reset();
+      if (res.ok) {
+        formRef.current?.reset();
+        // Same pattern as DocumentsCard/SubdivisionImportCard: the Lots table
+        // is server-rendered, so pull the fresh tree explicitly.
+        router.refresh();
+      }
     });
   }
 
