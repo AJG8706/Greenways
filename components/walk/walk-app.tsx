@@ -511,6 +511,16 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           <Button size="lg" className="btn-block" onClick={begin} data-testid="start-walking">
             {t("welcome.start")}
           </Button>
+          {config.master ? (
+            <a
+              className="t-small underline"
+              style={{ color: "var(--link)" }}
+              href={`/walk/${config.master.slug}`}
+              data-testid="other-lots-link"
+            >
+              {t("welcome.otherLots")}
+            </a>
+          ) : null}
           <p className="t-small muted">
             {t.rich("terms.agree", {
               link: (chunks) => (

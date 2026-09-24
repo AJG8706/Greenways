@@ -24,7 +24,8 @@
     "start": "Empezar a caminar",
     "preview": "Ver el recorrido desde casa",
     "loadHint": "Funciona mejor en el terreno. Abra este enlace antes de salir del pavimento para que cargue todo.",
-    "saved": "Guardado sin conexión · {mb} MB"
+    "saved": "Guardado sin conexión · {mb} MB",
+    "otherLots": "Ver otros lotes"
   },
   "terms": {
     "agree": "Al comenzar, usted acepta los <link>términos del recorrido</link>.",
@@ -124,5 +125,15 @@
     "s2": "Camine hasta que diga que llegó. Busque la estaca que describe la tarjeta.",
     "s3": "Toque Siguiente esquina. El límite del lote está en el mapa si quiere verlo.",
     "s4": "Si la flecha parece equivocada, gire despacio en un círculo para reiniciar la brújula."
+  },
+  "lots": {
+    "eyebrow": "Recorrido autoguiado",
+    "title": "Elige tu lote",
+    "body": "Cada lote tiene su propio recorrido guiado con estacas en las esquinas.",
+    "acres": "{n} acres",
+    "available": "Disponible",
+    "underContract": "En contrato",
+    "sold": "Vendido",
+    "empty": "Aún no hay lotes abiertos para recorrer. Vuelve pronto."
   }
 }

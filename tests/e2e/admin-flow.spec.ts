@@ -108,6 +108,7 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   await page.getByTestId("new-property-kml").setInputFiles(MASTER_KML_PATH);
   await page.getByTestId("create-property").click();
   await expect(page.getByTestId("property-title")).toHaveText("E2E Warren Master");
+  const masterUrl = page.url();
 
   // Master overview shows the lots table instead of the assembly checklist.
   await expect(page.getByTestId("lots-card")).toBeVisible();
@@ -127,8 +128,27 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
     .like("slug", "e2e-warren-master-lot-%");
   expect(lotRows?.map((r) => r.sale_status)).toEqual(Array(10).fill("under_contract"));
 
+  // Properties list: masters collapse; lots expand on the chevron.
+  await page.goto("/admin/properties");
+  const toggle = page.locator('[data-testid^="toggle-master-"]');
+  await expect(toggle).toHaveCount(1);
+  await expect(page.locator('tr[data-lot="true"]')).toHaveCount(0);
+  await toggle.click();
+  await expect(page.locator('tr[data-lot="true"]')).toHaveCount(10);
+
+  // Master Publish tab: link + QR that open the buyer lot picker.
+  await page.goto(masterUrl);
+  await page.getByTestId("tab-publish").click();
+  await expect(page.getByTestId("master-publish-hint")).toBeVisible();
+  await expect(page.getByTestId("qr-image")).toBeVisible();
+
+  // Buyer side: the master link is the lot picker. Nothing is published or
+  // locked yet, so buyers get the empty state (unpublished never shows).
+  await page.goto("/walk/e2e-warren-master");
+  await expect(page.getByTestId("lots-empty")).toBeVisible();
+
   // A lot is a full property with corners of its own and a way back up.
-  const masterUrl = page.url();
+  await page.goto(masterUrl);
   await page
     .getByTestId("lots-table")
     .locator("tbody tr")

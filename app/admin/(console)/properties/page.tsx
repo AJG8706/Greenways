@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
-import { Pill, saleTone, statusTone } from "@/components/ui/pill";
+import { saleTone, statusTone } from "@/components/ui/pill";
+import { PropertiesTable, type ListRow } from "@/components/admin/properties-table";
 import { NewPropertyDialog } from "./new-property-dialog";
 
 export default async function PropertiesPage({
@@ -55,10 +55,32 @@ export default async function PropertiesPage({
   for (const list of lotsByMaster.values()) {
     list.sort((a, b) => a.created_at.localeCompare(b.created_at));
   }
-  const rows = topLevel.flatMap((p) => [
-    { p, isLot: false },
-    ...(lotsByMaster.get(p.id) ?? []).map((lot) => ({ p: lot, isLot: true })),
-  ]);
+
+  // Everything the client table needs, resolved server-side (labels included)
+  // so the collapsible table stays a dumb renderer.
+  const toRow = (p: (typeof properties)[number]): ListRow => {
+    const corners = p.corners ?? [];
+    const locked = corners.filter((c) => c.locked).length;
+    return {
+      id: p.id,
+      name: i18nText(p.name).en || p.slug,
+      county: p.county,
+      cornersLabel: corners.length > 0 ? `${locked}/${corners.length}` : "—",
+      statusTone: statusTone[p.status] ?? "draft",
+      statusLabel: tStatus(p.status),
+      modeDemo: p.demo_mode,
+      modeLabel: p.demo_mode ? t("modeDemo") : t("modeLive"),
+      testLotLabel: p.test_lot ? t("modeTestLot") : null,
+      saleTone: saleTone[p.sale_status],
+      saleLabel: tSale(p.sale_status === "under_contract" ? "underContract" : p.sale_status),
+      updatedLabel: new Date(p.updated_at).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      lots: (lotsByMaster.get(p.id) ?? []).map(toRow),
+    };
+  };
+  const rows = topLevel.map(toRow);
 
   return (
     <div className="stack" style={{ gap: "var(--gw-s-6)" }}>
@@ -94,69 +116,7 @@ export default async function PropertiesPage({
                 <th>{t("cols.updated")}</th>
               </tr>
             </thead>
-            <tbody>
-              {rows.map(({ p, isLot }) => {
-                const corners = p.corners ?? [];
-                const locked = corners.filter((c) => c.locked).length;
-                const isMaster = lotsByMaster.has(p.id);
-                return (
-                  <tr key={p.id} data-lot={isLot ? "true" : undefined}>
-                    <td>
-                      <span
-                        className="row"
-                        style={{ gap: 6, paddingLeft: isLot ? "var(--gw-s-5)" : 0 }}
-                      >
-                        {isLot ? (
-                          <span aria-hidden className="muted">
-                            ↳
-                          </span>
-                        ) : null}
-                        <Link href={`/admin/properties/${p.id}`} className="t-body-m">
-                          {i18nText(p.name).en || p.slug}
-                        </Link>
-                        {isMaster ? (
-                          <Pill tone="draft">{t("master")}</Pill>
-                        ) : null}
-                      </span>
-                    </td>
-                    <td>{p.county ?? "—"}</td>
-                    <td className="num">
-                      {corners.length > 0 ? `${locked}/${corners.length}` : "—"}
-                    </td>
-                    <td>
-                      <Pill tone={statusTone[p.status] ?? "draft"}>
-                        {tStatus(p.status)}
-                      </Pill>
-                    </td>
-                    <td>
-                      <Pill tone={p.demo_mode ? "working" : "available"}>
-                        {p.demo_mode ? t("modeDemo") : t("modeLive")}
-                      </Pill>
-                      {p.test_lot ? (
-                        <Pill tone="draft" className="ml-2">
-                          {t("modeTestLot")}
-                        </Pill>
-                      ) : null}
-                    </td>
-                    <td>
-                      <Pill tone={saleTone[p.sale_status]}>
-                        {tSale(
-                          p.sale_status === "under_contract"
-                            ? "underContract"
-                            : p.sale_status,
-                        )}
-                      </Pill>
-                    </td>
-                    <td className="num">
-                      {new Date(p.updated_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
+            <PropertiesTable rows={rows} labels={{ master: t("master"), lotCount: t("lots") }} />
           </table>
         </div>
       )}

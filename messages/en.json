@@ -24,7 +24,8 @@
     "start": "Start walking",
     "preview": "Preview the walk from home",
     "loadHint": "Best on site. Open this link before you leave pavement so everything loads.",
-    "saved": "Saved for offline · {mb} MB"
+    "saved": "Saved for offline · {mb} MB",
+    "otherLots": "See other lots"
   },
   "terms": {
     "agree": "By starting, you agree to the <link>walk terms</link>.",
@@ -165,7 +166,8 @@
       "welcomeSignIn": "Next time: enter your work email at the sign-in page and tap the fresh link it sends. Links are personal — don't forward them.",
       "kml": "CAD-verified KML (optional)",
       "kmlHint": "Attach the buyer-lot-map KML and the corners import in the same step — verify and lock them on the Corners tab. A master KML with several lots creates the master plus one property per lot.",
-      "master": "Master tract"
+      "master": "Master tract",
+      "lots": "lots"
     },
     "status": {
       "draft": "Draft",
@@ -338,7 +340,9 @@
         "unlink": "Unpin",
         "linked": "Pinned to",
         "synced": "Synced."
-      }
+      },
+      "masterHint": "Master tract with {n} lots. This link and QR open the lot picker - buyers choose a lot and walk it. Only lots that are individually published ever appear; publish each lot from its own Publish tab.",
+      "masterLink": "Master link + QR (lot picker)"
     },
     "analytics": {
       "title": "Walk analytics",
@@ -421,5 +425,15 @@
       "uploading": "Splitting...",
       "badType": "Only a .kml file can be split into lots."
     }
+  },
+  "lots": {
+    "eyebrow": "Self-guided walk",
+    "title": "Choose your lot",
+    "body": "Each lot has its own guided walk with marked corner stakes.",
+    "acres": "{n} acres",
+    "available": "Available",
+    "underContract": "Under contract",
+    "sold": "Sold",
+    "empty": "No lots are open for walking yet. Check back soon."
   }
 }

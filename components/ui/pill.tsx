@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type PillTone =
+export type PillTone =
   | "draft"
   | "working"
   | "review"

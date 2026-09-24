@@ -28,6 +28,8 @@ export type WalkConfig = {
   declinationDeg: number;
   /** Demo scenario when launched from the admin Demo tab; null in the field. */
   demo: (WalkerScenario & { key: string }) | null;
+  /** Set when this lot belongs to a master tract: link back to the lot picker. */
+  master: { slug: string } | null;
   /** Valid prospect-link token from the URL; sessions attribute to it. */
   linkToken: string | null;
   /** Browser key for the Google satellite mini-map; drawn fallback when null. */
