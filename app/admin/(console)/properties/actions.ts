@@ -643,8 +643,9 @@ export async function updateAllLots(
     p_detail: { fields: Object.keys(patch), lots: lots.length },
   });
   revalidatePath("/admin/properties");
-  // "layout" so each lot's tabs (Demo included) re-render off the new flags.
-  revalidatePath(`/admin/properties/${masterId}`, "layout");
+  revalidatePath(`/admin/properties/${masterId}`);
+  // Each lot's own pages pick up the new flags on navigation.
+  for (const lot of lots) revalidatePath(`/admin/properties/${lot.id}`);
   return { ok: true, message: `Applied to ${lots.length} lots.` };
 }
 

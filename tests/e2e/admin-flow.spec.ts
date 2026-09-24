@@ -118,6 +118,13 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   await page.getByTestId("bulk-sale-select").selectOption("under_contract");
   await page.getByTestId("bulk-apply").click();
   await expect(page.getByTestId("bulk-result")).toContainText(/10 lots/i);
+  // First the DB (did the update apply?), then the UI (did the page refresh?)
+  // — so a failure names which layer broke.
+  const { data: lotRows } = await adminApi()
+    .from("properties")
+    .select("sale_status")
+    .like("slug", "e2e-warren-master-lot-%");
+  expect(lotRows?.map((r) => r.sale_status)).toEqual(Array(10).fill("under_contract"));
   await expect(
     page.getByTestId("lots-table").locator("tbody .pill-contract"),
   ).toHaveCount(10);

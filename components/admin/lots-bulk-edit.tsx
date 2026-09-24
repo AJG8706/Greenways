@@ -17,15 +17,18 @@ export function LotsBulkEdit({ masterId, lotCount }: { masterId: string; lotCoun
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
-  function submit(formData: FormData) {
+  // Plain onClick + startTransition, the same shape as the corners editor's
+  // run() — the one mutation→UI path this repo's E2E has proven live-updates.
+  function apply() {
+    const form = formRef.current;
+    if (!form) return;
+    const formData = new FormData(form);
     setResult(null);
     startTransition(async () => {
       const res = await updateAllLots(masterId, formData);
       setResult({ ok: res.ok, message: res.message ?? (res.ok ? "Applied." : "Update failed") });
       if (res.ok) {
-        formRef.current?.reset();
-        // Same pattern as DocumentsCard/SubdivisionImportCard: the Lots table
-        // is server-rendered, so pull the fresh tree explicitly.
+        form.reset();
         router.refresh();
       }
     });
@@ -40,7 +43,7 @@ export function LotsBulkEdit({ masterId, lotCount }: { masterId: string; lotCoun
           is&rdquo; don&rsquo;t change anything; each lot stays individually editable.
         </p>
       </div>
-      <form ref={formRef} action={submit} className="stack" style={{ gap: "var(--gw-s-3)" }}>
+      <form ref={formRef} className="stack" style={{ gap: "var(--gw-s-3)" }}>
         <div className="row" style={{ gap: "var(--gw-s-3)", flexWrap: "wrap" }}>
           <label className="field grow">
             Address
@@ -70,7 +73,7 @@ export function LotsBulkEdit({ masterId, lotCount }: { masterId: string; lotCoun
             </Select>
           </label>
           <div className="field" style={{ justifyContent: "flex-end" }}>
-            <Button type="submit" disabled={pending} data-testid="bulk-apply">
+            <Button type="button" onClick={apply} disabled={pending} data-testid="bulk-apply">
               {pending ? "Applying..." : "Apply to all lots"}
             </Button>
           </div>
