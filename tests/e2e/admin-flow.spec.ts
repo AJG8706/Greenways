@@ -136,16 +136,36 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   await toggle.click();
   await expect(page.locator('tr[data-lot="true"]')).toHaveCount(10);
 
-  // Master Publish tab: link + QR that open the buyer lot picker.
+  // Master Publish tab: link + QR + publish-all (nothing ready yet) + sign.
   await page.goto(masterUrl);
   await page.getByTestId("tab-publish").click();
   await expect(page.getByTestId("master-publish-hint")).toBeVisible();
   await expect(page.getByTestId("qr-image")).toBeVisible();
+  await expect(page.getByTestId("master-publish-tally")).toContainText("0 of 10");
+  await expect(page.getByTestId("publish-all-lots")).toBeDisabled();
+  await expect(page.getByTestId("gate-sign-link")).toBeVisible();
+
+  // Printable gate sign renders the big QR for the picker.
+  await page.goto(`/admin/sign/${masterUrl.split("/").pop()}`);
+  await expect(page.getByTestId("sign-qr")).toBeVisible();
+  await expect(page.getByTestId("print-sign")).toBeVisible();
+
+  // Master Photos tab: the bulk intake replaces the per-lot checklist.
+  await page.goto(masterUrl);
+  await page.getByTestId("tab-photos").click();
+  await expect(page.getByTestId("bulk-photo-intake")).toBeVisible();
+
+  // Master Analytics tab: per-lot rollup, one row per lot + totals.
+  await page.getByTestId("tab-analytics").click();
+  await expect(page.getByTestId("master-analytics").locator("tbody tr")).toHaveCount(11);
 
   // Buyer side: the master link is the lot picker. Nothing is published or
-  // locked yet, so buyers get the empty state (unpublished never shows).
+  // locked yet, so buyers get the empty state (unpublished never shows) —
+  // and the scarcity line counts sale status across ALL platted lots
+  // (the bulk edit above put all 10 under contract).
   await page.goto("/walk/e2e-warren-master");
   await expect(page.getByTestId("lots-empty")).toBeVisible();
+  await expect(page.getByTestId("lots-remaining")).toContainText("0 of 10");
 
   // A lot is a full property with corners of its own and a way back up.
   await page.goto(masterUrl);

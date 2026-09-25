@@ -21,10 +21,14 @@ export async function LotPicker({
   masterName,
   locale,
   lots,
+  totalLots,
+  availableLots,
 }: {
   masterName: I18nText;
   locale: string;
   lots: PickerLot[];
+  totalLots: number;
+  availableLots: number;
 }) {
   const t = await getTranslations("lots");
   const name = locale === "es" && masterName.es ? masterName.es : masterName.en;
@@ -54,6 +58,15 @@ export async function LotPicker({
         {t("title")}
       </h2>
       <p className="muted text-center">{t("body")}</p>
+      {totalLots > 0 ? (
+        <p
+          className="t-body-m text-center"
+          style={{ color: "var(--accent-text)" }}
+          data-testid="lots-remaining"
+        >
+          {t("remaining", { available: availableLots, total: totalLots })}
+        </p>
+      ) : null}
 
       {lots.length === 0 ? (
         <p className="muted text-center" data-testid="lots-empty">

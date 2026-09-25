@@ -12,6 +12,7 @@ import {
   PublishToggle,
   RevokeButton,
 } from "@/components/admin/publish-console";
+import { PublishAllButton } from "@/components/admin/publish-all-button";
 
 export default async function PublishPage({
   params,
@@ -49,19 +50,37 @@ export default async function PublishPage({
   const qrDataUri = `data:image/svg+xml;base64,${Buffer.from(qrSvg).toString("base64")}`;
 
   // Master tract: its link/QR opens the buyer lot picker, which only ever
-  // lists lots that are individually published. Nothing to publish here —
-  // the per-lot publish gates stay the only way anything reaches a buyer.
-  const { count: lotCount } = await supabase
+  // lists lots that are individually published. The publish-all button
+  // sequences each ready lot through the normal per-lot gates.
+  const { data: masterLots } = await supabase
     .from("properties")
-    .select("id", { count: "exact", head: true })
+    .select("id, status, es_reviewed, test_lot, corners(locked)")
     .eq("parent_id", id);
-  if ((lotCount ?? 0) > 0) {
+  if ((masterLots ?? []).length > 0) {
+    const lotCount = masterLots!.length;
+    const publishedCount = masterLots!.filter((l) => l.status === "published").length;
+    const readyCount = masterLots!.filter((l) => {
+      const corners = l.corners ?? [];
+      return (
+        l.status !== "published" &&
+        l.es_reviewed &&
+        !l.test_lot &&
+        corners.length >= 3 &&
+        corners.every((c) => c.locked)
+      );
+    }).length;
     return (
       <div className="stack" style={{ gap: "var(--gw-s-5)" }}>
-        <h2>{t("title")}</h2>
-        <div className="banner" role="status" data-testid="master-publish-hint">
-          {t("masterHint", { n: lotCount ?? 0 })}
+        <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <h2>{t("title")}</h2>
+          <span className="pill pill-draft" data-testid="master-publish-tally">
+            {t("masterTally", { published: publishedCount, total: lotCount })}
+          </span>
         </div>
+        <div className="banner" role="status" data-testid="master-publish-hint">
+          {t("masterHint", { n: lotCount })}
+        </div>
+        <PublishAllButton masterId={id} readyCount={readyCount} />
         <section className="card stack" style={{ gap: "var(--gw-s-3)" }}>
           <h3>{t("masterLink")}</h3>
           <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -75,6 +94,15 @@ export default async function PublishPage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={qrDataUri} alt={t("qr")} width={160} height={160} data-testid="qr-image" />
           </div>
+          <a
+            href={`/admin/sign/${id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="t-body-m"
+            data-testid="gate-sign-link"
+          >
+            {t("gateSign")} →
+          </a>
         </section>
       </div>
     );
@@ -128,6 +156,15 @@ export default async function PublishPage({
             <img src={qrDataUri} alt={t("qr")} width={160} height={160} data-testid="qr-image" />
             <a href={qrDataUri} download={`${property.slug}-qr.svg`} className="t-small">
               {t("download")}
+            </a>
+            <a
+              href={`/admin/sign/${id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="t-small"
+              data-testid="gate-sign-link"
+            >
+              {t("gateSign")} →
             </a>
           </div>
           <div className="stack grow" style={{ gap: 6, minWidth: 240, flex: "1 1 240px" }}>

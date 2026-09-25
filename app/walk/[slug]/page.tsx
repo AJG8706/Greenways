@@ -59,7 +59,13 @@ export default async function WalkPage({
         saleStatus: lot.sale_status,
       }));
     return (
-      <LotPicker masterName={i18nText(property.name)} locale={await getLocale()} lots={lots} />
+      <LotPicker
+        masterName={i18nText(property.name)}
+        locale={await getLocale()}
+        lots={lots}
+        totalLots={children.length}
+        availableLots={children.filter((l) => l.sale_status === "available").length}
+      />
     );
   }
 

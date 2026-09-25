@@ -342,7 +342,9 @@
         "synced": "Synced."
       },
       "masterHint": "Master tract with {n} lots. This link and QR open the lot picker - buyers choose a lot and walk it. Only lots that are individually published ever appear; publish each lot from its own Publish tab.",
-      "masterLink": "Master link + QR (lot picker)"
+      "masterLink": "Master link + QR (lot picker)",
+      "masterTally": "{published} of {total} lots published",
+      "gateSign": "Gate sign (print / save as PDF)"
     },
     "analytics": {
       "title": "Walk analytics",
@@ -361,7 +363,10 @@
       "prospectTag": "Prospect",
       "publicTag": "Public",
       "cornersShort": "corners",
-      "completedTag": "Completed"
+      "completedTag": "Completed",
+      "perLotHint": "Master tract - buyer numbers rolled up per lot. Click a lot for its full breakdown.",
+      "lotCol": "Lot",
+      "totalRow": "All lots"
     },
     "demo": {
       "title": "Demo & QA",
@@ -434,6 +439,12 @@
     "available": "Available",
     "underContract": "Under contract",
     "sold": "Sold",
-    "empty": "No lots are open for walking yet. Check back soon."
+    "empty": "No lots are open for walking yet. Check back soon.",
+    "remaining": "{available} of {total} lots still available"
+  },
+  "sign": {
+    "scanLots": "Scan to walk the lots",
+    "scanWalk": "Scan to walk this land",
+    "hint": "Your phone guides you to every corner stake. No app, no account."
   }
 }

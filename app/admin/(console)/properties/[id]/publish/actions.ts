@@ -64,6 +64,58 @@ export async function publishProperty(propertyId: string): Promise<ActionResult>
     : { ok: true, message: `Published. Monday sync failed: ${monday.message}` };
 }
 
+/**
+ * Master helper: publish every lot that passes its gates in one action.
+ * Each lot goes through publishProperty (DB publish-gate trigger, public
+ * link, Monday sync) — this only sequences them and reports the tally.
+ */
+export async function publishAllReadyLots(masterId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data: lots, error } = await supabase
+    .from("properties")
+    .select("id, slug, status, es_reviewed, test_lot, corners(locked)")
+    .eq("parent_id", masterId);
+  if (error) return { ok: false, message: error.message };
+  if (!lots || lots.length === 0) return { ok: false, message: "This property has no lots." };
+
+  const ready = lots.filter((l) => {
+    const corners = l.corners ?? [];
+    return (
+      l.status !== "published" &&
+      l.es_reviewed &&
+      !l.test_lot &&
+      corners.length >= 3 &&
+      corners.every((c) => c.locked)
+    );
+  });
+  if (ready.length === 0) {
+    return {
+      ok: false,
+      message:
+        "No lots are ready — a lot publishes once its corners are locked and its Spanish is reviewed.",
+    };
+  }
+
+  let published = 0;
+  const failures: string[] = [];
+  for (const lot of ready) {
+    const res = await publishProperty(lot.id);
+    if (res.ok) published += 1;
+    else failures.push(`${lot.slug}: ${res.message ?? "failed"}`);
+  }
+  await supabase.rpc("write_audit", {
+    p_action: "lots_bulk_published",
+    p_property_id: masterId,
+    p_detail: { published, ready: ready.length, lots: lots.length },
+  });
+  revalidatePath(`/admin/properties/${masterId}`);
+  revalidatePath("/admin/properties");
+  if (failures.length > 0) {
+    return { ok: false, message: `Published ${published}. Failed — ${failures.join("; ")}` };
+  }
+  return { ok: true, message: `Published ${published} lots.` };
+}
+
 export async function unpublishProperty(propertyId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase
