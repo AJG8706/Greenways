@@ -16,6 +16,7 @@ const ACTION_LABELS: Record<string, string> = {
   kml_imported: "Imported KML geometry",
   subdivision_imported: "Split a subdivision KML into lots",
   lots_bulk_updated: "Bulk-edited all lots of a master",
+  lots_bulk_published: "Published all ready lots of a master",
   entrance_moved: "Moved the entrance",
   corner_locked: "Locked a corner (CAD-verified)",
   corner_unlocked: "Unlocked a corner",

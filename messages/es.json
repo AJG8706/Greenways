@@ -134,6 +134,12 @@
     "available": "Disponible",
     "underContract": "En contrato",
     "sold": "Vendido",
-    "empty": "Aún no hay lotes abiertos para recorrer. Vuelve pronto."
+    "empty": "Aún no hay lotes abiertos para recorrer. Vuelve pronto.",
+    "remaining": "{available} de {total} lotes aún disponibles"
+  },
+  "sign": {
+    "scanLots": "Escanea para recorrer los lotes",
+    "scanWalk": "Escanea para recorrer este terreno",
+    "hint": "Tu teléfono te guía a cada estaca de esquina. Sin app, sin cuenta."
   }
 }

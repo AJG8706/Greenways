@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { i18nText } from "@/lib/i18n/text";
 import { PROPERTY_PHOTO_SLOTS } from "@/lib/photos";
 import { PhotoChecklist, type PhotoItem } from "@/components/admin/photo-checklist";
+import { BulkPhotoIntake, type IntakeLot } from "@/components/admin/bulk-photo-intake";
 
 export default async function PhotosPage({
   params,
@@ -27,6 +29,30 @@ export default async function PhotosPage({
         .eq("type", "capture"),
     ]);
   if (!property) notFound();
+
+  // Master tract: one intake screen routes a whole field session's photos
+  // to the right lot + slot instead of ten separate upload sessions.
+  const { data: children } = await supabase
+    .from("properties")
+    .select("id, slug, name, corners(id, n)")
+    .eq("parent_id", id)
+    .order("created_at");
+  if ((children ?? []).length > 0) {
+    const lots: IntakeLot[] = children!.map((lot, i) => ({
+      id: lot.id,
+      n: i + 1,
+      label: i18nText(lot.name).en || lot.slug,
+      corners: (lot.corners ?? [])
+        .map((c) => ({ id: c.id, n: c.n }))
+        .sort((a, b) => a.n - b.n),
+    }));
+    return (
+      <div className="stack" style={{ gap: "var(--gw-s-5)" }}>
+        <h2>Photos — all lots</h2>
+        <BulkPhotoIntake lots={lots} />
+      </div>
+    );
+  }
 
   const t = await getTranslations("admin.photos");
   const tCommon = await getTranslations("common");
