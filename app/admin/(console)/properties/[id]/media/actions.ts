@@ -471,8 +471,15 @@ export async function removeAsset(propertyId: string, assetId: string): Promise<
     return { ok: false, message: "Capture photos are replaced from the Photos tab" };
   }
 
-  const { error } = await supabase.from("media_assets").delete().eq("id", assetId);
+  const { count, error } = await supabase
+    .from("media_assets")
+    .delete({ count: "exact" })
+    .eq("id", assetId);
   if (error) return { ok: false, message: error.message };
+  // RLS makes deletes admin-only: for an editor the delete matches 0 rows.
+  // Never touch the storage file unless the row actually went — otherwise a
+  // non-admin could break an approved buyer-facing clip.
+  if (!count) return { ok: false, message: "Only an admin can remove a clip" };
   // Best-effort storage cleanup; the row is the source of truth.
   await supabase.storage.from("property-photos").remove([asset.storage_path]);
 

@@ -33,7 +33,9 @@ way to break the admin console.
 - **Vercel env vars** (Vercel → greenways → Settings → Environment
   Variables): Supabase URL + anon key + service-role key,
   `NEXT_PUBLIC_SITE_URL`, `HIGGSFIELD_API_KEY` (`id:secret`),
-  `GOOGLE_MAPS_KEY`, `ANTHROPIC_API_KEY`, `N8N_WEBHOOK_SECRET`,
+  `NEXT_PUBLIC_GOOGLE_MAPS_KEY` (browser Maps key — referrer-restrict it
+  to the production domains and API-restrict to Maps JavaScript API in
+  Google Cloud; it ships to buyers by design), `ANTHROPIC_API_KEY`, `N8N_WEBHOOK_SECRET`,
   `MONDAY_API_TOKEN`, optional `GA4_MEASUREMENT_ID`/`GA4_API_SECRET`,
   `NEXT_PUBLIC_MAPBOX_TOKEN`, `NEXT_PUBLIC_SENTRY_DSN`. Change → redeploy.
 - **GitHub Actions secrets** (repo → Settings → Secrets → Actions):

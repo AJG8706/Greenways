@@ -61,14 +61,42 @@ export async function POST(request: NextRequest) {
 
   const supabase = createAdminClient();
   let sessionId = body.sessionId ?? null;
+  // The device that decides demo classification: the session's STORED value,
+  // never the request's claim (an attacker could otherwise hide traffic).
+  let effectiveDevice = device;
+
+  // Security: a caller-supplied session id must actually belong to this
+  // slug's property — otherwise anyone who learns an id could append
+  // events to (or force-end) someone else's session.
+  if (sessionId) {
+    const { data: owned } = await supabase
+      .from("walk_sessions")
+      .select("id, device, walk_links!inner(properties!inner(slug))")
+      .eq("id", sessionId)
+      .maybeSingle();
+    const ownerSlug = (
+      owned as { walk_links?: { properties?: { slug?: string } } } | null
+    )?.walk_links?.properties?.slug;
+    if (!owned || ownerSlug !== body.slug) {
+      return NextResponse.json({ error: "unknown session" }, { status: 404 });
+    }
+    effectiveDevice = owned.device;
+  }
 
   if (!sessionId) {
     const { data: property } = await supabase
       .from("properties")
-      .select("id")
+      .select("id, demo_mode")
       .eq("slug", body.slug)
       .maybeSingle();
     if (!property) return NextResponse.json({ error: "unknown walk" }, { status: 404 });
+
+    // A "demo:" device is honored only on properties actually in demo mode —
+    // otherwise fabricated anonymous traffic could classify itself as demo
+    // and hide from the buyer numbers (or vice versa).
+    const sessionDevice =
+      device?.startsWith("demo:") && !property.demo_mode ? device.slice("demo:".length) : device;
+    effectiveDevice = sessionDevice;
 
     // Prospect token attributes the session; anything else falls back to
     // the property's stable public link (get-or-created).
@@ -108,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     const { data: session, error: sessionError } = await supabase
       .from("walk_sessions")
-      .insert({ link_id: linkId, locale, device })
+      .insert({ link_id: linkId, locale, device: sessionDevice })
       .select("id")
       .single();
     if (sessionError || !session) {
@@ -117,14 +145,23 @@ export async function POST(request: NextRequest) {
     sessionId = session.id;
   }
 
-  const { error } = await supabase.from("walk_events").insert(
+  // Cap per-event payloads: the aggregator only reads small fields, and an
+  // unbounded blob here is just storage bloat from an anonymous endpoint.
+  const boundedData = (d: unknown): unknown => {
+    try {
+      return JSON.stringify(d ?? {}).length <= 2048 ? (d ?? {}) : {};
+    } catch {
+      return {};
+    }
+  };
+  const { error: insertError } = await supabase.from("walk_events").insert(
     events.map((e) => ({
       session_id: sessionId,
       name: e.name!,
-      data: (e.data ?? {}) as never,
+      data: boundedData(e.data) as never,
     })),
   );
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
 
   if (events.some((e) => e.name === "walk_completed")) {
     await supabase
@@ -141,7 +178,7 @@ export async function POST(request: NextRequest) {
       slug: body.slug,
       sessionId,
       locale,
-      demo: (device ?? "").startsWith("demo:"),
+      demo: (effectiveDevice ?? "").startsWith("demo:"),
     },
   );
 

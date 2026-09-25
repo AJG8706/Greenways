@@ -180,8 +180,10 @@ export default async function WalkPage({
     demo: demoScenario,
     master,
     linkToken,
-    googleKey:
-      process.env.GOOGLE_MAPS_KEY ?? process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? null,
+    // Browser Maps keys are public by nature — only ship the one named as
+    // such, so a server-named key can never leak into the client bundle.
+    // Restrict it by HTTP referrer + Maps JavaScript API in Google Cloud.
+    googleKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? null,
     media: {
       intro: clipUrl("intro"),
       entrance: clipUrl("entrance"),

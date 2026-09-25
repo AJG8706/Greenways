@@ -187,7 +187,18 @@ const realProvider: MediaProvider = {
   },
 
   async status(job) {
-    const url = job.statusUrl ?? `${BASE_URL}/requests/${job.requestId}/status`;
+    // Security: status_url is stored in a member-updatable row. Only follow
+    // it when it still points at the vendor — otherwise a tampered row would
+    // make this poll send the API key (authHeaders) to an attacker's host.
+    // Off-origin or unparsable URLs fall back to the id-derived endpoint.
+    let url = `${BASE_URL}/requests/${job.requestId}/status`;
+    if (job.statusUrl) {
+      try {
+        if (new URL(job.statusUrl).origin === BASE_URL) url = job.statusUrl;
+      } catch {
+        // keep the derived URL
+      }
+    }
     const res = await fetch(url, { headers: authHeaders(), cache: "no-store" });
     const body = (await res.json().catch(() => ({}))) as Parameters<
       typeof parseStatusResponse
@@ -200,6 +211,9 @@ const realProvider: MediaProvider = {
   },
 
   async fetchResult(url) {
+    // Result URLs come from the vendor's status response; still refuse
+    // anything but https so a bad payload can't point this at file:/http.
+    if (!url.startsWith("https://")) throw new Error("Result URL must be https");
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`Result download failed (${res.status})`);
     return {
