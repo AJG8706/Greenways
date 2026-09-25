@@ -6,6 +6,7 @@ import type { WalkConfig } from "@/lib/walk/types";
 import { SCENARIOS } from "@/lib/hud/walker";
 import { WalkApp } from "@/components/walk/walk-app";
 import { LotPicker, type PickerLot } from "@/components/walk/lot-picker";
+import { isTeamViewer } from "@/lib/auth/team";
 
 export const dynamic = "force-dynamic";
 
@@ -44,12 +45,16 @@ export default async function WalkPage({
     .eq("parent_id", property.id)
     .order("created_at");
   if (children && children.length > 0) {
+    // Unpublished lots stay invisible to the public even in demo/test mode:
+    // drafts are reachable only by a signed-in team member.
+    const team = await isTeamViewer();
     const lots: PickerLot[] = children
       .filter((lot) => {
         const corners = lot.corners ?? [];
         const walkable =
           corners.length >= 3 && corners.every((c) => c.locked) && lot.entrance_lat !== null;
-        const visible = lot.status === "published" || lot.demo_mode || lot.test_lot;
+        const visible =
+          lot.status === "published" || ((lot.demo_mode || lot.test_lot) && team);
         return walkable && visible;
       })
       .map((lot) => ({
@@ -82,9 +87,11 @@ export default async function WalkPage({
   if (!corners || corners.length < 3 || corners.some((c) => !c.locked)) notFound();
 
   // Phase 5 gate: a listing serves buyers only once published. Demo-mode
-  // properties and generated test lots stay reachable for the team.
-  if (property.status !== "published" && !property.demo_mode && !property.test_lot) {
-    notFound();
+  // properties and generated test lots stay reachable — but only for a
+  // signed-in team member; a leaked draft link resolves to nothing.
+  if (property.status !== "published") {
+    const teamPreview = (property.demo_mode || property.test_lot) && (await isTeamViewer());
+    if (!teamPreview) notFound();
   }
 
   // Prospect token: attribution only (publish status is the gate). Invalid,

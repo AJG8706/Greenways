@@ -3,13 +3,14 @@
 import { createClient } from "@/lib/supabase/server";
 
 export type SignInState = {
-  status: "idle" | "sent" | "notInvited" | "error";
+  status: "idle" | "sent" | "error";
   message?: string;
 };
 
-// Magic-link sign-in, invite-only. The friendly check runs first so the form
-// can say "ask an admin to invite you"; the database trigger on auth.users is
-// the hard gate even if this check is bypassed.
+// Magic-link sign-in, invite-only. The response never reveals whether an
+// email is on the team (no enumeration oracle): unknown emails get the same
+// "if there's an account…" answer and simply no email arrives. The database
+// trigger on auth.users is the hard gate even if this check is bypassed.
 export async function signInWithMagicLink(
   _prev: SignInState,
   formData: FormData,
@@ -27,7 +28,7 @@ export async function signInWithMagicLink(
     check_email: email,
   });
   if (rpcError) return { status: "error", message: rpcError.message };
-  if (!invited) return { status: "notInvited" };
+  if (!invited) return { status: "sent" };
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const { error } = await supabase.auth.signInWithOtp({

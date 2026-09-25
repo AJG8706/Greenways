@@ -35,11 +35,6 @@ export function SignInForm() {
           placeholder="you@texasgreenerpastures.com"
         />
       </label>
-      {state.status === "notInvited" ? (
-        <div className="banner banner-warn" role="alert">
-          {t("notInvited")}
-        </div>
-      ) : null}
       {state.status === "error" ? (
         <div className="banner banner-error" role="alert">
           {state.message}
