@@ -153,8 +153,12 @@ test("analytics tab aggregates buyer walks and separates demo", async ({ page, r
   });
   expect(first.status()).toBe(200);
 
-  // A demo session: never counted as a buyer walk.
-  await request.post("/api/walk-events", {
+  // A demo session: never counted as a buyer walk. Demo sessions only exist
+  // on demo-enabled properties — the ingest strips a spoofed "demo:" prefix
+  // anywhere else — so demo mode is on while this session starts.
+  const supabase = adminApi();
+  await supabase.from("properties").update({ demo_mode: true }).eq("id", propertyId);
+  const demoRes = await request.post("/api/walk-events", {
     data: {
       slug: SLUG,
       locale: "es",
@@ -162,6 +166,8 @@ test("analytics tab aggregates buyer walks and separates demo", async ({ page, r
       events: [{ name: "walk_opened", ts: 1 }],
     },
   });
+  expect(demoRes.status()).toBe(200);
+  await supabase.from("properties").update({ demo_mode: false }).eq("id", propertyId);
 
   await signIn(page, ADMIN_EMAIL);
   await page.goto(`/admin/properties/${propertyId}`);
