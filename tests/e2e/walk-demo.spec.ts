@@ -1,9 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-import { adminApi } from "./helpers";
+import { ADMIN_EMAIL, adminApi, signIn } from "./helpers";
 
 /**
  * Simulated-walk E2E (Gate 3 acceptance: demo mode plays a full walk).
- * Uses the seeded broussard-lot-4 property; no sign-in — buyers are anonymous.
+ * Uses the seeded broussard-lot-4 property, published by the local seed;
+ * no sign-in — buyers are anonymous. Draft walks are team-only (see the
+ * draft-gate test at the bottom).
  * The demo source runs the same filters/arrival/boundary code path as the
  * field walk; "jump to arrival" exercises the teleport re-seed + arrival.
  */
@@ -150,13 +152,15 @@ test("PWA assets serve: manifest and service worker", async ({ page, request }) 
  * Demo is opt-in per property. The Hillmont test lot ships with demo_mode off
  * (it exists to exercise real device GPS), so `?demo=` must not put a
  * simulated walker on it — the guarantee that a stray demo link can never
- * replace a real walker's position with a simulation.
+ * replace a real walker's position with a simulation. It's an unpublished
+ * test lot, so a team session is what reaches it at all.
  */
 test("a property with demo mode off ignores ?demo= and asks for real GPS", async ({
   page,
   context,
 }) => {
   await context.clearPermissions();
+  await signIn(page, ADMIN_EMAIL);
   await page.goto("/walk/hillmont-gps-test?demo=clean");
   await expect(page.getByTestId("start-walking")).toBeVisible();
   await page.getByTestId("start-walking").click();
@@ -166,4 +170,44 @@ test("a property with demo mode off ignores ?demo= and asks for real GPS", async
   await expect(page.getByTestId("allow-sensors")).toBeVisible();
   await expect(page.getByTestId("demo-tray-toggle")).toHaveCount(0);
   await expect(page.getByTestId("hud-arrow")).toHaveCount(0);
+});
+
+/**
+ * Drafts are team-only, demo mode or not: an anonymous request to an
+ * unpublished walk resolves to nothing, and the exact same URL serves once
+ * a team member's session cookie is present.
+ */
+test("a draft walk is team-only: anonymous 404, signed-in team 200", async ({ page }) => {
+  const supabase = adminApi();
+  const SLUG = "e2e-draft-gate";
+  await supabase.from("properties").delete().eq("slug", SLUG);
+  const { data: property, error } = await supabase
+    .from("properties")
+    .insert({
+      slug: SLUG,
+      name: { en: "E2E Draft Gate", es: "Lote borrador" },
+      county: "Jefferson",
+      entrance_lat: 30.1745,
+      entrance_lng: -94.196,
+      demo_mode: true,
+    })
+    .select("id")
+    .single();
+  expect(error).toBeNull();
+  await supabase.from("corners").insert(
+    [
+      { n: 1, lat: 30.1745, lng: -94.1965 },
+      { n: 2, lat: 30.1745, lng: -94.1955 },
+      { n: 3, lat: 30.1738, lng: -94.1955 },
+    ].map((c) => ({ property_id: property!.id, ...c, locked: true })),
+  );
+
+  const anonymous = await page.request.get(`/walk/${SLUG}`);
+  expect(anonymous.status()).toBe(404);
+
+  await signIn(page, ADMIN_EMAIL);
+  const team = await page.request.get(`/walk/${SLUG}`);
+  expect(team.status()).toBe(200);
+
+  await supabase.from("properties").delete().eq("slug", SLUG);
 });

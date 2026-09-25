@@ -28,23 +28,30 @@ export default async function AdminLayout({
   const t = await getTranslations("admin.nav");
   const tTeam = await getTranslations("admin.team");
 
+  // One markup tree, two shapes: a sticky top bar with a horizontally
+  // scrollable nav on phones (spur-of-the-moment edits from the field), the
+  // familiar sidebar from lg up.
   return (
-    <div data-surface="light" className="gw grid min-h-dvh grid-cols-[240px_1fr]">
+    <div data-surface="light" className="gw min-h-dvh lg:grid lg:grid-cols-[240px_1fr]">
       <aside
         data-surface="walk"
-        className="gw flex min-w-0 flex-col gap-6 overflow-hidden p-5"
+        className="gw sticky top-0 z-40 flex min-w-0 flex-row items-center gap-4 overflow-x-auto px-4 py-2 lg:static lg:h-full lg:flex-col lg:items-stretch lg:gap-6 lg:overflow-hidden lg:p-5"
         style={{ background: "var(--gw-pine-2)", color: "var(--gw-prairie-cream)" }}
       >
-        <Link href="/admin/properties" className="no-underline">
+        <Link href="/admin/properties" className="shrink-0 no-underline">
           <Image
             src="/brand/greenways-logo-horizontal-reversed.svg"
             alt="Greenways"
             width={170}
             height={40}
             priority
+            className="h-auto w-[120px] lg:w-[170px]"
           />
         </Link>
-        <nav className="stack" style={{ gap: "var(--gw-s-2)" }}>
+        <nav
+          className="flex flex-row items-center lg:flex-col lg:items-stretch"
+          style={{ gap: "var(--gw-s-2)" }}
+        >
           <SidebarLink href="/admin/properties" icon={<Home size={18} />}>
             {t("properties")}
           </SidebarLink>
@@ -59,9 +66,12 @@ export default async function AdminLayout({
           <SidebarLink href="/admin/settings" icon={<Settings size={18} />}>
             {t("settings")}
           </SidebarLink>
+          <span className="ml-2 shrink-0 lg:hidden">
+            <SignOutButton label={t("signOut")} />
+          </span>
         </nav>
         <div
-          className="mt-auto panel gw-break-anywhere"
+          className="mt-auto hidden panel gw-break-anywhere lg:block"
           style={{ background: "var(--gw-pine-3)", padding: "var(--gw-s-4)" }}
         >
           <div className="stack gw-break-anywhere" style={{ gap: "var(--gw-s-2)" }}>
@@ -88,7 +98,7 @@ export default async function AdminLayout({
           </div>
         </div>
       </aside>
-      <main className="min-w-0 p-8">{children}</main>
+      <main className="min-w-0 p-4 pb-16 sm:p-6 lg:p-8">{children}</main>
     </div>
   );
 }
@@ -105,7 +115,7 @@ function SidebarLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-2 px-3 py-2 no-underline"
+      className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-2 px-3 py-2 no-underline lg:gap-3"
       style={{ color: "var(--gw-prairie-cream)" }}
     >
       {icon}

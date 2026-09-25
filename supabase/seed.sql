@@ -81,3 +81,10 @@ from public.properties p,
   ('boundary', '{"speedFtS": 4.5, "gpsNoiseFt": 6,  "compassErrDeg": 0, "wanderAtCorner": 3}'::jsonb)
 ) as s(name, config)
 where p.slug = 'broussard-lot-4';
+
+-- Local stacks serve the pilot as a published walk: drafts are team-only
+-- (the anonymous demo E2E and the Lighthouse budget both hit this URL with
+-- no session). The corners above are locked, so the publish gate passes.
+update public.properties
+set es_reviewed = true, status = 'published'
+where slug = 'broussard-lot-4';

@@ -58,6 +58,8 @@ export type CornersLabels = {
   useMyLocation: string;
   locating: string;
   noGeolocation: string;
+  setFromGps: string;
+  gpsCaptured: string;
 };
 
 /**
@@ -97,6 +99,8 @@ export function CornersEditor({
   const [entranceMode, setEntranceMode] = useState(false);
   const [testLotMode, setTestLotMode] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [gpsBusy, setGpsBusy] = useState<number | null>(null);
+  const [gpsNote, setGpsNote] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -176,6 +180,37 @@ export function CornersEditor({
         setError(labels.noGeolocation);
       },
       { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
+
+  /**
+   * Stand on the stake, press the button: the corner takes the device's
+   * position. Same pre-lock rule as dragging a pin — the server rejects a
+   * locked corner — and the reported accuracy is shown so a coarse fix is
+   * never mistaken for a surveyed point.
+   */
+  function setCornerFromGps(c: CornerRow) {
+    setError(null);
+    setGpsNote(null);
+    if (!navigator.geolocation) {
+      setError(labels.noGeolocation);
+      return;
+    }
+    setGpsBusy(c.n);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsBusy(null);
+        const ft = Math.round(pos.coords.accuracy * 3.28084);
+        setGpsNote(`C${c.n} ${labels.gpsCaptured} · ±${ft} ft`);
+        run(() =>
+          moveCorner(c.id, propertyId, pos.coords.latitude, pos.coords.longitude),
+        );
+      },
+      () => {
+        setGpsBusy(null);
+        setError(labels.noGeolocation);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   }
 
@@ -314,6 +349,12 @@ export function CornersEditor({
         </div>
       ) : null}
 
+      {gpsNote ? (
+        <div className="banner" role="status" data-testid="gps-note">
+          {gpsNote}
+        </div>
+      ) : null}
+
       <div className="grid gap-5 xl:grid-cols-[minmax(320px,1fr)_minmax(420px,1fr)]">
         <section className="card" style={{ padding: "var(--gw-s-3)" }}>
           {hasGeometry ? (
@@ -407,6 +448,18 @@ export function CornersEditor({
                     <td>
                       <strong>C{c.n}</strong>
                       {c.name.en ? <p className="t-small muted">{c.name.en}</p> : null}
+                      {!c.locked ? (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-secondary mt-1"
+                          disabled={pending || gpsBusy !== null}
+                          onClick={() => setCornerFromGps(c)}
+                          data-testid={`gps-corner-${c.n}`}
+                        >
+                          <LocateFixed size={14} />{" "}
+                          {gpsBusy === c.n ? labels.locating : labels.setFromGps}
+                        </button>
+                      ) : null}
                     </td>
                     <td className="num">{c.lat.toFixed(6)}</td>
                     <td className="num">{c.lng.toFixed(6)}</td>

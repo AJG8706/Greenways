@@ -21,12 +21,16 @@ test.beforeAll(async () => {
   await supabase.from("team_users").delete().eq("email", EDITOR_EMAIL);
 });
 
-test("uninvited email is turned away at sign-in", async ({ page }) => {
+test("sign-in never says whether an email is on the team", async ({ page }) => {
+  // An unknown email gets the same neutral answer as a real one (no
+  // enumeration oracle) — and no magic link actually goes out for it:
+  // the auth.users invite trigger stays the hard gate.
   await page.goto("/admin/sign-in");
   await page.getByRole("textbox").fill("stranger@example.com");
   await page.getByRole("button", { name: /sign-in link/i }).click();
-  // Not getByRole("alert"): Next's route announcer is also role=alert.
-  await expect(page.locator(".banner-warn")).toContainText(/isn't on the team/i);
+  await expect(page.getByRole("status")).toContainText(/if there's a team account/i);
+  const { data: users } = await adminApi().auth.admin.listUsers();
+  expect(users?.users.some((u) => u.email === "stranger@example.com")).toBe(false);
 });
 
 test("invited admin signs in via magic link", async ({ page }) => {

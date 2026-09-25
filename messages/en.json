@@ -139,8 +139,7 @@
       "body": "Team members only. We'll email you a one-tap sign-in link.",
       "email": "Work email",
       "cta": "Email me a sign-in link",
-      "sent": "Check your inbox. The link works for 15 minutes.",
-      "notInvited": "That email isn't on the team yet. Ask an admin to invite you."
+      "sent": "If there's a team account for this email, a sign-in link has been sent to it. The link works for 15 minutes."
     },
     "properties": {
       "title": "Properties",
@@ -214,6 +213,8 @@
       "useMyLocation": "Use my location",
       "locating": "Reading your position…",
       "noGeolocation": "Could not read this device's position. Click the map instead, or allow location access.",
+      "setFromGps": "Set from GPS",
+      "gpsCaptured": "set from this device's position",
       "lock": "Lock corners (mark CAD-verified)",
       "lockHint": "Locks these exact pins as final — it does not change or reset them. The walk link only serves while corners are locked."
     },
