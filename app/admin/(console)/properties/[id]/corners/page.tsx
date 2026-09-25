@@ -105,6 +105,8 @@ export default async function CornersPage({
         useMyLocation: t("useMyLocation"),
         locating: t("locating"),
         noGeolocation: t("noGeolocation"),
+        setFromGps: t("setFromGps"),
+        gpsCaptured: t("gpsCaptured"),
       }}
     />
   );
