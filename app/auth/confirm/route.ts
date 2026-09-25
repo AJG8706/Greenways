@@ -16,7 +16,9 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const next = searchParams.get("next") ?? "/admin";
-  const target = next.startsWith("/") ? next : "/admin";
+  // Same-origin paths only: "//evil.com" and "/\evil.com" are
+  // protocol-relative redirects, not paths.
+  const target = /^\/(?![/\\])/.test(next) ? next : "/admin";
 
   const supabase = await createClient();
 
