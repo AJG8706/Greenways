@@ -13,6 +13,10 @@ on:
         default: alton@texasgreenerpastures.com
         required: true
 
+# Least privilege: nothing here needs to write to the repo.
+permissions:
+  contents: read
+
 jobs:
   diagnose:
     runs-on: ubuntu-latest
@@ -25,10 +29,14 @@ jobs:
           curl -sS "$SUPABASE_URL/auth/v1/settings" -H "apikey: $ANON_KEY" | head -c 2000; echo
 
       - name: Request magic link (same call the sign-in form makes)
+        env:
+          # Through env, never inline: an expression inside run: would execute
+          # crafted input as shell. jq builds the JSON so quotes can't break out.
+          EMAIL: ${{ inputs.email }}
         run: |
           curl -sS -o body.json -w "HTTP %{http_code}\n" -D headers.txt \
             -X POST "$SUPABASE_URL/auth/v1/otp" \
             -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
-            -d "{\"email\": \"${{ inputs.email }}\", \"create_user\": true}"
+            -d "$(jq -n --arg email "$EMAIL" '{email: $email, create_user: false}')"
           echo "--- response body:"; cat body.json; echo
           echo "--- retry hints:"; grep -i "retry\|rate" headers.txt || true

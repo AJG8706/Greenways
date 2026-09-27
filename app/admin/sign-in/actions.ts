@@ -1,5 +1,8 @@
 "use server";
 
+import { headers } from "next/headers";
+import { rateLimitAllowed } from "@/lib/api/rate-limit";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type SignInState = {
@@ -22,9 +25,20 @@ export async function signInWithMagicLink(
     return { status: "error", message: "invalid_email" };
   }
 
+  // A handful of attempts a minute is plenty for a person and starves both
+  // email-bombing and timing probes.
+  const h = await headers();
+  const ip = (h.get("x-forwarded-for") ?? "unknown").split(",")[0]!.trim();
+  if (!(await rateLimitAllowed(`signin:${ip}`, 5, 60))) {
+    return { status: "error", message: "Too many attempts — try again in a minute." };
+  }
+
   const supabase = await createClient();
 
-  const { data: invited, error: rpcError } = await supabase.rpc("is_invited", {
+  // The invite pre-check runs with the service role: the RPC's anon grant
+  // was revoked (audit v2) so the database no longer answers "is this email
+  // on the team?" to anyone holding the public key.
+  const { data: invited, error: rpcError } = await createAdminClient().rpc("is_invited", {
     check_email: email,
   });
   if (rpcError) return { status: "error", message: rpcError.message };

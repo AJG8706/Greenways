@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
@@ -23,6 +23,14 @@ export default async function GateSignPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+
+  // Own session check (defense in depth): this route lives outside the
+  // (console) layout, so it must not depend on the middleware matcher alone
+  // — a future asset-extension exclusion there would silently unguard it.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/admin/sign-in");
 
   const { data: property } = await supabase
     .from("properties")

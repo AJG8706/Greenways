@@ -1,5 +1,6 @@
 import "server-only";
 
+import { deflateSync } from "node:zlib";
 import type { MediaSlotKind } from "@/lib/media/slots";
 import { findMotion, type Motion } from "@/lib/media/provider/motion";
 import {
@@ -262,16 +263,52 @@ const mockProvider: MediaProvider = {
     };
   },
 
-  async fetchResult(url) {
-    const slot = url.split(":")[2] ?? "asset";
-    const svg =
-      `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">` +
-      `<rect width="720" height="1280" fill="#24301F"/>` +
-      `<text x="360" y="600" fill="#F5F3E9" font-size="48" font-family="sans-serif" text-anchor="middle">MOCK</text>` +
-      `<text x="360" y="680" fill="#8DBA5E" font-size="36" font-family="sans-serif" text-anchor="middle">${slot}</text>` +
-      `<text x="360" y="740" fill="#BCAA6E" font-size="24" font-family="sans-serif" text-anchor="middle">placeholder — not generated media</text>` +
-      `</svg>`;
-    return { bytes: new TextEncoder().encode(svg), contentType: "image/svg+xml" };
+  async fetchResult() {
+    // A real PNG, not SVG: the storage bucket (audit v2) refuses scriptable
+    // types, and the mock must exercise the same pipeline the vendor does.
+    // Solid pine-green placeholder, built with zlib — no image deps.
+    return { bytes: mockPng(720, 1280, [0x24, 0x30, 0x1f]), contentType: "image/png" };
   },
 
 };
+
+/** Minimal valid PNG: one solid RGB color, deflate via node:zlib, CRCs by hand. */
+function mockPng(width: number, height: number, [r, g, b]: number[]): Uint8Array {
+  const crcTable = new Uint32Array(256).map((_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (bytes: Uint8Array): number => {
+    let c = 0xffffffff;
+    for (const byte of bytes) c = crcTable[(c ^ byte) & 0xff]! ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type: string, data: Uint8Array): Uint8Array => {
+    const out = new Uint8Array(12 + data.length);
+    const dv = new DataView(out.buffer);
+    dv.setUint32(0, data.length);
+    out.set(new TextEncoder().encode(type), 4);
+    out.set(data, 8);
+    dv.setUint32(8 + data.length, crc(out.subarray(4, 8 + data.length)));
+    return out;
+  };
+  const ihdr = new Uint8Array(13);
+  new DataView(ihdr.buffer).setUint32(0, width);
+  new DataView(ihdr.buffer).setUint32(4, height);
+  ihdr.set([8, 2, 0, 0, 0], 8); // 8-bit RGB
+  const row = new Uint8Array(1 + width * 3); // filter byte 0 + pixels
+  for (let x = 0; x < width; x++) row.set([r!, g!, b!], 1 + x * 3);
+  const raw = new Uint8Array(row.length * height);
+  for (let y = 0; y < height; y++) raw.set(row, y * row.length);
+  const idat = new Uint8Array(deflateSync(raw));
+  const sig = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+  const parts = [sig, chunk("IHDR", ihdr), chunk("IDAT", idat), chunk("IEND", new Uint8Array(0))];
+  const png = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let off = 0;
+  for (const p of parts) {
+    png.set(p, off);
+    off += p.length;
+  }
+  return png;
+}

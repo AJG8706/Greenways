@@ -39,11 +39,15 @@ export async function createApiKey(
 
 export async function revokeApiKey(keyId: string): Promise<{ ok: boolean; message?: string }> {
   const supabase = await createClient();
-  const { error } = await supabase
+  // RLS makes this a no-op for non-admins; the count check turns that into
+  // an honest failure instead of a false success with a forged-looking
+  // "revoked" audit row while the key stays live.
+  const { error, count } = await supabase
     .from("api_keys")
-    .update({ revoked_at: new Date().toISOString() })
+    .update({ revoked_at: new Date().toISOString() }, { count: "exact" })
     .eq("id", keyId);
   if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "Only an admin can revoke an API key" };
 
   await supabase.rpc("write_audit", {
     p_action: "api_key_revoked",

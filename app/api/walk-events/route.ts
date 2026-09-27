@@ -38,8 +38,12 @@ type Body = {
 
 export async function POST(request: NextRequest) {
   // Generous per-IP budget: a real walk flushes every 15 s (~4 req/min) plus
-  // immediate bookends — 120/min only stops floods, never a buyer.
+  // immediate bookends — 120/min only stops floods, never a buyer. The
+  // global bucket backstops IP rotation: it caps total ingest, not a buyer.
   if (!(await rateLimitAllowed(`walk:${clientIp(request)}`, 120, 60))) {
+    return rateLimitedResponse(30);
+  }
+  if (!(await rateLimitAllowed("walk:global", 2000, 60))) {
     return rateLimitedResponse(30);
   }
 
@@ -84,6 +88,12 @@ export async function POST(request: NextRequest) {
   }
 
   if (!sessionId) {
+    // A real device opens one session per walk; only floods open ten. The
+    // tighter creation budget stops each IP from minting rows at the full
+    // flush rate.
+    if (!(await rateLimitAllowed(`walk-create:${clientIp(request)}`, 15, 60))) {
+      return rateLimitedResponse(60);
+    }
     const { data: property } = await supabase
       .from("properties")
       .select("id, demo_mode")
@@ -107,6 +117,8 @@ export async function POST(request: NextRequest) {
         .select("id, revoked_at, expires_at")
         .eq("property_id", property.id)
         .eq("token", body.token)
+        // The guessable public token must never pass as prospect attribution.
+        .eq("kind", "prospect")
         .maybeSingle();
       if (
         prospect &&
@@ -117,21 +129,20 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!linkId) {
+      // Atomic get-or-create: two concurrent first-hits previously raced the
+      // unique token, leaving the loser's session with link_id NULL (and its
+      // later flushes 404ing the ownership check). The no-op update makes
+      // the upsert return the existing row instead.
       const token = `public-${body.slug}`;
-      const { data: existingLink } = await supabase
+      const { data: link } = await supabase
         .from("walk_links")
+        .upsert(
+          { property_id: property.id, kind: "public", token },
+          { onConflict: "token" },
+        )
         .select("id")
-        .eq("token", token)
-        .maybeSingle();
-      linkId = existingLink?.id ?? null;
-      if (!linkId) {
-        const { data: link } = await supabase
-          .from("walk_links")
-          .insert({ property_id: property.id, kind: "public", token })
-          .select("id")
-          .single();
-        linkId = link?.id ?? null;
-      }
+        .single();
+      linkId = link?.id ?? null;
     }
 
     const { data: session, error: sessionError } = await supabase
@@ -172,8 +183,19 @@ export async function POST(request: NextRequest) {
 
   // Copy to the external analytics sink (GA4 when configured; demo
   // sessions never forwarded; best-effort, never fails the ingest).
+  // Only the scalar fields the HUD actually reports go out — arbitrary
+  // client keys would otherwise mint junk GA4 params and burn quota.
+  const forwardable = (d?: Record<string, unknown>): Record<string, unknown> | undefined => {
+    if (!d) return undefined;
+    const out: Record<string, unknown> = {};
+    for (const k of ["n", "seconds", "accuracyFt", "slot", "scenario", "locale"]) {
+      const v = d[k];
+      if (typeof v === "number" || typeof v === "string" || typeof v === "boolean") out[k] = v;
+    }
+    return out;
+  };
   await forwardWalkEvents(
-    events.map((e) => ({ name: e.name!, data: e.data })),
+    events.map((e) => ({ name: e.name!, data: forwardable(e.data) })),
     {
       slug: body.slug,
       sessionId,

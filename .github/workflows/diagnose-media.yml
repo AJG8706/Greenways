@@ -17,6 +17,10 @@ on:
         type: boolean
         default: false
 
+# Least privilege: nothing here needs to write to the repo.
+permissions:
+  contents: read
+
 jobs:
   diagnose:
     runs-on: ubuntu-latest
@@ -27,25 +31,25 @@ jobs:
       - name: Cancel active jobs
         if: inputs.cancel_active
         run: |
-          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" <<SQL
+          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" -v slug="$SLUG" <<SQL
           update public.generation_jobs g set status = 'canceled', error = coalesce(g.error, 'canceled via diagnose-media')
             from public.properties p
-           where p.id = g.property_id and p.slug = '$SLUG'
+           where p.id = g.property_id and p.slug = :'slug'
              and g.status in ('queued', 'in_progress', 'completed');
           SQL
 
       - name: Inspect jobs and assets
         run: |
-          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" <<SQL
+          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" -v slug="$SLUG" <<SQL
           \x on
           select g.id, g.slot, g.status, g.provider_request_id, g.status_url,
                  g.error, g.created_at, g.updated_at
             from public.generation_jobs g join public.properties p on p.id = g.property_id
-           where p.slug = '$SLUG'
+           where p.slug = :'slug'
            order by g.created_at desc limit 8;
           \x off
           select m.slot, m.type, m.status, m.storage_path, m.reject_reason, m.created_at
             from public.media_assets m join public.properties p on p.id = m.property_id
-           where p.slug = '$SLUG'
+           where p.slug = :'slug'
            order by m.created_at desc limit 15;
           SQL

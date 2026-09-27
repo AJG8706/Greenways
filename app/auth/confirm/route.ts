@@ -16,9 +16,20 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const next = searchParams.get("next") ?? "/admin";
-  // Same-origin paths only: "//evil.com" and "/\evil.com" are
-  // protocol-relative redirects, not paths.
-  const target = /^\/(?![/\\])/.test(next) ? next : "/admin";
+  // Same-origin paths only. Resolved through the URL parser rather than a
+  // regex: the parser strips the same control characters the browser would
+  // (a literal "/\t/evil.com" re-parses as "//evil.com"), so whatever passes
+  // here is exactly what the browser will navigate.
+  const target = (() => {
+    try {
+      const resolved = new URL(next, request.nextUrl.origin);
+      return resolved.origin === request.nextUrl.origin
+        ? resolved.pathname + resolved.search
+        : "/admin";
+    } catch {
+      return "/admin";
+    }
+  })();
 
   const supabase = await createClient();
 

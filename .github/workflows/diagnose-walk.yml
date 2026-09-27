@@ -17,6 +17,10 @@ on:
         type: boolean
         default: false
 
+# Least privilege: nothing here needs to write to the repo.
+permissions:
+  contents: read
+
 jobs:
   diagnose:
     runs-on: ubuntu-latest
@@ -48,20 +52,20 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" <<SQL
+          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" -v slug="$SLUG" <<SQL
           update public.corners c set locked = true
             from public.properties p
-           where p.id = c.property_id and p.slug = '$SLUG' and not c.locked;
+           where p.id = c.property_id and p.slug = :'slug' and not c.locked;
           SQL
 
       - name: Inspect walk data directly (pooler)
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" <<SQL
+          psql "postgresql://postgres.pdrvinfahqnskuwqumuu@aws-0-us-east-1.pooler.supabase.com:5432/postgres" -v slug="$SLUG" <<SQL
           select slug, entrance_lat, entrance_lng, demo_mode, test_lot, status
-            from public.properties where slug = '$SLUG';
+            from public.properties where slug = :'slug';
           select n, locked, round(lat::numeric,5) lat, round(lng::numeric,5) lng, c.updated_at
             from public.corners c join public.properties p on p.id = c.property_id
-           where p.slug = '$SLUG' order by n;
+           where p.slug = :'slug' order by n;
           SQL

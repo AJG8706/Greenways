@@ -8,6 +8,10 @@ name: DB push
 on:
   workflow_dispatch:
 
+# Least privilege: nothing here needs to write to the repo.
+permissions:
+  contents: read
+
 jobs:
   push:
     runs-on: ubuntu-latest
@@ -16,8 +20,8 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       PROJECT_REF: pdrvinfahqnskuwqumuu
     steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
         with:
           # Pinned: resolving 'latest' hits the GitHub API unauthenticated and
           # rate-limits on shared runners (killed a CI run before tests began).

@@ -2,7 +2,7 @@ import "server-only";
 
 import { NextResponse, type NextRequest } from "next/server";
 import { hashApiKey, KEY_PREFIX } from "@/lib/api/keys";
-import { rateLimitAllowed, rateLimitedResponse } from "@/lib/api/rate-limit";
+import { clientIp, rateLimitAllowed, rateLimitedResponse } from "@/lib/api/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /** Per-key budget: generous for tools, cheap to raise, hard to abuse. */
@@ -37,6 +37,11 @@ export async function authenticateApiKey(request: NextRequest): Promise<ApiAuth>
     .maybeSingle();
 
   if (!key || key.revoked_at) {
+    // Failures burn a per-IP budget (valid keys never touch it): the
+    // keyspace is unguessable, so this only stops an unbounded 401 spray.
+    if (!(await rateLimitAllowed(`v1-auth:${clientIp(request)}`, 30, 60))) {
+      return { ok: false, response: rateLimitedResponse(60) };
+    }
     return {
       ok: false,
       response: NextResponse.json(
