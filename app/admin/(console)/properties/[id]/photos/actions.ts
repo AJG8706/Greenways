@@ -4,6 +4,20 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "../../actions";
 
+/**
+ * A recorded photo path must live in THIS property's folder and be an
+ * image. The walk page signs whatever path these rows hold and hands the
+ * URL to anonymous buyers, so an arbitrary path here would disclose another
+ * property's private files through a public walk.
+ */
+function validPhotoPath(propertyId: string, folder: string, storagePath: string): boolean {
+  return (
+    storagePath.startsWith(`${propertyId}/${folder}/`) &&
+    !storagePath.includes("..") &&
+    /\.(jpe?g|png|webp|heic|heif)$/i.test(storagePath)
+  );
+}
+
 /** Record an uploaded corner photo (approach or stake) against its corner row. */
 export async function recordCornerPhoto(
   propertyId: string,
@@ -11,11 +25,15 @@ export async function recordCornerPhoto(
   slot: "approach" | "stake",
   storagePath: string,
 ): Promise<ActionResult> {
+  if (!validPhotoPath(propertyId, "corners", storagePath)) {
+    return { ok: false, message: "Photo path does not belong to this property" };
+  }
   const supabase = await createClient();
   const { error } = await supabase
     .from("corners")
     .update(slot === "approach" ? { approach_photo: storagePath } : { stake_photo: storagePath })
-    .eq("id", cornerId);
+    .eq("id", cornerId)
+    .eq("property_id", propertyId);
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
@@ -27,6 +45,9 @@ export async function recordPropertyPhoto(
   slot: string,
   storagePath: string,
 ): Promise<ActionResult> {
+  if (!validPhotoPath(propertyId, "property", storagePath)) {
+    return { ok: false, message: "Photo path does not belong to this property" };
+  }
   const supabase = await createClient();
   // Not an upsert: capture uniqueness lives on a PARTIAL index
   // (property_id, slot) WHERE type='capture', which ON CONFLICT column

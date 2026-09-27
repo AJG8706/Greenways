@@ -46,8 +46,15 @@ export default async function WalkPage({
     .order("created_at");
   if (children && children.length > 0) {
     // Unpublished lots stay invisible to the public even in demo/test mode:
-    // drafts are reachable only by a signed-in team member.
+    // drafts are reachable only by a signed-in team member. The picker page
+    // itself follows the same rule — a subdivision nobody has published yet
+    // (name, lot count, availability) is not public information.
     const team = await isTeamViewer();
+    const masterVisible =
+      property.status === "published" ||
+      children.some((lot) => lot.status === "published") ||
+      team;
+    if (!masterVisible) notFound();
     const lots: PickerLot[] = children
       .filter((lot) => {
         const corners = lot.corners ?? [];
@@ -103,6 +110,9 @@ export default async function WalkPage({
       .select("token, revoked_at, expires_at")
       .eq("property_id", property.id)
       .eq("token", t)
+      // Only real prospect tokens attribute: the deterministic public token
+      // must never gain meaning by being pasted into ?t=.
+      .eq("kind", "prospect")
       .maybeSingle();
     if (
       link &&

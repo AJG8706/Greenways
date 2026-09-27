@@ -501,11 +501,8 @@ export async function setDemoMode(
     .update({ demo_mode: demoMode })
     .eq("id", propertyId);
   if (error) return { ok: false, message: error.message };
-  await supabase.rpc("write_audit", {
-    p_action: "demo_mode_changed",
-    p_property_id: propertyId,
-    p_detail: { to: demoMode },
-  });
+  // Audit comes from the DB trigger (guard_property_update), which also
+  // covers flips that bypass this action — no second write here.
   revalidatePath("/admin/properties");
   // "layout" so the nested Demo tab re-renders too — the scenario launchers
   // are server-rendered off this flag, and a page-scoped revalidate would

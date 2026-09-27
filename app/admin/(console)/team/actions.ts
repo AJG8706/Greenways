@@ -98,9 +98,37 @@ export async function resendInvite(email: string): Promise<ActionResult> {
 
 /** Remove a pending invite (admin only). */
 export async function removeInvite(inviteId: string): Promise<ActionResult> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("invites").delete().eq("id", inviteId);
+  const { supabase, me } = await requireAdmin();
+  if (!me) return { ok: false, message: "Only an admin can remove invites" };
+
+  // Once the invite email went out, an auth user + team row already exist
+  // (the OTP flow pre-creates them). Deleting just the invites row would
+  // leave a live account behind a "revoked" invite — that removal must go
+  // through removeTeamMember, which tears all three down.
+  const { data: invite } = await supabase
+    .from("invites")
+    .select("email")
+    .eq("id", inviteId)
+    .maybeSingle();
+  if (!invite) return { ok: false, message: "Invite not found" };
+  const { data: member } = await supabase
+    .from("team_users")
+    .select("id")
+    .eq("email", invite.email)
+    .maybeSingle();
+  if (member) {
+    return {
+      ok: false,
+      message: "This invite already has an account — remove the team member instead.",
+    };
+  }
+
+  const { error, count } = await supabase
+    .from("invites")
+    .delete({ count: "exact" })
+    .eq("id", inviteId);
   if (error) return { ok: false, message: error.message };
+  if (!count) return { ok: false, message: "Invite not found" };
   revalidatePath("/admin/team");
   return { ok: true };
 }

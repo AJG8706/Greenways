@@ -15,6 +15,17 @@ export async function draftSpanish(
   if (!process.env.ANTHROPIC_API_KEY) {
     return { ok: false, message: "ANTHROPIC_API_KEY is not configured" };
   }
+  // Team members only: this action touches no table (so RLS never runs) and
+  // otherwise makes the model key a free proxy for any authenticated caller.
+  const gate = await createClient();
+  const { data: userRes } = await gate.auth.getUser();
+  const { data: caller } = await gate
+    .from("team_users")
+    .select("id")
+    .eq("user_id", userRes.user?.id ?? "")
+    .maybeSingle();
+  if (!caller) return { ok: false, message: "Not a team member" };
+
   const nonEmpty = texts.map((t) => t.trim());
   if (nonEmpty.every((t) => !t)) {
     return { ok: false, message: "Write the English text first" };

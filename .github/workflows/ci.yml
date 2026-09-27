@@ -9,14 +9,19 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege: read code + pull the ghcr images CI uses.
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   quality:
     name: Lint · typecheck · unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: pnpm
@@ -29,13 +34,13 @@ jobs:
     name: Build · E2E (local Supabase)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: pnpm
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
         with:
           # Pinned: resolving 'latest' hits the GitHub API unauthenticated and
           # rate-limits on shared runners (killed a CI run before tests began).
@@ -85,7 +90,7 @@ jobs:
             echo "===== $f ====="
             cat "$f"
           done
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
           name: playwright-report
@@ -109,7 +114,7 @@ jobs:
           # shared runners: 'Unable to connect to Chrome') — tolerate it and
           # gate on whatever runs completed, requiring at least one.
           for i in 1 2 3; do
-            npx --yes lighthouse@12 http://localhost:3000/walk/broussard-lot-4 \
+            npx --yes lighthouse@12.8.2 http://localhost:3000/walk/broussard-lot-4 \
               --budget-path=lighthouse-budget.json \
               --output=json --output-path=./lighthouse-walk-$i.json \
               --chrome-flags="--headless=new --no-sandbox" \
@@ -150,7 +155,7 @@ jobs:
             if (perf < 0.70) { console.error('best-of-3 performance below the 0.70 floor'); process.exit(1); }
             if (a11y < 0.95) { console.error('accessibility score below 0.95'); process.exit(1); }
           "
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: lighthouse-report

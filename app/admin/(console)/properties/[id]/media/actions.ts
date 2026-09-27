@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { checkCredentials, getProvider } from "@/lib/media/provider";
+import { checkCredentials, getProvider, isMockProvider } from "@/lib/media/provider";
 import { buildPrompt, type MediaBrief } from "@/lib/media/prompts";
 import { canGenerateSlot, mediaSlotsFor, styleLocked, type MediaSlot } from "@/lib/media/slots";
 import { i18nText } from "@/lib/i18n/text";
@@ -257,6 +257,15 @@ export async function refreshJobs(propertyId: string): Promise<ActionResult> {
 
       if (s.status === "completed" && s.resultUrl) {
         const { bytes, contentType } = await provider.fetchResult(s.resultUrl);
+        // The real vendor only ever returns video/images. Anything else
+        // (svg outside the mock, html, whatever a tampered response
+        // claims) must not land in the buyer-served bucket as an asset.
+        const allowed = isMockProvider()
+          ? ["video/mp4", "video/webm", "image/png", "image/jpeg", "image/svg+xml"]
+          : ["video/mp4", "video/webm", "image/png", "image/jpeg"];
+        if (!allowed.some((t) => contentType.startsWith(t))) {
+          throw new Error(`Provider returned unexpected content-type ${contentType}`);
+        }
         const ext = contentType.includes("mp4")
           ? "mp4"
           : contentType.includes("svg")

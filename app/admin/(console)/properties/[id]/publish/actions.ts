@@ -167,6 +167,16 @@ export async function listMondayItems(): Promise<
   { ok: boolean; items?: MondayItem[]; message?: string }
 > {
   if (!isMondayConfigured()) return { ok: false, message: "Monday is not configured" };
+  // Team members only: the fetch runs on MONDAY_API_TOKEN and reads the
+  // whole board, and nothing else in this action touches RLS.
+  const gate = await createClient();
+  const { data: userRes } = await gate.auth.getUser();
+  const { data: caller } = await gate
+    .from("team_users")
+    .select("id")
+    .eq("user_id", userRes.user?.id ?? "")
+    .maybeSingle();
+  if (!caller) return { ok: false, message: "Not a team member" };
   try {
     return { ok: true, items: await listBoardItems() };
   } catch (e) {

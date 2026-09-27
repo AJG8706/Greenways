@@ -104,7 +104,10 @@ test("assemble: KML attached at creation imports corners in the same step", asyn
   await expect(page.getByTestId("corners-table").locator("tbody tr")).toHaveCount(4);
 });
 
-test("assemble: a master KML at creation splits into lot properties", async ({ page }) => {
+test("assemble: a master KML at creation splits into lot properties", async ({
+  page,
+  request,
+}) => {
   await signIn(page, ADMIN_EMAIL);
 
   await page.getByTestId("new-property").click();
@@ -163,10 +166,16 @@ test("assemble: a master KML at creation splits into lot properties", async ({ p
   await page.getByTestId("tab-analytics").click();
   await expect(page.getByTestId("master-analytics").locator("tbody tr")).toHaveCount(11);
 
-  // Buyer side: the master link is the lot picker. Nothing is published or
-  // locked yet, so buyers get the empty state (unpublished never shows) —
-  // and the scarcity line counts sale status across ALL platted lots
-  // (the bulk edit above put all 10 under contract).
+  // Buyer side: a fully-draft subdivision does not exist for the public —
+  // the picker page itself (name, lot counts) is team-only until something
+  // publishes. The `request` fixture carries no session cookie.
+  const anonMaster = await request.get("/walk/e2e-warren-master");
+  expect(anonMaster.status()).toBe(404);
+
+  // For the signed-in team the master link is the lot picker. Nothing is
+  // published or locked yet, so the list is the empty state (unpublished
+  // never shows) — and the scarcity line counts sale status across ALL
+  // platted lots (the bulk edit above put all 10 under contract).
   await page.goto("/walk/e2e-warren-master");
   await expect(page.getByTestId("lots-empty")).toBeVisible();
   await expect(page.getByTestId("lots-remaining")).toContainText("0 of 10");

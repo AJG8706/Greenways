@@ -11,6 +11,10 @@ on:
         default: https://greenways-jade.vercel.app
         required: true
 
+# Least privilege: nothing here needs to write to the repo.
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -48,15 +52,14 @@ jobs:
             -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY")
           test "$BODY" = "[]"
 
-      - name: Supabase — seed invites present (is_invited RPC)
+      - name: Supabase — is_invited is NOT anon-callable (audit v2 regression check)
         run: |
-          R=$(curl -fsS -X POST "$SUPABASE_URL/rest/v1/rpc/is_invited" \
-            -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
-            -H "Content-Type: application/json" \
-            -d '{"check_email": "alton@texasgreenerpastures.com"}')
-          test "$R" = "true"
-          R2=$(curl -fsS -X POST "$SUPABASE_URL/rest/v1/rpc/is_invited" \
+          # The RPC used to be the team-email oracle; audit v2 revoked anon
+          # EXECUTE. Anything other than a permission error here is a
+          # security regression, so the old true/false assertions inverted.
+          CODE=$(curl -sS -o body.json -w "%{http_code}" -X POST "$SUPABASE_URL/rest/v1/rpc/is_invited" \
             -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY" \
             -H "Content-Type: application/json" \
             -d '{"check_email": "stranger@example.com"}')
-          test "$R2" = "false"
+          echo "HTTP $CODE"; cat body.json; echo
+          test "$CODE" != "200"

@@ -15,6 +15,28 @@ const nextConfig: NextConfig = {
   eslint: {
     dirs: ["app", "components", "lib", "tests"],
   },
+  // Baseline security headers (audit v2). No page here is ever legitimately
+  // framed — DENY kills clickjacking against signed-in admins outright —
+  // and the referrer policy keeps tokenized walk URLs (?t=…) from leaking
+  // to third-party hosts a walk links out to.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            // The walk HUD and the admin GPS capture need geolocation;
+            // nothing needs camera or microphone.
+            value: "geolocation=(self), camera=(), microphone=()",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 const config = withSerwist(withNextIntl(nextConfig));

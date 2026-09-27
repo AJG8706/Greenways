@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 import { defaultCache } from "@serwist/next/worker";
-import { CacheFirst, ExpirationPlugin, Serwist, type PrecacheEntry, type SerwistGlobalConfig } from "serwist";
+import { CacheFirst, ExpirationPlugin, NetworkOnly, Serwist, type PrecacheEntry, type SerwistGlobalConfig } from "serwist";
 
 // PWA service worker (stack convention): offline after first load. The app
 // shell and static assets precache; visited walk pages and their signed
@@ -11,6 +11,18 @@ declare global {
   }
 }
 declare const self: ServiceWorkerGlobalScope;
+
+// Only the buyer walk works offline. Admin pages and Supabase API
+// responses must never persist in Cache Storage: on a shared or borrowed
+// device they would outlive the sign-out. (First matcher wins, so these
+// sit between the walk-photos rule and the defaults.)
+const supabaseOrigin = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin;
+  } catch {
+    return null;
+  }
+})();
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
@@ -28,6 +40,15 @@ const serwist = new Serwist({
           new ExpirationPlugin({ maxEntries: 64, maxAgeSeconds: 60 * 60 * 6 }),
         ],
       }),
+    },
+    {
+      matcher: ({ url }) =>
+        url.pathname.startsWith("/admin") || url.pathname.startsWith("/auth"),
+      handler: new NetworkOnly(),
+    },
+    {
+      matcher: ({ url }) => supabaseOrigin !== null && url.origin === supabaseOrigin,
+      handler: new NetworkOnly(),
     },
     ...defaultCache,
   ],

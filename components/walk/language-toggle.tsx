@@ -12,7 +12,7 @@ export function LanguageToggle() {
 
   function toggle() {
     const next = t("switchLanguageShort") === "ES" ? "es" : "en";
-    document.cookie = `${LOCALE_COOKIE}=${next};path=/;max-age=31536000;samesite=lax`;
+    document.cookie = `${LOCALE_COOKIE}=${next};path=/;max-age=31536000;samesite=lax;secure`;
     router.refresh();
   }
 
