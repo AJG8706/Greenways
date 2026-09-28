@@ -64,7 +64,10 @@ jobs:
               -d "$(jq -n --arg q "$1" '{query: $q}')" | jq -r '.[0].count'
           }
           copy_rows() {
-            awk -v t="$1" '$0 ~ "^COPY "t" " {f=1; next} /^\\\.$/ {f=0} f' backup/data.sql | wc -l
+            # The CLI's pg_dump quotes identifiers (COPY "public"."properties");
+            # match quoted and bare alike, anchored to the column list.
+            awk -v t="$1" 'BEGIN { gsub(/\./, "\"?[.]\"?", t); re = "^COPY \"?" t "\"? \\(" }
+              $0 ~ re {f=1; next} /^\\\.$/ {f=0} f' backup/data.sql | wc -l
           }
           fail=0
           for t in public.properties public.corners public.team_users public.walk_links; do
