@@ -109,9 +109,16 @@ publishes, media decisions, uploads, key events), append-only.
   best-effort with the row. Storage is not in DB backups — media can be
   regenerated from source photos; source photos should also live in the
   team's Drive per the capture protocol.
+- **Our own nightly verified backup** (independent of Supabase):
+  `.github/workflows/db-backup.yml` dumps roles/schema/data in the
+  official restore format, checks row counts against the live DB, and
+  keeps 30 days of restore points as private-repo artifacts, plus a
+  storage-object manifest.
 - The repo (migrations + seed) can rebuild an empty environment from
-  scratch; the runbook assumption is: **database = Supabase backups,
-  media = regenerable, code = GitHub.**
+  scratch. Full recovery procedures, scenario by scenario (bad deploy,
+  bad migration, corruption, storage loss, compromised account), the
+  quarterly restore drill, and the paid-service roadmap live in
+  **docs/DISASTER-RECOVERY.md** — that file is the source of truth.
 
 ## Deploy discipline
 
