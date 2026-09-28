@@ -1,0 +1,93 @@
+name: DB backup (nightly, verified)
+
+# Backups WE control, independent of Supabase's own daily snapshot:
+# the official three-file logical dump (roles / schema / data, the same
+# files `psql` restores into a fresh project), verified against live row
+# counts before upload, plus a storage-object manifest so a storage loss
+# is at least enumerable. Restore steps: docs/DISASTER-RECOVERY.md.
+#
+# Artifacts live on this private repo, 30-day retention -> RPO 24h,
+# 30 restore points. The dump contains all app data including team
+# emails - the repo's collaborator list is the access boundary. Encrypt
+# the artifact (age) before any wider distribution or paid-service use.
+
+on:
+  schedule:
+    - cron: "17 9 * * *" # ~4:17am Central, off the :00 rush
+  workflow_dispatch:
+
+# Least privilege: nothing here needs to write to the repo.
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: pdrvinfahqnskuwqumuu
+      DB_URL: postgresql://postgres.pdrvinfahqnskuwqumuu:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
+        with:
+          version: 2.117.0
+
+      - name: Dump roles, schema, data (official restore format)
+        run: |
+          mkdir -p backup
+          supabase db dump --db-url "$DB_URL" -f backup/roles.sql --role-only
+          supabase db dump --db-url "$DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$DB_URL" -f backup/data.sql --data-only --use-copy
+          ls -l backup
+
+      - name: Verify the dump against live row counts
+        run: |
+          set -o pipefail
+          # Live counts via the Management API (same remote-hands pattern as
+          # diagnose-hierarchy). Low-churn tables must match the dump exactly;
+          # a mismatch means a broken/partial dump and the backup must fail
+          # loudly rather than upload quietly.
+          q() {
+            curl -sf -X POST \
+              "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg q "$1" '{query: $q}')" | jq -r '.[0].count'
+          }
+          copy_rows() {
+            awk -v t="$1" '$0 ~ "^COPY "t" " {f=1; next} /^\\\.$/ {f=0} f' backup/data.sql | wc -l
+          }
+          fail=0
+          for t in public.properties public.corners public.team_users public.walk_links; do
+            live=$(q "select count(*) from $t")
+            dumped=$(copy_rows "$t")
+            echo "$t: live=$live dumped=$dumped"
+            if [ "$live" != "$dumped" ]; then echo "::error::row-count mismatch on $t"; fail=1; fi
+          done
+          # High-churn telemetry just has to be present and plausible.
+          events=$(copy_rows public.walk_events)
+          echo "public.walk_events: dumped=$events"
+          test -s backup/schema.sql && test -s backup/roles.sql
+          exit $fail
+
+      - name: Storage-object manifest (what a storage restore must recover)
+        run: |
+          set -o pipefail
+          curl -sf -X POST \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n '{query: "select bucket_id, name, (metadata->>'\''size'\'')::bigint as bytes, created_at, updated_at from storage.objects order by bucket_id, name"}')" \
+            > backup/storage-manifest.json
+          jq 'length as $n | ([.[].bytes] | add // 0) as $b | {objects: $n, total_bytes: $b}' backup/storage-manifest.json
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: greenways-db-backup-${{ github.run_id }}
+          path: backup/
+          retention-days: 30
+          if-no-files-found: error
