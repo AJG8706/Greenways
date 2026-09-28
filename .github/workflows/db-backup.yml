@@ -28,7 +28,6 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       PROJECT_REF: pdrvinfahqnskuwqumuu
-      DB_URL: postgresql://postgres.pdrvinfahqnskuwqumuu:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-0-us-east-1.pooler.supabase.com:5432/postgres
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1.7.3
@@ -37,6 +36,13 @@ jobs:
 
       - name: Dump roles, schema, data (official restore format)
         run: |
+          # The password rides inside the URL for the CLI's dockerized
+          # pg_dump, so it must be percent-encoded (it contains characters
+          # that break a raw connection string). Built here, never echoed;
+          # the encoded form differs from the masked secret, so nothing
+          # below may print it.
+          ENC=$(python3 -c "import urllib.parse, os; print(urllib.parse.quote(os.environ['PGPASSWORD'], safe=''))")
+          DB_URL="postgresql://postgres.$PROJECT_REF:$ENC@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
           mkdir -p backup
           supabase db dump --db-url "$DB_URL" -f backup/roles.sql --role-only
           supabase db dump --db-url "$DB_URL" -f backup/schema.sql
