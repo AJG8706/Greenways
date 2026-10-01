@@ -77,7 +77,140 @@ export function parseKmlMulti(xml: string): ParsedKmlMulti {
     }
   }
 
+  // Deed-plot exports (Land iD, deed-plotting CAD tools) carry no Polygon
+  // at all: boundaries and lot lines are LineString segments, one per
+  // survey call, with lots sharing edges. When a file has no polygons,
+  // polygonize the line work — dangling leaders prune away, every enclosed
+  // face becomes a lot, and the outer face (the whole tract) is dropped so
+  // the result feeds the same single-vs-subdivision logic as polygons.
+  if (polygons.length === 0) {
+    const segments: LatLng[][] = [];
+    collectLineSegments(root, segments);
+    for (const ring of polygonizeSegments(segments)) {
+      polygons.push({ name: null, description: null, ring });
+    }
+  }
+
   return { polygons, point };
+}
+
+function collectLineSegments(node: unknown, out: LatLng[][]): void {
+  if (node === null || typeof node !== "object") return;
+  const direct = get(node, "Placemark");
+  for (const pm of Array.isArray(direct) ? direct : direct ? [direct] : []) {
+    const coords = get(get(pm, "LineString"), "coordinates");
+    if (typeof coords === "string") {
+      const pts = parseCoordinates(coords);
+      if (pts.length >= 2) out.push(pts);
+    }
+  }
+  const folders = get(node, "Folder");
+  for (const f of Array.isArray(folders) ? folders : folders ? [folders] : []) {
+    collectLineSegments(f, out);
+  }
+}
+
+/**
+ * Planar face extraction over survey line work: build the segment graph,
+ * prune dangling chains (label leaders, ties), then trace every face by
+ * always taking the next edge clockwise. Interior faces are the lots; the
+ * single largest face is the outside of the tract and is discarded. Each
+ * returned ring carries its closing vertex, like a KML LinearRing.
+ */
+function polygonizeSegments(segments: LatLng[][]): LatLng[][] {
+  const keyOf = (p: LatLng) => `${p.lat.toFixed(7)},${p.lng.toFixed(7)}`;
+  const pts = new Map<string, LatLng>();
+  const adj = new Map<string, Set<string>>();
+  for (const seg of segments) {
+    for (let i = 1; i < seg.length; i++) {
+      const a = seg[i - 1]!;
+      const b = seg[i]!;
+      const ka = keyOf(a);
+      const kb = keyOf(b);
+      if (ka === kb) continue;
+      pts.set(ka, a);
+      pts.set(kb, b);
+      if (!adj.has(ka)) adj.set(ka, new Set());
+      if (!adj.has(kb)) adj.set(kb, new Set());
+      adj.get(ka)!.add(kb);
+      adj.get(kb)!.add(ka);
+    }
+  }
+
+  // Dangling chains can't bound a face; prune until every node has 2+ edges.
+  let pruned = true;
+  while (pruned) {
+    pruned = false;
+    for (const [k, ns] of [...adj]) {
+      if (ns.size <= 1) {
+        for (const n of ns) adj.get(n)?.delete(k);
+        adj.delete(k);
+        pruned = true;
+      }
+    }
+  }
+  if (adj.size === 0) return [];
+
+  const angle = (from: string, to: string): number => {
+    const a = pts.get(from)!;
+    const b = pts.get(to)!;
+    const lat0 = (((a.lat + b.lat) / 2) * Math.PI) / 180;
+    return Math.atan2(b.lat - a.lat, (b.lng - a.lng) * Math.cos(lat0));
+  };
+  const visited = new Set<string>();
+  const faces: LatLng[][] = [];
+  for (const [start, ns] of adj) {
+    for (const first of ns) {
+      if (visited.has(`${start}|${first}`)) continue;
+      let a = start;
+      let b = first;
+      const cycle: string[] = [];
+      let guard = adj.size * 8;
+      let closed = false;
+      while (guard-- > 0) {
+        visited.add(`${a}|${b}`);
+        cycle.push(a);
+        const base = angle(b, a);
+        let best: string | null = null;
+        let bestDelta = Infinity;
+        for (const n of adj.get(b)!) {
+          let delta = base - angle(b, n);
+          while (delta <= 1e-9) delta += 2 * Math.PI;
+          if (delta < bestDelta) {
+            bestDelta = delta;
+            best = n;
+          }
+        }
+        if (best === null) break;
+        a = b;
+        b = best;
+        if (a === start && b === first) {
+          closed = true;
+          break;
+        }
+      }
+      if (closed && cycle.length >= 3) faces.push(cycle.map((k) => pts.get(k)!));
+    }
+  }
+  if (faces.length < 2) return [];
+
+  // Shoelace on an equirectangular projection — plenty for "which face is
+  // the outside" and "is this face degenerate" at parcel scale.
+  const area = (ring: LatLng[]): number => {
+    const lat0 = (ring[0]!.lat * Math.PI) / 180;
+    let s = 0;
+    for (let i = 0; i < ring.length; i++) {
+      const p = ring[i]!;
+      const q = ring[(i + 1) % ring.length]!;
+      s += p.lng * Math.cos(lat0) * q.lat - q.lng * Math.cos(lat0) * p.lat;
+    }
+    return s / 2;
+  };
+  const measured = faces
+    .map((ring) => ({ ring, size: Math.abs(area(ring)) }))
+    .filter((f) => f.size > 1e-12)
+    .sort((x, y) => y.size - x.size);
+  return measured.slice(1).map((f) => [...f.ring, f.ring[0]!]);
 }
 
 /** KML coordinates: whitespace-separated `lng,lat[,alt]` tuples. */
