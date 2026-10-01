@@ -44,14 +44,24 @@ export function NewPropertyDialog() {
               <span className="t-small muted">{t("kmlHint")}</span>
             </label>
           ) : null}
-          <label className="row" style={{ gap: "var(--gw-s-3)", cursor: "pointer" }}>
+          <label
+            className="row"
+            style={{
+              gap: "var(--gw-s-3)",
+              cursor: "pointer",
+              // Box and label stay side by side: without nowrap the long
+              // label wraps under the checkbox and reads as a stray box.
+              flexWrap: "nowrap",
+              alignItems: "flex-start",
+            }}
+          >
             <input
               type="checkbox"
               name="test_lot"
               checked={testLot}
               onChange={(e) => setTestLot(e.target.checked)}
               data-testid="new-property-test-lot"
-              style={{ width: 18, height: 18 }}
+              style={{ width: 18, height: 18, flexShrink: 0, marginTop: 3 }}
             />
             <span className="stack" style={{ gap: 2 }}>
               <span className="t-body-m">{t("testLot")}</span>

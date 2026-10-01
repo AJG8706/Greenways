@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { zipSync } from "fflate";
-import { kmlTextFromUpload, parseKml } from "@/lib/kml";
+import { kmlTextFromUpload, parseKml, parseKmlMulti } from "@/lib/kml";
 
 const lot4 = readFileSync(
   join(__dirname, "../../data/lot4_gaines_acres.kml"),
@@ -73,5 +73,27 @@ describe("kmlTextFromUpload (KMZ support)", () => {
     );
     const out = kmlTextFromUpload(kmz, "export.kmz");
     expect(parseKml(out).ring).toEqual(parseKml(xml).ring);
+  });
+});
+
+describe("deed-plot KMZ (survey line work, no Polygon)", () => {
+  const kmz = readFileSync(join(__dirname, "../../data/broussard_road.kmz"));
+
+  it("polygonizes the line work into the four platted lots", () => {
+    const xml = kmlTextFromUpload(new Uint8Array(kmz), "broussard_road.kmz");
+    const multi = parseKmlMulti(xml);
+    // Two ~1.49 ac and two ~1.00 ac lots; the ~4.99 ac outer face (the
+    // whole tract) and the label leader lines never become lots.
+    expect(multi.polygons.length).toBe(4);
+    for (const poly of multi.polygons) {
+      expect(poly.ring.length).toBeGreaterThanOrEqual(4);
+      expect(poly.ring[0]).toEqual(poly.ring[poly.ring.length - 1]);
+      for (const p of poly.ring) {
+        expect(p.lat).toBeGreaterThan(30.17);
+        expect(p.lat).toBeLessThan(30.18);
+        expect(p.lng).toBeGreaterThan(-94.2);
+        expect(p.lng).toBeLessThan(-94.19);
+      }
+    }
   });
 });
