@@ -7,6 +7,7 @@ import { SCENARIOS } from "@/lib/hud/walker";
 import { WalkApp } from "@/components/walk/walk-app";
 import { LotPicker, type PickerLot } from "@/components/walk/lot-picker";
 import { isTeamViewer } from "@/lib/auth/team";
+import { DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 
 export const dynamic = "force-dynamic";
 
@@ -138,7 +139,11 @@ export default async function WalkPage({
 
   const stakeUrls = new Map<string, string>();
   const paths = [
-    ...corners.flatMap((c) => (c.stake_photo ? [c.stake_photo] : [])),
+    // The shared example-pin stand-in renders from the app's own static
+    // asset (with its "example photo" caption), so it never needs signing.
+    ...corners.flatMap((c) =>
+      c.stake_photo && c.stake_photo !== DEFAULT_STAKE_PHOTO_PATH ? [c.stake_photo] : [],
+    ),
     ...clipPathBySlot.values(),
   ];
   if (paths.length > 0) {
@@ -190,7 +195,10 @@ export default async function WalkPage({
       lng: c.lng,
       name: i18nText(c.name),
       stake: i18nText(c.stake),
-      stakePhotoUrl: c.stake_photo ? (stakeUrls.get(c.stake_photo) ?? null) : null,
+      stakePhotoUrl:
+        c.stake_photo && c.stake_photo !== DEFAULT_STAKE_PHOTO_PATH
+          ? (stakeUrls.get(c.stake_photo) ?? null)
+          : null,
     })),
     entrance: { lat: property.entrance_lat, lng: property.entrance_lng },
     declinationDeg: 1.5, // Beaumont ≈ +1.5°E (2026); per-property model in Phase 6

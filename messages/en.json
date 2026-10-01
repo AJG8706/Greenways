@@ -231,7 +231,7 @@
       "upload": "Upload",
       "missing": "Missing",
       "ready": "Ready",
-      "defaultNote": "Corners without a stake photo show a standard example-pin image on the buyer walk until you upload the real one."
+      "defaultNote": "Until a corner has its real stake photo, buyers see the standard example-pin image. Uploading the real photo here replaces it."
     },
     "content": {
       "title": "Buyer-facing text",

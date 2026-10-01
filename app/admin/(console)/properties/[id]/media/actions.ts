@@ -6,6 +6,7 @@ import { checkCredentials, getProvider } from "@/lib/media/provider";
 import { buildPrompt, type MediaBrief } from "@/lib/media/prompts";
 import { canGenerateSlot, mediaSlotsFor, styleLocked, type MediaSlot } from "@/lib/media/slots";
 import { i18nText } from "@/lib/i18n/text";
+import { DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 import type { Json } from "@/lib/supabase/database.types";
 
 export type ActionResult = { ok: boolean; message?: string };
@@ -95,7 +96,10 @@ async function sourcePathsFor(
       .eq("n", slot.cornerN!)
       .maybeSingle();
     if (!corner?.approach_photo) return { missing: `C${slot.cornerN} approach photo` };
-    if (!corner.stake_photo) return { missing: `C${slot.cornerN} stake photo` };
+    // The shared example-pin stand-in is not the actual land (guardrail #3),
+    // so it can never be a generation source frame.
+    if (!corner.stake_photo || corner.stake_photo === DEFAULT_STAKE_PHOTO_PATH)
+      return { missing: `C${slot.cornerN} stake photo` };
     // Start frame = 30-ft approach, end frame = stake close-up (library §2).
     return [corner.approach_photo, corner.stake_photo];
   }

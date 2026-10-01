@@ -8,6 +8,7 @@ import { DeletePropertyButton } from "@/components/admin/delete-property-button"
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
 import { DuplicateLotButton } from "@/components/admin/duplicate-lot-button";
+import { DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 import { LotsBulkEdit } from "@/components/admin/lots-bulk-edit";
 import { Pill, saleTone, statusTone } from "@/components/ui/pill";
 
@@ -104,7 +105,8 @@ export default async function OverviewPage({
       n: c.n,
       locked: c.locked,
       approachPhoto: Boolean(c.approach_photo),
-      stakePhoto: Boolean(c.stake_photo),
+      // The shared example-pin stand-in is not a field photo.
+      stakePhoto: Boolean(c.stake_photo) && c.stake_photo !== DEFAULT_STAKE_PHOTO_PATH,
     })),
     captureSlots: mediaRows.filter((m) => m.type === "capture").map((m) => m.slot),
     briefSaved:
@@ -177,7 +179,7 @@ export default async function OverviewPage({
         n: c.n,
         locked: c.locked,
         approachPhoto: Boolean(c.approach_photo),
-        stakePhoto: Boolean(c.stake_photo),
+        stakePhoto: Boolean(c.stake_photo) && c.stake_photo !== DEFAULT_STAKE_PHOTO_PATH,
       })),
       captureSlots: lotMedia.filter((m) => m.type === "capture").map((m) => m.slot),
       briefSaved: lot.media_brief !== null && Object.keys(lot.media_brief as object).length > 0,
