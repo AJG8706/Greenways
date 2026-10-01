@@ -18,6 +18,7 @@ const ACTION_LABELS: Record<string, string> = {
   lots_bulk_updated: "Bulk-edited all lots of a master",
   lots_bulk_published: "Published all ready lots of a master",
   geometry_changed: "Edited a published listing's geometry",
+  property_duplicated: "Duplicated a property",
   entrance_moved: "Moved the entrance",
   corner_locked: "Locked a corner (CAD-verified)",
   corner_unlocked: "Unlocked a corner",

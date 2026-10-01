@@ -1,3 +1,4 @@
+import { unzipSync } from "fflate";
 import { XMLParser } from "fast-xml-parser";
 import type { LatLng } from "./geo/types";
 
@@ -116,4 +117,24 @@ function get(obj: unknown, key: string): unknown {
 
 function asString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
+}
+
+/**
+ * Accept .kml and .kmz alike: a KMZ is a zip whose main document is a KML
+ * (Google Earth saves `doc.kml` at the root). Returns the KML text either
+ * way. The extracted size is capped independently of the upload cap so a
+ * tiny zip can't expand into something enormous.
+ */
+export function kmlTextFromUpload(bytes: Uint8Array, filename: string): string {
+  const isZip = bytes.length > 3 && bytes[0] === 0x50 && bytes[1] === 0x4b;
+  if (!isZip && !/\.kmz$/i.test(filename)) {
+    return new TextDecoder().decode(bytes);
+  }
+  const entries = unzipSync(bytes, {
+    filter: (f) => /\.kml$/i.test(f.name) && f.originalSize <= 8 * 1024 * 1024,
+  });
+  const names = Object.keys(entries);
+  if (names.length === 0) throw new Error("KMZ contains no .kml document");
+  const main = names.find((n) => /^doc\.kml$/i.test(n)) ?? names.sort()[0]!;
+  return new TextDecoder().decode(entries[main]!);
 }

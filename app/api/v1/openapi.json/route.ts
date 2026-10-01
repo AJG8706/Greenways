@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
  * OpenAPI 3.1 description of /api/v1 — public (no secrets in a spec), so
  * any tool (n8n, Postman, Zapier, a GPT action) can import it directly.
  */
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://greenways-jade.vercel.app";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://navigate.texasgreenerpastures.com";
 
 const spec = {
   openapi: "3.1.0",

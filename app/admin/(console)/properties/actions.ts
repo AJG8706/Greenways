@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { parseKml, parseKmlMulti } from "@/lib/kml";
+import { i18nText } from "@/lib/i18n/text";
+import { kmlTextFromUpload, parseKml, parseKmlMulti } from "@/lib/kml";
 import { splitSubdivision, type SubdivisionLot } from "@/lib/geo/subdivision";
 import {
   areaAcres,
@@ -57,7 +58,7 @@ export async function createProperty(
     }
     if (kmlFile.size > 2 * 1024 * 1024) return { ok: false, message: "KML too large (max 2 MB)" };
     try {
-      const xml = await kmlFile.text();
+      const xml = kmlTextFromUpload(new Uint8Array(await kmlFile.arrayBuffer()), kmlFile.name);
       const multi = parseKmlMulti(xml);
       kmlName = kmlFile.name;
       if (multi.polygons.length > 1) {
@@ -126,12 +127,15 @@ export async function importSubdivisionKml(
   formData: FormData,
 ): Promise<ActionResult> {
   const file = formData.get("kml");
-  if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Choose a .kml file" };
+  if (!(file instanceof File) || file.size === 0)
+    return { ok: false, message: "Choose a .kml or .kmz file" };
   if (file.size > 2 * 1024 * 1024) return { ok: false, message: "KML too large (max 2 MB)" };
 
   let lots: SubdivisionLot[];
   try {
-    const multi = parseKmlMulti(await file.text());
+    const multi = parseKmlMulti(
+      kmlTextFromUpload(new Uint8Array(await file.arrayBuffer()), file.name),
+    );
     if (multi.polygons.length < 2) {
       return {
         ok: false,
@@ -332,7 +336,7 @@ export async function importKml(
 ): Promise<ActionResult> {
   const file = formData.get("kml");
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, message: "Choose a .kml file" };
+    return { ok: false, message: "Choose a .kml or .kmz file" };
   }
   if (file.size > 1024 * 1024) {
     return { ok: false, message: "KML too large (max 1 MB)" };
@@ -340,7 +344,7 @@ export async function importKml(
 
   let parsed;
   try {
-    parsed = parseKml(await file.text());
+    parsed = parseKml(kmlTextFromUpload(new Uint8Array(await file.arrayBuffer()), file.name));
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Could not parse KML" };
   }
@@ -738,4 +742,95 @@ export async function deleteProperty(propertyId: string): Promise<ActionResult> 
 
   revalidatePath("/admin/properties");
   redirect("/admin/properties");
+}
+
+/**
+ * Duplicate a property (typically a lot of a master): same geometry and
+ * content as a fresh DRAFT sibling. Corners copy UNLOCKED — "locked" means
+ * CAD-verified through the audited lock step, which a copy has not been —
+ * and nothing property-scoped that can't be true of two listings at once
+ * comes along: no photos, media, links, Monday pin, publish state.
+ */
+export async function duplicateProperty(
+  propertyId: string,
+): Promise<ActionResult & { newId?: string }> {
+  const supabase = await createClient();
+
+  const { data: src } = await supabase
+    .from("properties")
+    .select(
+      "slug, name, address, county, parent_id, acres, entrance_lat, entrance_lng, boundary, geometry_source, media_brief, test_lot",
+    )
+    .eq("id", propertyId)
+    .maybeSingle();
+  if (!src) return { ok: false, message: "Property not found" };
+
+  // First free slug: <src>-copy, then -copy-2, -copy-3…
+  let slug = `${src.slug}-copy`;
+  for (let i = 2; i <= 50; i++) {
+    const { data: taken } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (!taken) break;
+    slug = `${src.slug}-copy-${i}`;
+  }
+
+  const srcName = i18nText(src.name);
+  const { data: created, error } = await supabase
+    .from("properties")
+    .insert({
+      slug,
+      name: {
+        en: srcName.en ? `${srcName.en} (copy)` : slug,
+        es: srcName.es ? `${srcName.es} (copia)` : "",
+      },
+      address: src.address,
+      county: src.county,
+      parent_id: src.parent_id,
+      acres: src.acres,
+      entrance_lat: src.entrance_lat,
+      entrance_lng: src.entrance_lng,
+      boundary: src.boundary,
+      geometry_source: src.geometry_source,
+      media_brief: src.media_brief,
+      test_lot: src.test_lot,
+      // Fresh start by design: draft, unreviewed Spanish, available, no demo.
+    })
+    .select("id")
+    .single();
+  if (error || !created) return { ok: false, message: error?.message ?? "Duplicate failed" };
+
+  const { data: corners } = await supabase
+    .from("corners")
+    .select("n, lat, lng, name, stake")
+    .eq("property_id", propertyId)
+    .order("n");
+  if (corners && corners.length > 0) {
+    const { error: cornersError } = await supabase.from("corners").insert(
+      corners.map((c) => ({
+        property_id: created.id,
+        n: c.n,
+        lat: c.lat,
+        lng: c.lng,
+        name: c.name as never,
+        stake: c.stake as never,
+        locked: false,
+      })),
+    );
+    if (cornersError) {
+      return { ok: false, message: `Duplicated, but corners failed: ${cornersError.message}` };
+    }
+  }
+
+  await supabase.rpc("write_audit", {
+    p_action: "property_duplicated",
+    p_property_id: created.id,
+    p_detail: { from: src.slug, slug },
+  });
+
+  if (src.parent_id) revalidatePath(`/admin/properties/${src.parent_id}`);
+  revalidatePath("/admin/properties");
+  return { ok: true, newId: created.id };
 }

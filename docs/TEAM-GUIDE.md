@@ -1,7 +1,7 @@
 # Greenways Team Guide
 
 How the TGP team uses the Greenways console, start to finish. The console
-lives at **https://greenways-jade.vercel.app/admin**. Questions the guide
+lives at **https://navigate.texasgreenerpastures.com/admin**. Questions the guide
 doesn't answer go to Alton.
 
 ## Signing in

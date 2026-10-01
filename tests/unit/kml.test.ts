@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parseKml } from "@/lib/kml";
+import { zipSync } from "fflate";
+import { kmlTextFromUpload, parseKml } from "@/lib/kml";
 
 const lot4 = readFileSync(
   join(__dirname, "../../data/lot4_gaines_acres.kml"),
@@ -41,5 +42,25 @@ describe("KML import (buyer-lot-map standard)", () => {
     expect(parsed.name).toBe("lot");
     expect(parsed.ring).toHaveLength(4);
     expect(parsed.point).toEqual({ lat: 30.1, lng: -94.1 });
+  });
+});
+
+describe("kmlTextFromUpload (KMZ support)", () => {
+  it("passes plain KML text through untouched", () => {
+    const xml = readFileSync(join(__dirname, "../../data/lot4_gaines_acres.kml"), "utf8");
+    const out = kmlTextFromUpload(new TextEncoder().encode(xml), "lot4.kml");
+    expect(parseKml(out).ring.length).toBeGreaterThan(3);
+  });
+
+  it("extracts doc.kml from a KMZ and parses identically", () => {
+    const xml = readFileSync(join(__dirname, "../../data/lot4_gaines_acres.kml"), "utf8");
+    const kmz = zipSync({ "doc.kml": new TextEncoder().encode(xml), "images/ignored.png": new Uint8Array([1]) });
+    const out = kmlTextFromUpload(kmz, "lot4.kmz");
+    expect(parseKml(out).ring).toEqual(parseKml(xml).ring);
+  });
+
+  it("rejects a KMZ with no KML inside", () => {
+    const kmz = zipSync({ "readme.txt": new TextEncoder().encode("nope") });
+    expect(() => kmlTextFromUpload(kmz, "broken.kmz")).toThrow(/no .kml/i);
   });
 });

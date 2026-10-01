@@ -40,7 +40,7 @@ export function NewPropertyDialog() {
           {!testLot ? (
             <label className="field">
               {t("kml")}
-              <Input type="file" name="kml" accept=".kml" data-testid="new-property-kml" />
+              <Input type="file" name="kml" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" data-testid="new-property-kml" />
               <span className="t-small muted">{t("kmlHint")}</span>
             </label>
           ) : null}
