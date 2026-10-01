@@ -14,7 +14,7 @@ export type PropertyDocument = {
   sizeKb: number | null;
 };
 
-const ALLOWED = /\.(kml|pdf)$/i;
+const ALLOWED = /\.(kml|kmz|pdf)$/i;
 
 /**
  * Property documents (surveys, plats, source KML): KML/PDF only, stored in

@@ -63,4 +63,15 @@ describe("kmlTextFromUpload (KMZ support)", () => {
     const kmz = zipSync({ "readme.txt": new TextEncoder().encode("nope") });
     expect(() => kmlTextFromUpload(kmz, "broken.kmz")).toThrow(/no .kml/i);
   });
+
+  it("handles stored (uncompressed) entries and a KML in a subfolder", () => {
+    const xml = readFileSync(join(__dirname, "../../data/lot4_gaines_acres.kml"), "utf8");
+    // level 0 = stored, like some GIS exporters; no doc.kml at the root.
+    const kmz = zipSync(
+      { "files/boundary.kml": new TextEncoder().encode(xml), "files/overlay.png": new Uint8Array(64) },
+      { level: 0 },
+    );
+    const out = kmlTextFromUpload(kmz, "export.kmz");
+    expect(parseKml(out).ring).toEqual(parseKml(xml).ring);
+  });
 });

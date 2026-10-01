@@ -56,7 +56,7 @@ export async function createProperty(
     if (testLot) {
       return { ok: false, message: "A test lot takes a generated square, not a KML" };
     }
-    if (kmlFile.size > 2 * 1024 * 1024) return { ok: false, message: "KML too large (max 2 MB)" };
+    if (kmlFile.size > 8 * 1024 * 1024) return { ok: false, message: "KML/KMZ too large (max 8 MB)" };
     try {
       const xml = kmlTextFromUpload(new Uint8Array(await kmlFile.arrayBuffer()), kmlFile.name);
       const multi = parseKmlMulti(xml);
@@ -129,7 +129,7 @@ export async function importSubdivisionKml(
   const file = formData.get("kml");
   if (!(file instanceof File) || file.size === 0)
     return { ok: false, message: "Choose a .kml or .kmz file" };
-  if (file.size > 2 * 1024 * 1024) return { ok: false, message: "KML too large (max 2 MB)" };
+  if (file.size > 8 * 1024 * 1024) return { ok: false, message: "KML/KMZ too large (max 8 MB)" };
 
   let lots: SubdivisionLot[];
   try {
@@ -338,8 +338,8 @@ export async function importKml(
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, message: "Choose a .kml or .kmz file" };
   }
-  if (file.size > 1024 * 1024) {
-    return { ok: false, message: "KML too large (max 1 MB)" };
+  if (file.size > 8 * 1024 * 1024) {
+    return { ok: false, message: "KML/KMZ too large (max 8 MB)" };
   }
 
   let parsed;

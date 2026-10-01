@@ -30,7 +30,7 @@ export function SubdivisionImportCard({
 
   function importFile(file: File) {
     setError(null);
-    if (!/\.kml$/i.test(file.name)) {
+    if (!/\.(kml|kmz)$/i.test(file.name)) {
       setError(labels.badType);
       return;
     }

@@ -12,6 +12,12 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Geometry imports (KML/KMZ with embedded overlays) arrive as server-action
+  // form posts; the framework default of 1 MB silently rejected them before
+  // our own size checks could even run.
+  experimental: {
+    serverActions: { bodySizeLimit: "10mb" },
+  },
   eslint: {
     dirs: ["app", "components", "lib", "tests"],
   },
