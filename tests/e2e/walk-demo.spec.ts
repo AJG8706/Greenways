@@ -22,11 +22,22 @@ async function completeWalk(page: Page) {
 
   await page.getByTestId("demo-tray-toggle").click();
 
+  // The media specs give C1/C2 real stake photos on this same shared DB,
+  // but C3/C4 never get one — so somewhere in the walk the arrival card
+  // must fall back to the standard example-pin image with its caption.
+  let sawDefaultPin = false;
   for (let i = 0; i < 4; i++) {
     await page.getByTestId("demo-jump").click();
     await expect(page.getByTestId("arrival-card")).toBeVisible({ timeout: 20000 });
+    sawDefaultPin =
+      sawDefaultPin ||
+      (await page
+        .getByTestId("stake-photo-default")
+        .isVisible()
+        .catch(() => false));
     await page.getByTestId("arrival-next").click();
   }
+  expect(sawDefaultPin).toBe(true);
 
   await expect(page.getByTestId("done-title")).toBeVisible();
 }

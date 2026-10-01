@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
-import { PROPERTY_PHOTO_SLOTS } from "@/lib/photos";
+import { DEFAULT_STAKE_PHOTO_PATH, PROPERTY_PHOTO_SLOTS } from "@/lib/photos";
 import { PhotoChecklist, type PhotoItem } from "@/components/admin/photo-checklist";
 import { BulkPhotoIntake, type IntakeLot } from "@/components/admin/bulk-photo-intake";
 
@@ -76,7 +76,9 @@ export default async function PhotosPage({
       cornerId: c.id,
       cornerN: c.n,
       slot: "stake",
-      path: c.stake_photo,
+      // The shared example-pin stand-in is not a field photo: the checklist
+      // keeps asking for the real one until it's uploaded.
+      path: c.stake_photo === DEFAULT_STAKE_PHOTO_PATH ? null : c.stake_photo,
     });
   }
   for (const slot of PROPERTY_PHOTO_SLOTS) {
@@ -92,6 +94,7 @@ export default async function PhotosPage({
   return (
     <div className="stack" style={{ gap: "var(--gw-s-5)" }}>
       <h2>{t("title")}</h2>
+      <p className="t-small muted">{t("defaultNote")}</p>
       {items.length === 0 ? (
         <div className="card">
           <p className="muted">Import the KML first — the checklist follows the corners.</p>

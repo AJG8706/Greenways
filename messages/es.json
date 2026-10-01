@@ -85,7 +85,9 @@
     "clip": "Ver la llegada",
     "next": "Siguiente esquina",
     "stay": "Ver la esquina",
-    "allDone": "Esa fue la última"
+    "allDone": "Esa fue la última",
+    "examplePin": "Foto de ejemplo — el pin en esta esquina puede verse un poco diferente.",
+    "examplePinAlt": "Ejemplo de un pin de esquina: un pequeño marcador redondo de topografía con cinta naranja."
   },
   "boundary": {
     "title": "Está justo fuera del límite del lote",

@@ -1,0 +1,70 @@
+name: Seed default corner photo
+
+# Uploads public/media/corner-pin-default.jpg into the property-photos
+# bucket at defaults/corner-pin-default.jpg and points every corner's
+# stake_photo at it. Manual trigger, idempotent (x-upsert + no-op-safe
+# UPDATE). Any stake photo paths being replaced are printed first so the
+# overwrite is recoverable from the run log (the photo files themselves
+# are never deleted from storage).
+
+on:
+  workflow_dispatch:
+
+# Least privilege: nothing here needs to write to the repo.
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: pdrvinfahqnskuwqumuu
+      DEFAULT_PATH: defaults/corner-pin-default.jpg
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Upload the image to storage
+        run: |
+          set -euo pipefail
+          # Service-role key fetched at run time, held in a shell var only.
+          # It is NOT a masked secret, so nothing below may print it.
+          KEY=$(curl -sf "https://api.supabase.com/v1/projects/$PROJECT_REF/api-keys?reveal=true" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            | jq -r '.[] | select(.name == "service_role") | .api_key')
+          test -n "$KEY" && test "$KEY" != "null"
+          curl -sf -X POST \
+            "https://$PROJECT_REF.supabase.co/storage/v1/object/property-photos/$DEFAULT_PATH" \
+            -H "Authorization: Bearer $KEY" \
+            -H "apikey: $KEY" \
+            -H "Content-Type: image/jpeg" \
+            -H "x-upsert: true" \
+            --data-binary @public/media/corner-pin-default.jpg | jq .
+
+      - name: Point every corner's stake photo at it
+        run: |
+          set -euo pipefail
+          q() {
+            curl -sf -X POST \
+              "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg q "$1" '{query: $q}')"
+          }
+          echo "Stake photo paths being replaced (recovery record):"
+          q "select p.slug, c.n, c.stake_photo from public.corners c
+             join public.properties p on p.id = c.property_id
+             where c.stake_photo is not null and c.stake_photo <> '$DEFAULT_PATH'
+             order by p.slug, c.n" | jq .
+          echo "Updating:"
+          q "with u as (update public.corners set stake_photo = '$DEFAULT_PATH'
+             where stake_photo is distinct from '$DEFAULT_PATH' returning 1)
+             select count(*) as updated from u" | jq .
+          echo "Verify:"
+          q "select count(*) as corners_total,
+                    count(*) filter (where stake_photo = '$DEFAULT_PATH') as defaulted
+             from public.corners" | jq .
+          q "select name, (metadata->>'size')::bigint as bytes
+             from storage.objects
+             where bucket_id = 'property-photos' and name = '$DEFAULT_PATH'" | jq -e '.[0]'
