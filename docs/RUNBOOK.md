@@ -7,7 +7,7 @@ Companion to `docs/TEAM-GUIDE.md` (how the team *uses* the console) and
 ## The system in one paragraph
 
 Next.js app on **Vercel** (project `greenways`, production = `main`,
-https://greenways-jade.vercel.app), database/auth/storage on **Supabase**
+https://navigate.texasgreenerpastures.com), database/auth/storage on **Supabase**
 (project ref `pdrvinfahqnskuwqumuu`), code on **GitHub**
 (`AJG8706/Greenways`). Merging to `main` deploys production. Database
 changes ship as files in `supabase/migrations/` and are applied to the

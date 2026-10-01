@@ -61,7 +61,13 @@ export function DocumentsCard({
         .from("property-photos")
         .upload(path, file, {
           upsert: true,
-          contentType: file.type || (safeName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "application/vnd.google-earth.kml+xml"),
+          contentType:
+            file.type ||
+            (safeName.toLowerCase().endsWith(".pdf")
+              ? "application/pdf"
+              : safeName.toLowerCase().endsWith(".kmz")
+                ? "application/vnd.google-earth.kmz"
+                : "application/vnd.google-earth.kml+xml"),
         });
       if (upError) throw new Error(upError.message);
       startTransition(async () => {
@@ -105,7 +111,7 @@ export function DocumentsCard({
           <input
             ref={fileRef}
             type="file"
-            accept=".kml,.pdf,application/pdf,application/vnd.google-earth.kml+xml"
+            accept=".kml,.kmz,.pdf,application/pdf,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
             className="sr-only"
             data-testid="document-input"
             onChange={(e) => {

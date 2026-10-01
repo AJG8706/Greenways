@@ -7,6 +7,7 @@ import { assemblyStages } from "@/lib/assembly";
 import { DeletePropertyButton } from "@/components/admin/delete-property-button";
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
+import { DuplicateLotButton } from "@/components/admin/duplicate-lot-button";
 import { LotsBulkEdit } from "@/components/admin/lots-bulk-edit";
 import { Pill, saleTone, statusTone } from "@/components/ui/pill";
 
@@ -234,6 +235,7 @@ export default async function OverviewPage({
                     <th>Status</th>
                     <th>Sale</th>
                     <th>Next step</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -257,6 +259,9 @@ export default async function OverviewPage({
                       </td>
                       <td className="t-small muted">
                         {lot.next ? stageMeta[lot.next].label : "Walk is live"}
+                      </td>
+                      <td>
+                        <DuplicateLotButton lotId={lot.id} />
                       </td>
                     </tr>
                   ))}

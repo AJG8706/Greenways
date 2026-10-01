@@ -4,8 +4,8 @@ Programmatic access to Greenways for external tools — n8n, GoHighLevel,
 spreadsheets, dashboards, future apps. Read properties, issue prospect walk
 links, and pull walk analytics without touching the admin console.
 
-- **Base URL**: `https://greenways-jade.vercel.app/api/v1`
-- **Machine-readable spec**: [`/api/v1/openapi.json`](https://greenways-jade.vercel.app/api/v1/openapi.json)
+- **Base URL**: `https://navigate.texasgreenerpastures.com/api/v1`
+- **Machine-readable spec**: [`/api/v1/openapi.json`](https://navigate.texasgreenerpastures.com/api/v1/openapi.json)
   (OpenAPI 3.1 — import it into n8n, Postman, Zapier or a GPT action and the
   endpoints self-describe)
 - **Format**: JSON in, JSON out. UTF-8. Times are ISO 8601 UTC.
@@ -43,7 +43,7 @@ Failure modes:
 ### `GET /properties` — list all properties
 
 ```bash
-curl -s https://greenways-jade.vercel.app/api/v1/properties \
+curl -s https://navigate.texasgreenerpastures.com/api/v1/properties \
   -H "Authorization: Bearer $GREENWAYS_API_KEY"
 ```
 
@@ -62,7 +62,7 @@ curl -s https://greenways-jade.vercel.app/api/v1/properties \
       "demo_mode": true,
       "test_lot": false,
       "corners": { "total": 4, "locked": 4 },
-      "walk_url": "https://greenways-jade.vercel.app/walk/broussard-lot-4",
+      "walk_url": "https://navigate.texasgreenerpastures.com/walk/broussard-lot-4",
       "published_at": "2026-09-18T01:00:00Z",
       "created_at": "2026-09-15T20:00:00Z"
     }
@@ -90,7 +90,7 @@ tokenized link tied to a prospect so their walk sessions are attributed.
 
 ```bash
 curl -s -X POST \
-  https://greenways-jade.vercel.app/api/v1/properties/broussard-lot-4/links \
+  https://navigate.texasgreenerpastures.com/api/v1/properties/broussard-lot-4/links \
   -H "Authorization: Bearer $GREENWAYS_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"ghl_contact_id": "abc123", "locale": "es", "expires_days": 30}'
@@ -100,7 +100,7 @@ Response `201`:
 
 ```json
 {
-  "url": "https://greenways-jade.vercel.app/walk/broussard-lot-4?t=…",
+  "url": "https://navigate.texasgreenerpastures.com/walk/broussard-lot-4?t=…",
   "token": "…",
   "expires_at": "2026-10-18T01:00:00Z",
   "published": true,

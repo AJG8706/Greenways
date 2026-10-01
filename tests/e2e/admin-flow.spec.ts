@@ -193,6 +193,25 @@ test("assemble: a master KML at creation splits into lot properties", async ({
   await page.getByTestId("tab-corners").click();
   await expect(page.getByTestId("corners-table").locator("tbody tr")).toHaveCount(4);
 
+  // Duplicate a lot: a fresh DRAFT sibling with the same geometry, corners
+  // copied UNLOCKED (the CAD lock step re-runs on the copy), nothing
+  // property-scoped (photos, links, publish state) carried over.
+  await page.goto(masterUrl);
+  await page.locator('[data-testid^="duplicate-"]').first().click();
+  await expect(page.getByTestId("lots-table").locator("tbody tr")).toHaveCount(11, {
+    timeout: 15_000,
+  });
+  const { data: copy } = await adminApi()
+    .from("properties")
+    .select("id, status, es_reviewed, sale_status, corners(locked)")
+    .like("slug", "e2e-warren-master-lot-%-copy")
+    .single();
+  expect(copy!.status).toBe("draft");
+  expect(copy!.es_reviewed).toBe(false);
+  expect(copy!.sale_status).toBe("available");
+  expect(copy!.corners.length).toBeGreaterThanOrEqual(3);
+  expect(copy!.corners.every((c: { locked: boolean }) => !c.locked)).toBe(true);
+
   // Folder semantics: deleting the master deletes its lots with it.
   // (The breadcrumb lives on the Overview tab; we're on Corners — go direct.)
   await page.goto(masterUrl);

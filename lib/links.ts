@@ -18,7 +18,7 @@ export function publicLinkToken(slug: string): string {
 }
 
 export function walkUrl(slug: string, token?: string | null): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://greenways-jade.vercel.app";
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://navigate.texasgreenerpastures.com";
   return token ? `${base}/walk/${slug}?t=${token}` : `${base}/walk/${slug}`;
 }
 

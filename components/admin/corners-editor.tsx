@@ -264,7 +264,7 @@ export function CornersEditor({
         <input
           ref={fileRef}
           type="file"
-          accept=".kml,application/vnd.google-earth.kml+xml"
+          accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"
           className="sr-only"
           data-testid="kml-input"
           onChange={(e) => onKmlChosen(e.target.files?.[0])}
