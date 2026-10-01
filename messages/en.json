@@ -85,7 +85,9 @@
     "clip": "Watch the approach",
     "next": "Next corner",
     "stay": "View corner",
-    "allDone": "That was the last one"
+    "allDone": "That was the last one",
+    "examplePin": "Example photo — the pin at this corner may look slightly different.",
+    "examplePinAlt": "Example of a corner pin: a small round survey marker with orange flagging tape."
   },
   "boundary": {
     "title": "You're just outside the lot line",
@@ -228,7 +230,8 @@
       "aerial": "Drone / aerial",
       "upload": "Upload",
       "missing": "Missing",
-      "ready": "Ready"
+      "ready": "Ready",
+      "defaultNote": "Corners without a stake photo show a standard example-pin image on the buyer walk until you upload the real one."
     },
     "content": {
       "title": "Buyer-facing text",

@@ -25,6 +25,11 @@ async function completeWalk(page: Page) {
   for (let i = 0; i < 4; i++) {
     await page.getByTestId("demo-jump").click();
     await expect(page.getByTestId("arrival-card")).toBeVisible({ timeout: 20000 });
+    if (i === 0) {
+      // The seeded lot has no on-site stake photos yet, so the arrival card
+      // falls back to the standard example-pin image with its caption.
+      await expect(page.getByTestId("stake-photo-default")).toBeVisible();
+    }
     await page.getByTestId("arrival-next").click();
   }
 

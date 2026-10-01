@@ -127,7 +127,23 @@ export function ArrivalCard({
               className="w-full rounded-2"
               style={{ maxHeight: 200, objectFit: "cover" }}
             />
-          ) : null}
+          ) : (
+            // No on-site photo yet: show the standard example pin so buyers
+            // still know what they're hunting for. Display-only fallback —
+            // never written to the corner, so checklists and the media
+            // pipeline keep treating the real photo as missing.
+            <figure className="stack" style={{ gap: 4, margin: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- static asset, sized by CSS */}
+              <img
+                src="/media/corner-pin-default.jpg"
+                alt={t("arrival.examplePinAlt")}
+                className="w-full rounded-2"
+                style={{ maxHeight: 200, objectFit: "cover" }}
+                data-testid="stake-photo-default"
+              />
+              <figcaption className="t-small muted">{t("arrival.examplePin")}</figcaption>
+            </figure>
+          )}
           {pick(corner.stake, locale) ? (
             <p>
               <span className="t-label">{t("arrival.lookFor")}</span>

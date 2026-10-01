@@ -92,6 +92,7 @@ export default async function PhotosPage({
   return (
     <div className="stack" style={{ gap: "var(--gw-s-5)" }}>
       <h2>{t("title")}</h2>
+      <p className="t-small muted">{t("defaultNote")}</p>
       {items.length === 0 ? (
         <div className="card">
           <p className="muted">Import the KML first — the checklist follows the corners.</p>
