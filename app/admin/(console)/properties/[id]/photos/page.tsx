@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
-import { DEFAULT_STAKE_PHOTO_PATH, PROPERTY_PHOTO_SLOTS } from "@/lib/photos";
+import {
+  DEFAULT_APPROACH_PHOTO_PATH,
+  DEFAULT_STAKE_PHOTO_PATH,
+  PROPERTY_PHOTO_SLOTS,
+} from "@/lib/photos";
 import { PhotoChecklist, type PhotoItem } from "@/components/admin/photo-checklist";
 import { BulkPhotoIntake, type IntakeLot } from "@/components/admin/bulk-photo-intake";
 
@@ -68,6 +72,7 @@ export default async function PhotosPage({
       cornerN: c.n,
       slot: "approach",
       path: c.approach_photo,
+      isDefault: c.approach_photo === DEFAULT_APPROACH_PHOTO_PATH,
     });
     items.push({
       key: `c${c.n}-stake`,

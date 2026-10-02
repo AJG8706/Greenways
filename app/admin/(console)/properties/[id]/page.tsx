@@ -8,7 +8,7 @@ import { DeletePropertyButton } from "@/components/admin/delete-property-button"
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
 import { DuplicateLotButton } from "@/components/admin/duplicate-lot-button";
-import { DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
+import { DEFAULT_APPROACH_PHOTO_PATH, DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 import { LotsBulkEdit } from "@/components/admin/lots-bulk-edit";
 import { Pill, saleTone, statusTone } from "@/components/ui/pill";
 
@@ -104,8 +104,9 @@ export default async function OverviewPage({
     corners: cornerList.map((c) => ({
       n: c.n,
       locked: c.locked,
-      approachPhoto: Boolean(c.approach_photo),
-      // The shared example-pin stand-in is not a field photo.
+      // The shared example-pin stand-ins are not field photos.
+      approachPhoto:
+        Boolean(c.approach_photo) && c.approach_photo !== DEFAULT_APPROACH_PHOTO_PATH,
       stakePhoto: Boolean(c.stake_photo) && c.stake_photo !== DEFAULT_STAKE_PHOTO_PATH,
     })),
     captureSlots: mediaRows.filter((m) => m.type === "capture").map((m) => m.slot),
@@ -178,7 +179,8 @@ export default async function OverviewPage({
       corners: lotCorners.map((c) => ({
         n: c.n,
         locked: c.locked,
-        approachPhoto: Boolean(c.approach_photo),
+        approachPhoto:
+          Boolean(c.approach_photo) && c.approach_photo !== DEFAULT_APPROACH_PHOTO_PATH,
         stakePhoto: Boolean(c.stake_photo) && c.stake_photo !== DEFAULT_STAKE_PHOTO_PATH,
       })),
       captureSlots: lotMedia.filter((m) => m.type === "capture").map((m) => m.slot),
