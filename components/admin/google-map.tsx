@@ -31,6 +31,24 @@ export function GoogleMap({
   callbacksRef.current = { onCornerDragged, onMapClick };
 
   useEffect(() => {
+    // Google reports key rejections (wrong referrer, billing, disabled API)
+    // through this global AFTER the script loads — never through the loader
+    // promise below. Without this hook a rejected key renders a silently
+    // blank map, which is exactly how a domain cutover breaks every lot at
+    // once with no error anywhere.
+    const w = window as typeof window & { gm_authFailure?: () => void };
+    const prev = w.gm_authFailure;
+    w.gm_authFailure = () => {
+      setError(
+        `the key was rejected for this site. In Google Cloud → APIs & Services → Credentials, add ${window.location.origin}/* to the key's website (referrer) restrictions`,
+      );
+    };
+    return () => {
+      w.gm_authFailure = prev;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!containerRef.current) return;
     let cancelled = false;
     let map: google.maps.Map | null = null;

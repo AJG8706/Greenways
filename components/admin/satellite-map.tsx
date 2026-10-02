@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { LatLng } from "@/lib/geo/types";
@@ -26,6 +26,7 @@ export function SatelliteMap({
   onMapClick: (p: LatLng) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [tileError, setTileError] = useState<string | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const callbacksRef = useRef({ onCornerDragged, onMapClick });
@@ -92,6 +93,18 @@ export function SatelliteMap({
       });
     });
 
+    // Tile auth failures otherwise render a silently blank background —
+    // surface them with the cause so a token restriction that misses this
+    // domain is diagnosed from the page itself.
+    map.on("error", (e) => {
+      const status = (e.error as { status?: number } | undefined)?.status;
+      if (status === 401 || status === 403) {
+        setTileError(
+          `Mapbox rejected the token for this site (HTTP ${status}). In the Mapbox dashboard, check the token's URL restrictions include ${window.location.origin}`,
+        );
+      }
+    });
+
     map.on("click", (e) => {
       callbacksRef.current.onMapClick({ lat: e.lngLat.lat, lng: e.lngLat.lng });
     });
@@ -131,11 +144,23 @@ export function SatelliteMap({
   }, [token, corners, entrance, draggable]);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full rounded-2"
-      style={{ aspectRatio: "1", background: "var(--gw-pine-3)" }}
-      data-testid="satellite-map"
-    />
+    <div className="relative">
+      <div
+        ref={containerRef}
+        className="w-full rounded-2"
+        style={{ aspectRatio: "1", background: "var(--gw-pine-3)" }}
+        data-testid="satellite-map"
+      />
+      {tileError ? (
+        <div
+          className="absolute inset-x-0 top-0 rounded-2 p-3 t-small"
+          style={{ background: "rgba(36,48,31,.92)", color: "var(--gw-prairie-cream)" }}
+          role="alert"
+          data-testid="satellite-map-error"
+        >
+          {tileError}
+        </div>
+      ) : null}
+    </div>
   );
 }
