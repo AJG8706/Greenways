@@ -2,7 +2,11 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
-import { DEFAULT_STAKE_PHOTO_PATH, PROPERTY_PHOTO_SLOTS } from "@/lib/photos";
+import {
+  DEFAULT_APPROACH_PHOTO_PATH,
+  DEFAULT_STAKE_PHOTO_PATH,
+  PROPERTY_PHOTO_SLOTS,
+} from "@/lib/photos";
 import { PhotoChecklist, type PhotoItem } from "@/components/admin/photo-checklist";
 import { BulkPhotoIntake, type IntakeLot } from "@/components/admin/bulk-photo-intake";
 
@@ -68,6 +72,7 @@ export default async function PhotosPage({
       cornerN: c.n,
       slot: "approach",
       path: c.approach_photo,
+      isDefault: c.approach_photo === DEFAULT_APPROACH_PHOTO_PATH,
     });
     items.push({
       key: `c${c.n}-stake`,
@@ -76,9 +81,10 @@ export default async function PhotosPage({
       cornerId: c.id,
       cornerN: c.n,
       slot: "stake",
-      // The shared example-pin stand-in is not a field photo: the checklist
-      // keeps asking for the real one until it's uploaded.
-      path: c.stake_photo === DEFAULT_STAKE_PHOTO_PATH ? null : c.stake_photo,
+      path: c.stake_photo,
+      // The shared example-pin stand-in counts as in use, with its own
+      // label so the row still invites the real close-up.
+      isDefault: c.stake_photo === DEFAULT_STAKE_PHOTO_PATH,
     });
   }
   for (const slot of PROPERTY_PHOTO_SLOTS) {
@@ -103,7 +109,12 @@ export default async function PhotosPage({
         <PhotoChecklist
           propertyId={id}
           items={items}
-          labels={{ upload: t("upload"), missing: t("missing"), ready: t("ready") }}
+          labels={{
+            upload: t("upload"),
+            missing: t("missing"),
+            ready: t("ready"),
+            defaultPin: t("defaultPin"),
+          }}
         />
       )}
     </div>

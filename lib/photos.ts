@@ -15,6 +15,8 @@ export const PROPERTY_PHOTO_SLOTS = [
  * media pipeline and the walk's caption all treat it as "no photo yet".
  */
 export const DEFAULT_STAKE_PHOTO_PATH = "defaults/corner-pin-default.jpg";
+/** Same stand-in idea for the 30-ft approach slot. */
+export const DEFAULT_APPROACH_PHOTO_PATH = "defaults/corner-approach-default.jpg";
 
 export type CornerPhotoSlot = (typeof PHOTO_SLOTS_PER_CORNER)[number];
 export type PropertyPhotoSlot = (typeof PROPERTY_PHOTO_SLOTS)[number];

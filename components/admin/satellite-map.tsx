@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { LatLng } from "@/lib/geo/types";
@@ -26,6 +26,7 @@ export function SatelliteMap({
   onMapClick: (p: LatLng) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [tileError, setTileError] = useState<string | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const callbacksRef = useRef({ onCornerDragged, onMapClick });
@@ -51,13 +52,19 @@ export function SatelliteMap({
               `https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=${token}`,
             ],
             tileSize: 512,
+            // Rural imagery often stops at z18; without this cap MapLibre
+            // requests z19+ tiles that 404 and the background goes blank
+            // (bit every small lot — fitBounds dives past the imagery).
+            // Capping the source makes deeper zooms overscale z18 instead.
+            maxzoom: 18,
             attribution: "© Mapbox © Maxar",
           },
         },
         layers: [{ id: "satellite", type: "raster", source: "satellite" }],
       },
       bounds,
-      fitBoundsOptions: { padding: 48 },
+      // maxZoom keeps a ~1-acre lot from opening past the imagery depth.
+      fitBoundsOptions: { padding: 48, maxZoom: 18 },
       attributionControl: { compact: true },
     });
     mapRef.current = map;
@@ -84,6 +91,18 @@ export function SatelliteMap({
         source: "lot",
         paint: { "line-color": "#8DBA5E", "line-width": 2.5 },
       });
+    });
+
+    // Tile auth failures otherwise render a silently blank background —
+    // surface them with the cause so a token restriction that misses this
+    // domain is diagnosed from the page itself.
+    map.on("error", (e) => {
+      const status = (e.error as { status?: number } | undefined)?.status;
+      if (status === 401 || status === 403) {
+        setTileError(
+          `Mapbox rejected the token for this site (HTTP ${status}). In the Mapbox dashboard, check the token's URL restrictions include ${window.location.origin}`,
+        );
+      }
     });
 
     map.on("click", (e) => {
@@ -125,11 +144,23 @@ export function SatelliteMap({
   }, [token, corners, entrance, draggable]);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full rounded-2"
-      style={{ aspectRatio: "1", background: "var(--gw-pine-3)" }}
-      data-testid="satellite-map"
-    />
+    <div className="relative">
+      <div
+        ref={containerRef}
+        className="w-full rounded-2"
+        style={{ aspectRatio: "1", background: "var(--gw-pine-3)" }}
+        data-testid="satellite-map"
+      />
+      {tileError ? (
+        <div
+          className="absolute inset-x-0 top-0 rounded-2 p-3 t-small"
+          style={{ background: "rgba(36,48,31,.92)", color: "var(--gw-prairie-cream)" }}
+          role="alert"
+          data-testid="satellite-map-error"
+        >
+          {tileError}
+        </div>
+      ) : null}
+    </div>
   );
 }

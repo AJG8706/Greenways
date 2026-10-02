@@ -231,7 +231,8 @@
       "upload": "Upload",
       "missing": "Missing",
       "ready": "Ready",
-      "defaultNote": "Until a corner has its real stake photo, buyers see the standard example-pin image. Uploading the real photo here replaces it."
+      "defaultNote": "New corners start with the standard example-pin photos in both slots, shown as stand-ins until you upload the real approach and stake shots here. Media generation uses only real field photos.",
+      "defaultPin": "Example pin in use"
     },
     "content": {
       "title": "Buyer-facing text",
