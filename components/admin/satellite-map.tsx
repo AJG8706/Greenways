@@ -51,13 +51,19 @@ export function SatelliteMap({
               `https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}@2x.jpg90?access_token=${token}`,
             ],
             tileSize: 512,
+            // Rural imagery often stops at z18; without this cap MapLibre
+            // requests z19+ tiles that 404 and the background goes blank
+            // (bit every small lot — fitBounds dives past the imagery).
+            // Capping the source makes deeper zooms overscale z18 instead.
+            maxzoom: 18,
             attribution: "© Mapbox © Maxar",
           },
         },
         layers: [{ id: "satellite", type: "raster", source: "satellite" }],
       },
       bounds,
-      fitBoundsOptions: { padding: 48 },
+      // maxZoom keeps a ~1-acre lot from opening past the imagery depth.
+      fitBoundsOptions: { padding: 48, maxZoom: 18 },
       attributionControl: { compact: true },
     });
     mapRef.current = map;

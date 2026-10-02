@@ -19,6 +19,8 @@ export type PhotoItem =
       cornerN: number;
       slot: "approach" | "stake";
       path: string | null;
+      /** The shared example-pin stand-in: in use, but not the real close-up. */
+      isDefault?: boolean;
     }
   | {
       key: string;
@@ -35,7 +37,7 @@ export function PhotoChecklist({
 }: {
   propertyId: string;
   items: PhotoItem[];
-  labels: { upload: string; missing: string; ready: string };
+  labels: { upload: string; missing: string; ready: string; defaultPin: string };
 }) {
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -89,7 +91,11 @@ export function PhotoChecklist({
                     className={`pill ${item.path ? "pill-live" : "pill-draft"}`}
                     data-testid={`photo-state-${item.key}`}
                   >
-                    {item.path ? labels.ready : labels.missing}
+                    {item.path
+                      ? item.kind === "corner" && item.isDefault
+                        ? labels.defaultPin
+                        : labels.ready
+                      : labels.missing}
                   </span>
                 </td>
                 <td style={{ textAlign: "right" }}>

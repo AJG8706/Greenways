@@ -76,9 +76,10 @@ export default async function PhotosPage({
       cornerId: c.id,
       cornerN: c.n,
       slot: "stake",
-      // The shared example-pin stand-in is not a field photo: the checklist
-      // keeps asking for the real one until it's uploaded.
-      path: c.stake_photo === DEFAULT_STAKE_PHOTO_PATH ? null : c.stake_photo,
+      path: c.stake_photo,
+      // The shared example-pin stand-in counts as in use, with its own
+      // label so the row still invites the real close-up.
+      isDefault: c.stake_photo === DEFAULT_STAKE_PHOTO_PATH,
     });
   }
   for (const slot of PROPERTY_PHOTO_SLOTS) {
@@ -103,7 +104,12 @@ export default async function PhotosPage({
         <PhotoChecklist
           propertyId={id}
           items={items}
-          labels={{ upload: t("upload"), missing: t("missing"), ready: t("ready") }}
+          labels={{
+            upload: t("upload"),
+            missing: t("missing"),
+            ready: t("ready"),
+            defaultPin: t("defaultPin"),
+          }}
         />
       )}
     </div>
