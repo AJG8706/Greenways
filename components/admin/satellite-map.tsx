@@ -98,9 +98,16 @@ export function SatelliteMap({
     // domain is diagnosed from the page itself.
     map.on("error", (e) => {
       const status = (e.error as { status?: number } | undefined)?.status;
-      if (status === 401 || status === 403) {
+      // Mapbox semantics: 401 = the token itself is invalid (rotated,
+      // deleted, or mangled in the env var); 403 = a valid token whose URL
+      // restrictions exclude this site. Different dashboards fix each.
+      if (status === 401) {
         setTileError(
-          `Mapbox rejected the token for this site (HTTP ${status}). In the Mapbox dashboard, check the token's URL restrictions include ${window.location.origin}`,
+          "Mapbox says the token is invalid (HTTP 401) — it was rotated, deleted, or mis-pasted. Update NEXT_PUBLIC_MAPBOX_TOKEN in Vercel with the current public token (pk.…) from the Mapbox dashboard, then redeploy.",
+        );
+      } else if (status === 403) {
+        setTileError(
+          `Mapbox blocked this site (HTTP 403). In the Mapbox dashboard, add ${window.location.origin} to the token's URL restrictions.`,
         );
       }
     });
