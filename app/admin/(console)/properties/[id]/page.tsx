@@ -7,6 +7,7 @@ import { assemblyStages } from "@/lib/assembly";
 import { DeletePropertyButton } from "@/components/admin/delete-property-button";
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
+import { AcresCell } from "@/components/admin/acres-cell";
 import { DuplicateLotButton } from "@/components/admin/duplicate-lot-button";
 import { DEFAULT_APPROACH_PHOTO_PATH, DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 import { LotsBulkEdit } from "@/components/admin/lots-bulk-edit";
@@ -250,7 +251,12 @@ export default async function OverviewPage({
                           {lot.name}
                         </Link>
                       </td>
-                      <td className="num">{lot.acres ?? "—"}</td>
+                      <td className="num">
+                        <AcresCell
+                          propertyId={lot.id}
+                          acres={lot.acres === null ? null : Number(lot.acres)}
+                        />
+                      </td>
                       <td>
                         <Pill tone={statusTone[lot.status] ?? "draft"}>{t(`status.${lot.status}`)}</Pill>
                       </td>
