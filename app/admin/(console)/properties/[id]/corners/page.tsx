@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
 import { CornersEditor } from "@/components/admin/corners-editor";
+import { DEFAULT_APPROACH_PHOTO_PATH, DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 
 export default async function CornersPage({
   params,
@@ -50,8 +51,10 @@ export default async function CornersPage({
     lng: c.lng,
     name: i18nText(c.name),
     stake: i18nText(c.stake),
-    approachPhoto: c.approach_photo,
-    stakePhoto: c.stake_photo,
+    // The editor's photo pill counts real field photos; the shared
+    // example-pin stand-ins don't qualify.
+    approachPhoto: c.approach_photo === DEFAULT_APPROACH_PHOTO_PATH ? null : c.approach_photo,
+    stakePhoto: c.stake_photo === DEFAULT_STAKE_PHOTO_PATH ? null : c.stake_photo,
     locked: c.locked,
   }));
 
