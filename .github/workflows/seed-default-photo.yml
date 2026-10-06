@@ -3,10 +3,11 @@ name: Seed default corner photos
 # Uploads the example-pin stand-ins from public/media into the
 # property-photos bucket (defaults/corner-pin-default.jpg for the stake
 # slot, defaults/corner-approach-default.jpg for the approach slot) and
-# points every corner's empty-or-default slots at them. Manual trigger,
-# idempotent (x-upsert + no-op-safe UPDATEs). Any real photo paths being
-# replaced are printed first so the overwrite is recoverable from the run
-# log (the photo files themselves are never deleted from storage).
+# fills EMPTY corner photo slots with them. Real photos are never touched
+# — the one-time full overwrite happened 2026-10-02 on Alton's explicit
+# instruction; since then corners get these defaults at INSERT (migration
+# 20261006190000), so this run is only a backfill for rows created in the
+# gap. Manual trigger, idempotent.
 
 on:
   workflow_dispatch:
@@ -58,22 +59,25 @@ jobs:
               -H "Content-Type: application/json" \
               -d "$(jq -n --arg q "$1" '{query: $q}')"
           }
-          echo "Photo paths being replaced (recovery record):"
-          q "select p.slug, c.n, c.stake_photo, c.approach_photo
+          echo "Corners with empty slots to fill:"
+          q "select p.slug, c.n,
+                    (c.stake_photo is null) as stake_empty,
+                    (c.approach_photo is null) as approach_empty
              from public.corners c
              join public.properties p on p.id = c.property_id
-             where (c.stake_photo is not null and c.stake_photo <> '$STAKE_PATH')
-                or (c.approach_photo is not null and c.approach_photo <> '$APPROACH_PATH')
+             where c.stake_photo is null or c.approach_photo is null
              order by p.slug, c.n" | jq .
-          echo "Updating:"
+          echo "Filling (real photos are never touched):"
           q "with u as (update public.corners
-               set stake_photo = '$STAKE_PATH', approach_photo = '$APPROACH_PATH'
-             where stake_photo is distinct from '$STAKE_PATH'
-                or approach_photo is distinct from '$APPROACH_PATH'
+               set stake_photo = coalesce(stake_photo, '$STAKE_PATH'),
+                   approach_photo = coalesce(approach_photo, '$APPROACH_PATH')
+             where stake_photo is null or approach_photo is null
              returning 1)
              select count(*) as updated from u" | jq .
           echo "Verify:"
           q "select count(*) as corners_total,
+                    count(*) filter (where stake_photo is null) as stake_still_empty,
+                    count(*) filter (where approach_photo is null) as approach_still_empty,
                     count(*) filter (where stake_photo = '$STAKE_PATH') as stake_defaulted,
                     count(*) filter (where approach_photo = '$APPROACH_PATH') as approach_defaulted
              from public.corners" | jq .

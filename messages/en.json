@@ -445,6 +445,7 @@
     "available": "Available",
     "underContract": "Under contract",
     "sold": "Sold",
+    "comingSoon": "Walk coming soon",
     "empty": "No lots are open for walking yet. Check back soon.",
     "remaining": "{available} of {total} lots still available"
   },

@@ -137,6 +137,7 @@
     "available": "Disponible",
     "underContract": "En contrato",
     "sold": "Vendido",
+    "comingSoon": "Recorrido disponible pronto",
     "empty": "Aún no hay lotes abiertos para recorrer. Vuelve pronto.",
     "remaining": "{available} de {total} lotes aún disponibles"
   },

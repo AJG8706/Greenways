@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isMockProvider } from "@/lib/media/provider";
 import type { MediaBrief } from "@/lib/media/prompts";
 import { canGenerateSlot, mediaSlotsFor, styleLocked } from "@/lib/media/slots";
+import { DEFAULT_APPROACH_PHOTO_PATH, DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 import {
   BriefForm,
   ConnectionTest,
@@ -68,8 +69,12 @@ export default async function MediaPage({ params }: { params: Promise<{ id: stri
     const missing: string[] = [];
     if (slot.kind === "corner_approach") {
       const c = cornerByN.get(slot.cornerN!);
-      if (!c?.approach_photo) missing.push(t("sources.approach"));
-      if (!c?.stake_photo) missing.push(t("sources.stake"));
+      // The shared example-pin stand-ins are not generation sources
+      // (guardrail #3) — same rule the server action enforces.
+      if (!c?.approach_photo || c.approach_photo === DEFAULT_APPROACH_PHOTO_PATH)
+        missing.push(t("sources.approach"));
+      if (!c?.stake_photo || c.stake_photo === DEFAULT_STAKE_PHOTO_PATH)
+        missing.push(t("sources.stake"));
     } else {
       const wanted =
         slot.kind === "intro" ? ["aerial", "gate"] : slot.kind === "entrance" ? ["gate"] : ["homesite"];

@@ -56,21 +56,26 @@ export default async function WalkPage({
       children.some((lot) => lot.status === "published") ||
       team;
     if (!masterVisible) notFound();
-    const lots: PickerLot[] = children
-      .filter((lot) => {
-        const corners = lot.corners ?? [];
-        const walkable =
-          corners.length >= 3 && corners.every((c) => c.locked) && lot.entrance_lat !== null;
-        const visible =
-          lot.status === "published" || ((lot.demo_mode || lot.test_lot) && team);
-        return walkable && visible;
-      })
-      .map((lot) => ({
+    // Every platted lot is listed so the picker matches the "X of Y lots"
+    // line and the sign at the gate. Lots that aren't individually walkable
+    // yet (unpublished for this viewer, corners not locked, no entrance)
+    // render as non-clickable "coming soon" tiles; team members can walk
+    // their drafts as soon as the geometry is ready.
+    const lots: PickerLot[] = children.map((lot) => {
+      const lotCorners = lot.corners ?? [];
+      const geomReady =
+        lotCorners.length >= 3 &&
+        lotCorners.every((c) => c.locked) &&
+        lot.entrance_lat !== null;
+      const visible = lot.status === "published" || team;
+      return {
         slug: lot.slug,
         name: i18nText(lot.name),
         acres: lot.acres === null ? null : Number(lot.acres),
         saleStatus: lot.sale_status,
-      }));
+        walkable: geomReady && visible,
+      };
+    });
     return (
       <LotPicker
         masterName={i18nText(property.name)}

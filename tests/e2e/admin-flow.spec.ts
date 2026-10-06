@@ -172,12 +172,14 @@ test("assemble: a master KML at creation splits into lot properties", async ({
   const anonMaster = await request.get("/walk/e2e-warren-master");
   expect(anonMaster.status()).toBe(404);
 
-  // For the signed-in team the master link is the lot picker. Nothing is
-  // published or locked yet, so the list is the empty state (unpublished
-  // never shows) — and the scarcity line counts sale status across ALL
-  // platted lots (the bulk edit above put all 10 under contract).
+  // For the signed-in team the master link is the lot picker. Every
+  // platted lot is listed so the picker matches the scarcity line, but
+  // nothing is locked yet, so all ten render as non-clickable
+  // "coming soon" tiles — and the scarcity line counts sale status across
+  // ALL platted lots (the bulk edit above put all 10 under contract).
   await page.goto("/walk/e2e-warren-master");
-  await expect(page.getByTestId("lots-empty")).toBeVisible();
+  await expect(page.getByTestId("lot-picker").locator("li")).toHaveCount(10);
+  await expect(page.getByTestId("lot-picker").getByRole("link")).toHaveCount(0);
   await expect(page.getByTestId("lots-remaining")).toContainText("0 of 10");
 
   // A lot is a full property with corners of its own and a way back up.
