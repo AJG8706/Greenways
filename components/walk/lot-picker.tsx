@@ -9,6 +9,8 @@ export type PickerLot = {
   name: I18nText;
   acres: number | null;
   saleStatus: "available" | "under_contract" | "sold";
+  /** False until this lot's walk serves for this viewer — tile doesn't link. */
+  walkable: boolean;
 };
 
 /**
@@ -77,6 +79,7 @@ export async function LotPicker({
           {lots.map((lot) => {
             const lotName = locale === "es" && lot.name.es ? lot.name.es : lot.name.en;
             const sold = lot.saleStatus === "sold";
+            const clickable = lot.walkable && !sold;
             const badge =
               lot.saleStatus === "available"
                 ? { className: "pill-available", label: t("available") }
@@ -92,16 +95,19 @@ export async function LotPicker({
                       {t("acres", { n: lot.acres })}
                     </span>
                   ) : null}
+                  {!lot.walkable && !sold ? (
+                    <span className="t-small muted">{t("comingSoon")}</span>
+                  ) : null}
                 </span>
                 <span className={`pill ${badge.className}`}>{badge.label}</span>
               </span>
             );
             return (
               <li key={lot.slug}>
-                {sold ? (
+                {!clickable ? (
                   <span
                     className="corner-tile"
-                    style={{ opacity: 0.6, cursor: "default" }}
+                    style={{ opacity: sold ? 0.6 : 0.75, cursor: "default" }}
                     data-testid={`lot-${lot.slug}`}
                   >
                     {body}
