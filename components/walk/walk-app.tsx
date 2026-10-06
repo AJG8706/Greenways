@@ -657,7 +657,20 @@ export function WalkApp({ config }: { config: WalkConfig }) {
             />
           )}
 
-          {view === "compass" ? <DistanceReadout feet={distFeet} /> : null}
+          {view === "compass" ? (
+            <DistanceReadout feet={distFeet} />
+          ) : (
+            // The lot line connects surveyed corners as straight segments;
+            // real boundaries (curved road frontage especially) differ
+            // between corners. Say so right where the line is on screen.
+            <p
+              className="t-small muted mx-auto"
+              style={{ textAlign: "center", maxWidth: 340 }}
+              data-testid="map-line-note"
+            >
+              {t("map.lineNote")}
+            </p>
+          )}
           <StatusLine statusKey={statusKey === null && foundIds.has(trackedCorner.id) ? "here" : statusKey} />
 
           <CornerStrip

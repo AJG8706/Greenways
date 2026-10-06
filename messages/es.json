@@ -32,6 +32,7 @@
     "title": "Términos y seguridad del recorrido",
     "risk": "Usted camina bajo su propio riesgo. Este es campo abierto: terreno desigual, hoyos, cercas, maleza, insectos, fauna silvestre y clima forman parte de él. Mire cada paso y mantenga a los niños cerca.",
     "gps": "La flecha es una guía, no una garantía. La precisión del GPS varía; las estacas marcan las esquinas exactas. Nunca siga la flecha por encima de una cerca, a través de una carretera, hacia el agua ni hacia ningún lugar que parezca inseguro.",
+    "boundary": "El mapa dibuja líneas rectas entre las estacas de las esquinas medidas. El límite real entre esquinas puede variar — por ejemplo, un frente de carretera curvo se muestra como una línea recta. Las estacas son la referencia; las líneas son solo para orientación.",
     "liability": "En la máxima medida permitida por la ley, Texas Greener Pastures LLC y sus propietarios, empleados y representantes no son responsables de lesiones, extravíos ni daños a la propiedad derivados de su visita o del uso de esta guía.",
     "emergency": "En caso de emergencia, llame al 911. El marcador de entrada del mapa muestra el camino de regreso al portón.",
     "close": "Entendido"
@@ -143,5 +144,8 @@
     "scanLots": "Escanea para recorrer los lotes",
     "scanWalk": "Escanea para recorrer este terreno",
     "hint": "Tu teléfono te guía a cada estaca de esquina. Sin app, sin cuenta."
+  },
+  "map": {
+    "lineNote": "Las líneas conectan las estacas de las esquinas en forma directa — el límite real entre esquinas puede ser curvo."
   }
 }

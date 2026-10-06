@@ -17,6 +17,7 @@ const ACTION_LABELS: Record<string, string> = {
   subdivision_imported: "Split a subdivision KML into lots",
   lots_bulk_updated: "Bulk-edited all lots of a master",
   lots_bulk_published: "Published all ready lots of a master",
+  acres_changed: "Corrected a property's acreage",
   geometry_changed: "Edited a published listing's geometry",
   property_duplicated: "Duplicated a property",
   entrance_moved: "Moved the entrance",

@@ -834,3 +834,38 @@ export async function duplicateProperty(
   revalidatePath("/admin/properties");
   return { ok: true, newId: created.id };
 }
+
+/**
+ * Override a property's acreage. Imported geometry only approximates the
+ * surveyed plat (drawn rings, right-of-way, projection) — the plat number
+ * is the one buyers and contracts see, so it wins when the team enters it.
+ */
+export async function updateAcres(propertyId: string, acres: number): Promise<ActionResult> {
+  if (!Number.isFinite(acres) || acres <= 0 || acres > 100000) {
+    return { ok: false, message: "Enter the acreage as a number above zero" };
+  }
+  const rounded = Math.round(acres * 100) / 100;
+  const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("properties")
+    .select("acres, parent_id")
+    .eq("id", propertyId)
+    .maybeSingle();
+  if (!before) return { ok: false, message: "Property not found" };
+
+  const { error } = await supabase
+    .from("properties")
+    .update({ acres: rounded })
+    .eq("id", propertyId);
+  if (error) return { ok: false, message: error.message };
+
+  await supabase.rpc("write_audit", {
+    p_action: "acres_changed",
+    p_property_id: propertyId,
+    p_detail: { from: before.acres === null ? null : Number(before.acres), to: rounded },
+  });
+
+  if (before.parent_id) revalidatePath(`/admin/properties/${before.parent_id}`);
+  revalidatePath(`/admin/properties/${propertyId}`);
+  return { ok: true };
+}
