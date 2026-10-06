@@ -224,7 +224,7 @@ export function TermsSheet({ onClose }: { onClose: () => void }) {
       >
         <div className="stack">
           <h2>{t("title")}</h2>
-          {(["risk", "gps", "liability", "emergency"] as const).map((k) => (
+          {(["risk", "gps", "boundary", "liability", "emergency"] as const).map((k) => (
             <p key={k} className="muted">
               {t(k)}
             </p>

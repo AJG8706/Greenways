@@ -32,6 +32,7 @@
     "title": "Walk terms & safety",
     "risk": "You walk at your own risk. This is open rural land — uneven ground, holes, fences, brush, insects, wildlife, and weather are all part of it. Watch every step and keep children close.",
     "gps": "The arrow is a guide, not a guarantee. GPS accuracy varies; the stakes mark the exact corners. Never follow the arrow over a fence, across a road, into water, or anywhere that looks unsafe.",
+    "boundary": "The map draws straight lines between the surveyed corner stakes. The actual boundary between corners can differ — curved road frontage, for example, shows as a straight line. The corner stakes are the reference; the lines are for orientation only.",
     "liability": "To the fullest extent allowed by law, Texas Greener Pastures LLC and its owners, employees, and representatives are not liable for injury, becoming lost, or property damage arising from your visit or your use of this guide.",
     "emergency": "In an emergency, call 911. The map's entrance marker shows the way back to the gate.",
     "close": "Got it"
@@ -451,5 +452,8 @@
     "scanLots": "Scan to walk the lots",
     "scanWalk": "Scan to walk this land",
     "hint": "Your phone guides you to every corner stake. No app, no account."
+  },
+  "map": {
+    "lineNote": "Lines connect the corner stakes directly — the actual boundary between corners may curve."
   }
 }
