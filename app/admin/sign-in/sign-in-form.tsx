@@ -35,6 +35,19 @@ export function SignInForm() {
           placeholder="you@texasgreenerpastures.com"
         />
       </label>
+      <label
+        className="row"
+        style={{ gap: "var(--gw-s-3)", cursor: "pointer", flexWrap: "nowrap", alignItems: "center" }}
+      >
+        <input
+          type="checkbox"
+          name="remember"
+          defaultChecked
+          data-testid="remember-device"
+          style={{ width: 18, height: 18, flexShrink: 0 }}
+        />
+        <span className="t-body-m">{t("remember")}</span>
+      </label>
       {state.status === "error" ? (
         <div className="banner banner-error" role="alert">
           {state.message}

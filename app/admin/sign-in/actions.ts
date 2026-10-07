@@ -1,6 +1,7 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { REMEMBER_COOKIE, REMEMBER_MAX_AGE_S } from "@/lib/supabase/cookies";
 import { rateLimitAllowed } from "@/lib/api/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -32,6 +33,20 @@ export async function signInWithMagicLink(
   if (!(await rateLimitAllowed(`signin:${ip}`, 5, 60))) {
     return { status: "error", message: "Too many attempts — try again in a minute." };
   }
+
+  // Record the "remember this device" choice before the magic link round
+  // trip; the confirm route and every later refresh read it when setting
+  // auth cookies. Remembered → both live 30 days (rolling); not → both are
+  // session cookies and end when the browser closes. Set for unknown
+  // emails too, so the response stays identical either way.
+  const remember = formData.get("remember") === "on";
+  (await cookies()).set(REMEMBER_COOKIE, remember ? "1" : "0", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    ...(remember ? { maxAge: REMEMBER_MAX_AGE_S } : {}),
+  });
 
   const supabase = await createClient();
 
