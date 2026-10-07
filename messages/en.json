@@ -142,7 +142,8 @@
       "body": "Team members only. We'll email you a one-tap sign-in link.",
       "email": "Work email",
       "cta": "Email me a sign-in link",
-      "sent": "If there's a team account for this email, a sign-in link has been sent to it. The link works for 15 minutes."
+      "sent": "If there's a team account for this email, a sign-in link has been sent to it. The link works for 15 minutes.",
+      "remember": "Remember this device for 30 days"
     },
     "properties": {
       "title": "Properties",
