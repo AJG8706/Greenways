@@ -24,7 +24,9 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "gw card fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2",
+        // Phone: breathing room from the screen edges and internal scroll —
+        // the New Property form is taller than a small phone's viewport.
+        "gw card fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 max-h-[85dvh] overflow-y-auto",
         className,
       )}
       style={{ boxShadow: "var(--shadow-2)" }}
