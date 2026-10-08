@@ -38,3 +38,26 @@ body {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+
+/* Admin on a phone: the design system (imported verbatim above) is sized
+   for desktop. These overrides only tighten density below 640px and add
+   touch affordances — they change nothing on larger screens. */
+.gw .table-wrap {
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 640px) {
+  .gw h1 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  .gw th,
+  .gw td {
+    padding: 10px;
+  }
+  .gw .tab {
+    padding: 10px;
+  }
+  .gw .card {
+    padding: var(--gw-s-4, 16px);
+  }
+}

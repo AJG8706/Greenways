@@ -56,6 +56,8 @@ export function AcresCell({
         width: 84,
         textAlign: "right",
         padding: "4px 8px",
+        // ≥16px or iOS zooms the whole page on focus.
+        fontSize: 16,
         background: "transparent",
         border: `1px solid ${invalid ? "var(--gw-fence-post-red)" : "var(--gw-border, rgba(36,48,31,.25))"}`,
         opacity: pending ? 0.6 : 1,

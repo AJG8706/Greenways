@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  authCookieOptions,
-  REMEMBER_MAX_AGE_S,
-  rememberedFrom,
-} from "@/lib/supabase/cookies";
+import { authCookieOptions, rememberedFrom } from "@/lib/supabase/cookies";
 
 describe("remember-this-device cookie logic", () => {
   it("defaults to remembered when the preference cookie is missing", () => {
@@ -13,16 +9,13 @@ describe("remember-this-device cookie logic", () => {
     expect(rememberedFrom("0")).toBe(false);
   });
 
-  it("remembered: pins auth cookies to the 30-day rolling window", () => {
-    const out = authCookieOptions(true, {
+  it("remembered: keeps the auth library's long-lived defaults untouched", () => {
+    const options = {
       path: "/",
       maxAge: 400 * 24 * 60 * 60,
       expires: new Date("2030-01-01"),
-    });
-    expect(out.maxAge).toBe(REMEMBER_MAX_AGE_S);
-    expect(out.maxAge).toBe(30 * 24 * 60 * 60);
-    expect(out.expires).toBeUndefined();
-    expect(out.path).toBe("/");
+    };
+    expect(authCookieOptions(true, options)).toEqual(options);
   });
 
   it("not remembered: strips lifetimes so cookies end with the browser session", () => {
