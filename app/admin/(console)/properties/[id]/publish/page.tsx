@@ -107,7 +107,7 @@ export default async function PublishPage({
       </div>
     );
   }
-  const mondayOn = isMondayConfigured();
+  const mondayOn = await isMondayConfigured();
   const mondayItemName =
     mondayOn && property.monday_item_id ? await getItemName(property.monday_item_id) : null;
 

@@ -259,6 +259,30 @@ export type Database = {
           },
         ];
       };
+      service_keys: {
+        Row: {
+          name: string;
+          ciphertext: string;
+          last4: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          name: string;
+          ciphertext: string;
+          last4: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          name?: string;
+          ciphertext?: string;
+          last4?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       media_assets: {
         Row: {
           id: string;

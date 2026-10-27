@@ -2,6 +2,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { revalidatePath } from "next/cache";
+import { getServiceKey } from "@/lib/keys";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "../../actions";
 
@@ -12,8 +13,9 @@ import type { ActionResult } from "../../actions";
 export async function draftSpanish(
   texts: string[],
 ): Promise<{ ok: boolean; drafts?: string[]; message?: string }> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { ok: false, message: "ANTHROPIC_API_KEY is not configured" };
+  const anthropicKey = await getServiceKey("anthropic");
+  if (!anthropicKey) {
+    return { ok: false, message: "Anthropic API key is not configured (Settings → Service keys)" };
   }
   // Team members only: this action touches no table (so RLS never runs) and
   // otherwise makes the model key a free proxy for any authenticated caller.
@@ -31,7 +33,7 @@ export async function draftSpanish(
     return { ok: false, message: "Write the English text first" };
   }
 
-  const client = new Anthropic();
+  const client = new Anthropic({ apiKey: anthropicKey });
   const response = await client.messages.create({
     model: "claude-opus-5",
     max_tokens: 4000,
