@@ -34,17 +34,26 @@ export async function draftSpanish(
   }
 
   const client = new Anthropic({ apiKey: anthropicKey });
-  const response = await client.messages.create({
-    model: "claude-opus-5",
-    max_tokens: 4000,
-    system: [
-      "You translate buyer-facing land-walkthrough text from English to Spanish for Texas Greener Pastures.",
-      "Style: neutral Latin American Spanish, usted register, short plain sentences readable on a phone in bright sun.",
-      "Distances stay in feet (pies). Keep proper nouns (road names, 'Gaines Acres') unchanged.",
-      "Input is a JSON array of strings. Reply with ONLY a JSON array of the translations, same length and order. Translate empty strings to empty strings.",
-    ].join(" "),
-    messages: [{ role: "user", content: JSON.stringify(nonEmpty) }],
-  });
+  let response: Anthropic.Message;
+  try {
+    response = await requestDrafts(client, nonEmpty);
+  } catch (error) {
+    // A vendor failure is an answer for the admin, never a crash page.
+    if (error instanceof Anthropic.AuthenticationError) {
+      return {
+        ok: false,
+        message:
+          "Anthropic rejected the API key — it is expired, revoked, or invalid. Rotate it in Settings → Service keys, then try again.",
+      };
+    }
+    if (error instanceof Anthropic.RateLimitError) {
+      return { ok: false, message: "Anthropic is rate-limiting right now — try again in a minute." };
+    }
+    if (error instanceof Anthropic.APIError) {
+      return { ok: false, message: `Anthropic API error${error.status ? ` ${error.status}` : ""}: ${error.message}` };
+    }
+    return { ok: false, message: "Could not reach the Anthropic API — try again." };
+  }
 
   const text = response.content.find((b) => b.type === "text")?.text ?? "";
   try {
@@ -60,6 +69,20 @@ export async function draftSpanish(
   } catch {
     return { ok: false, message: "Could not parse the draft — try again" };
   }
+}
+
+function requestDrafts(client: Anthropic, nonEmpty: string[]): Promise<Anthropic.Message> {
+  return client.messages.create({
+    model: "claude-opus-5",
+    max_tokens: 4000,
+    system: [
+      "You translate buyer-facing land-walkthrough text from English to Spanish for Texas Greener Pastures.",
+      "Style: neutral Latin American Spanish, usted register, short plain sentences readable on a phone in bright sun.",
+      "Distances stay in feet (pies). Keep proper nouns (road names, 'Gaines Acres') unchanged.",
+      "Input is a JSON array of strings. Reply with ONLY a JSON array of the translations, same length and order. Translate empty strings to empty strings.",
+    ].join(" "),
+    messages: [{ role: "user", content: JSON.stringify(nonEmpty) }],
+  });
 }
 
 export type ContentPayload = {
