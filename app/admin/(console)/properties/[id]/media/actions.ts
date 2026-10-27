@@ -49,7 +49,7 @@ async function submitSpec(
   let requestId: string;
   let statusUrl: string;
   try {
-    ({ requestId, statusUrl } = await getProvider().submitGeneration({
+    ({ requestId, statusUrl } = await (await getProvider()).submitGeneration({
       slotKey: slot.key,
       kind: slot.kind,
       prompt: spec.prompt,
@@ -249,7 +249,7 @@ export async function refreshJobs(propertyId: string): Promise<ActionResult> {
     .in("status", ["queued", "in_progress", "completed"]);
   if (error) return { ok: false, message: error.message };
 
-  const provider = getProvider();
+  const provider = await getProvider();
   let changed = false;
 
   for (const job of jobs ?? []) {

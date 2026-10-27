@@ -158,7 +158,7 @@ export default async function MediaPage({ params }: { params: Promise<{ id: stri
       </div>
       <p className="muted">{t("realityRule")}</p>
       <ConnectionTest label={t("testConnection")} />
-      {isMockProvider() ? (
+      {(await isMockProvider()) ? (
         <div className="banner-warn" data-testid="mock-banner">
           {t("mockNotice")}
         </div>

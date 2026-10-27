@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { hasServiceKey } from "@/lib/keys";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
@@ -43,7 +44,7 @@ export default async function ContentPage({
         property.team_users?.display_name ?? property.team_users?.email ?? null
       }
       esReviewedAt={property.es_reviewed_at}
-      anthropicConfigured={Boolean(process.env.ANTHROPIC_API_KEY)}
+      anthropicConfigured={await hasServiceKey("anthropic")}
       labels={{
         title: t("title"),
         en: t("en"),

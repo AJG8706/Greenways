@@ -166,7 +166,7 @@ export async function revokeLink(propertyId: string, linkId: string): Promise<Ac
 export async function listMondayItems(): Promise<
   { ok: boolean; items?: MondayItem[]; message?: string }
 > {
-  if (!isMondayConfigured()) return { ok: false, message: "Monday is not configured" };
+  if (!(await isMondayConfigured())) return { ok: false, message: "Monday is not configured" };
   // Team members only: the fetch runs on MONDAY_API_TOKEN and reads the
   // whole board, and nothing else in this action touches RLS.
   const gate = await createClient();
@@ -203,7 +203,7 @@ export async function linkMondayItem(
   if (error) return { ok: false, message: error.message };
 
   // Unlinking clears the old row's column so the board never keeps a stale link.
-  if (!itemId && current?.monday_item_id && isMondayConfigured()) {
+  if (!itemId && current?.monday_item_id && (await isMondayConfigured())) {
     await setWalkLink(current.monday_item_id, null);
   }
   revalidatePath(`/admin/properties/${propertyId}`);
@@ -212,7 +212,7 @@ export async function linkMondayItem(
 
 /** Push the walk link (published) or clear it (draft) on the linked row. */
 export async function syncMondayLink(propertyId: string): Promise<ActionResult> {
-  if (!isMondayConfigured()) return { ok: true };
+  if (!(await isMondayConfigured())) return { ok: true };
   const supabase = await createClient();
   const { data: property } = await supabase
     .from("properties")

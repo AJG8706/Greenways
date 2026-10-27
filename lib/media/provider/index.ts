@@ -1,4 +1,5 @@
 import "server-only";
+import { getServiceKey } from "@/lib/keys";
 
 import { deflateSync } from "node:zlib";
 import type { MediaSlotKind } from "@/lib/media/slots";
@@ -62,13 +63,17 @@ export interface MediaProvider {
   fetchResult(url: string): Promise<{ bytes: Uint8Array; contentType: string }>;
 }
 
-export function isMockProvider(): boolean {
-  const key = process.env.HIGGSFIELD_API_KEY;
+async function higgsfieldKey(): Promise<string> {
+  return (await getServiceKey("higgsfield")) ?? "";
+}
+
+export async function isMockProvider(): Promise<boolean> {
+  const key = await higgsfieldKey();
   return !key || key === "mock";
 }
 
-export function getProvider(): MediaProvider {
-  return isMockProvider() ? mockProvider : realProvider;
+export async function getProvider(): Promise<MediaProvider> {
+  return (await isMockProvider()) ? mockProvider : realProvider;
 }
 
 /**
@@ -80,7 +85,7 @@ export async function checkCredentials(): Promise<{
   mode: "mock" | "real";
   detail: string;
 }> {
-  if (isMockProvider()) {
+  if (await isMockProvider()) {
     return {
       ok: true,
       mode: "mock",
@@ -88,7 +93,7 @@ export async function checkCredentials(): Promise<{
     };
   }
 
-  const raw = process.env.HIGGSFIELD_API_KEY ?? "";
+  const raw = await higgsfieldKey();
   const problems: string[] = [];
   if (raw !== raw.trim()) problems.push("value has leading/trailing whitespace");
   if (/["']/.test(raw)) problems.push("value contains quote characters");
@@ -104,7 +109,7 @@ export async function checkCredentials(): Promise<{
   let live: string;
   try {
     const res = await fetch(`${BASE_URL}/v1/motions`, {
-      headers: authHeaders(),
+      headers: await authHeaders(),
       cache: "no-store",
     });
     if (res.ok) {
@@ -130,9 +135,9 @@ export async function checkCredentials(): Promise<{
 // Real provider
 // ---------------------------------------------------------------------------
 
-function authHeaders(): Record<string, string> {
+async function authHeaders(): Promise<Record<string, string>> {
   return {
-    Authorization: `Key ${process.env.HIGGSFIELD_API_KEY}`,
+    Authorization: `Key ${await higgsfieldKey()}`,
     "Content-Type": "application/json",
     // Match the official SDK's UA — the platform expects a server client.
     "User-Agent": "higgsfield-server-js/2.0",
@@ -145,7 +150,7 @@ const MODEL = "dop-turbo";
 
 async function fetchMotions(): Promise<Motion[]> {
   const res = await fetch(`${BASE_URL}/v1/motions`, {
-    headers: authHeaders(),
+    headers: await authHeaders(),
     // Motion catalog is static enough to cache for the deployment.
     next: { revalidate: 3600 },
   });
@@ -171,7 +176,7 @@ const realProvider: MediaProvider = {
 
     const res = await fetch(`${BASE_URL}${ENDPOINT}`, {
       method: "POST",
-      headers: authHeaders(),
+      headers: await authHeaders(),
       // v1 endpoints take the generation fields wrapped in `params`.
       body: JSON.stringify({ params: input }),
       cache: "no-store",
@@ -200,7 +205,7 @@ const realProvider: MediaProvider = {
         // keep the derived URL
       }
     }
-    const res = await fetch(url, { headers: authHeaders(), cache: "no-store" });
+    const res = await fetch(url, { headers: await authHeaders(), cache: "no-store" });
     const body = (await res.json().catch(() => ({}))) as Parameters<
       typeof parseStatusResponse
     >[0];

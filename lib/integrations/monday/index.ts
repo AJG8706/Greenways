@@ -1,6 +1,7 @@
 import "server-only";
 
 import { linkColumnValue } from "@/lib/integrations/monday/value";
+import { getServiceKey } from "@/lib/keys";
 
 /**
  * Monday.com Inventory-board integration — all vendor specifics live in this
@@ -16,8 +17,8 @@ const API_URL = "https://api.monday.com/v2";
 const BOARD_ID = process.env.MONDAY_BOARD_ID ?? "18418085202"; // Inventory Information
 const WALK_COLUMN_TITLE = "Greenways Walk";
 
-export function isMondayConfigured(): boolean {
-  return Boolean(process.env.MONDAY_API_TOKEN);
+export async function isMondayConfigured(): Promise<boolean> {
+  return Boolean(await getServiceKey("monday"));
 }
 
 async function gql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
@@ -25,7 +26,7 @@ async function gql<T>(query: string, variables?: Record<string, unknown>): Promi
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: process.env.MONDAY_API_TOKEN ?? "",
+      Authorization: (await getServiceKey("monday")) ?? "",
       "API-Version": "2024-10",
     },
     body: JSON.stringify({ query, variables }),
