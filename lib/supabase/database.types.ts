@@ -349,6 +349,8 @@ export type Database = {
           county: string | null;
           parent_id: string | null;
           acres: number | null;
+          acres_manual: boolean;
+          sort_order: number;
           entrance_lat: number | null;
           media_brief: Json;
           monday_item_id: string | null;
@@ -374,6 +376,8 @@ export type Database = {
           county?: string | null;
           parent_id?: string | null;
           acres?: number | null;
+          acres_manual?: boolean;
+          sort_order?: number;
           entrance_lat?: number | null;
           media_brief?: Json;
           monday_item_id?: string | null;
@@ -399,6 +403,8 @@ export type Database = {
           county?: string | null;
           parent_id?: string | null;
           acres?: number | null;
+          acres_manual?: boolean;
+          sort_order?: number;
           entrance_lat?: number | null;
           media_brief?: Json;
           monday_item_id?: string | null;

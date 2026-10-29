@@ -18,6 +18,7 @@ const ACTION_LABELS: Record<string, string> = {
   lots_bulk_updated: "Bulk-edited all lots of a master",
   lots_bulk_published: "Published all ready lots of a master",
   acres_changed: "Corrected a property's acreage",
+  lots_resorted: "Re-sorted a master tract's lots by name",
   service_key_rotated: "Rotated a service API key",
   service_key_cleared: "Removed a rotated service API key",
   geometry_changed: "Edited a published listing's geometry",

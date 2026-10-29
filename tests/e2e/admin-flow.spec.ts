@@ -122,6 +122,16 @@ test("assemble: a master KML at creation splits into lot properties", async ({
   await expect(page.getByTestId("assembly-checklist")).toHaveCount(0);
   await expect(page.getByTestId("lots-table").locator("tbody tr")).toHaveCount(10);
 
+  // Reorder: move the first lot down one slot, then Sort by name puts it back
+  // (the seeded names carry their lot numbers, and the sort is natural order).
+  const firstLotLink = () =>
+    page.getByTestId("lots-table").locator("tbody tr").first().getByRole("link");
+  const firstName = await firstLotLink().innerText();
+  await page.locator('[data-testid^="lot-down-"]').first().click();
+  await expect(firstLotLink()).not.toHaveText(firstName, { timeout: 15_000 });
+  await page.getByTestId("sort-lots-by-name").click();
+  await expect(firstLotLink()).toHaveText(firstName, { timeout: 15_000 });
+
   // Bulk edit: one apply touches every lot; each stays editable on its own.
   // A successful apply reloads the page — the flipped pills are the receipt.
   await page.getByTestId("bulk-sale-select").selectOption("under_contract");
@@ -268,7 +278,7 @@ test("admin invites a second team member from the Team tab", async ({ page }) =>
   await expect(page.getByTestId("team-table")).toContainText(EDITOR_EMAIL);
 });
 
-test("invited editor signs in and edits content, but cannot unlock corners", async ({
+test("invited editor signs in, edits content, and gets the unlock affordance", async ({
   page,
 }) => {
   await signIn(page, EDITOR_EMAIL);
@@ -285,10 +295,11 @@ test("invited editor signs in and edits content, but cannot unlock corners", asy
   await page.getByTestId("save-content").click();
   await expect(page.getByRole("status")).toContainText(/saved/i);
 
-  // Corners are locked; editors get no unlock affordance (admin-only, DB-enforced).
+  // Corners are locked; unlocking is a team action (audit-logged), so the
+  // editor sees the same unlock button an admin does.
   await page.getByTestId("tab-corners").click();
   await expect(page.getByTestId("corners-table")).toBeVisible();
-  await expect(page.getByTestId("unlock-corners")).toHaveCount(0);
+  await expect(page.getByTestId("unlock-corners")).toBeVisible();
 
   // The activity trail is admin-only: no nav entry, and the page bounces.
   await expect(page.getByRole("link", { name: "Activity" })).toHaveCount(0);

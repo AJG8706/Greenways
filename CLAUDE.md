@@ -15,7 +15,7 @@ This file is the standing brief for Claude Code. Read it before touching the rep
 
 ## Standing guardrails (product rules, enforced in code and review)
 1. One tracked corner at a time, always labeled; the picker shows the rest.
-2. Corners come only from CAD-verified parcel geometry (the buyer-lot-map KML standard). Never hand-guessed. Locked after verification; unlocking is an admin action that is logged.
+2. Corners come only from CAD-verified parcel geometry (the buyer-lot-map KML standard). Never hand-guessed. Locked after verification; any team member can unlock (relaxed from admin-only by Alton, Oct 2026), and every unlock is audit-logged.
 3. Generated media must depict the actual land. Review queue is mandatory; rejected clips regenerate from the same source frames.
 4. GPS honesty in the UI: "Stakes mark the exact corner. The arrow gets you within a few steps."
 5. Buyers never need an account or an install. Link → walking in under 30 seconds.

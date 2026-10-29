@@ -39,7 +39,7 @@ export function PickerSheet({
         onClick={onClose}
       />
       <div
-        className="relative rounded-t-3 p-5"
+        className="relative mx-auto w-full max-w-md rounded-t-3 p-5"
         style={{ background: "var(--bg)", maxHeight: "80dvh", overflowY: "auto" }}
         data-testid="picker-sheet"
       >
@@ -110,7 +110,7 @@ export function ArrivalCard({
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end" style={{ pointerEvents: "none" }}>
       <div
-        className="rounded-t-3 p-5"
+        className="mx-auto w-full max-w-md rounded-t-3 p-5"
         style={{ background: "var(--bg-2)", boxShadow: "var(--shadow-2)", pointerEvents: "auto" }}
         role="dialog"
         aria-modal
@@ -218,7 +218,7 @@ export function TermsSheet({ onClose }: { onClose: () => void }) {
         onClick={onClose}
       />
       <div
-        className="relative rounded-t-3 p-5"
+        className="relative mx-auto w-full max-w-md rounded-t-3 p-5"
         style={{ background: "var(--bg)", maxHeight: "85dvh", overflowY: "auto" }}
         data-testid="walk-terms"
       >
@@ -250,7 +250,7 @@ export function HelpSheet({ onClose }: { onClose: () => void }) {
         style={{ background: "rgba(27,36,26,.6)" }}
         onClick={onClose}
       />
-      <div className="relative rounded-t-3 p-5" style={{ background: "var(--bg)" }}>
+      <div className="relative mx-auto w-full max-w-md rounded-t-3 p-5" style={{ background: "var(--bg)" }}>
         <div className="stack">
           <h2>{t("title")}</h2>
           {(["s1", "s2", "s3", "s4"] as const).map((k) => (
