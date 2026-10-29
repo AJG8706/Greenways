@@ -40,6 +40,7 @@ export default async function PhotosPage({
     .from("properties")
     .select("id, slug, name, corners(id, n)")
     .eq("parent_id", id)
+    .order("sort_order")
     .order("created_at");
   if ((children ?? []).length > 0) {
     const lots: IntakeLot[] = children!.map((lot, i) => ({

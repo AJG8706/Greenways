@@ -151,6 +151,7 @@ export default async function AnalyticsPage({
     .from("properties")
     .select("id, slug, name")
     .eq("parent_id", id)
+    .order("sort_order")
     .order("created_at");
   if ((masterLots ?? []).length > 0) {
     return <MasterRollup lots={masterLots!} />;

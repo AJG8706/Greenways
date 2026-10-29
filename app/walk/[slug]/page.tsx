@@ -44,6 +44,7 @@ export default async function WalkPage({
     .from("properties")
     .select("slug, name, acres, status, sale_status, demo_mode, test_lot, entrance_lat, corners(locked)")
     .eq("parent_id", property.id)
+    .order("sort_order")
     .order("created_at");
   if (children && children.length > 0) {
     // Unpublished lots stay invisible to the public even in demo/test mode:

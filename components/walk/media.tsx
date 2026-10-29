@@ -23,31 +23,34 @@ export function IntroOverlay({
   const t = useTranslations("intro");
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col"
+      className="fixed inset-0 z-50"
       style={{ background: "var(--gw-pine-3, #1B241A)" }}
       data-testid="intro-overlay"
     >
-      <video
-        src={src}
-        autoPlay
-        muted
-        playsInline
-        onEnded={onDone}
-        onError={onDone}
-        className="h-full w-full"
-        style={{ objectFit: "cover" }}
-      />
-      <div className="absolute inset-x-0 bottom-0 flex justify-center p-6">
-        <Button variant="secondary" size="lg" onClick={onSkip} data-testid="intro-skip">
-          {t("skip")}
-        </Button>
+      {/* Same phone-width column as the HUD so desktop mode matches mobile. */}
+      <div className="relative mx-auto flex h-full w-full max-w-md flex-col">
+        <video
+          src={src}
+          autoPlay
+          muted
+          playsInline
+          onEnded={onDone}
+          onError={onDone}
+          className="h-full w-full"
+          style={{ objectFit: "cover" }}
+        />
+        <div className="absolute inset-x-0 bottom-0 flex justify-center p-6">
+          <Button variant="secondary" size="lg" onClick={onSkip} data-testid="intro-skip">
+            {t("skip")}
+          </Button>
+        </div>
+        <span
+          className="hud-chip absolute left-4 top-4"
+          style={{ background: "rgba(27,36,26,.7)" }}
+        >
+          {t("label")}
+        </span>
       </div>
-      <span
-        className="hud-chip absolute left-4 top-4"
-        style={{ background: "rgba(27,36,26,.7)" }}
-      >
-        {t("label")}
-      </span>
     </div>
   );
 }
@@ -99,7 +102,9 @@ export function PreviewSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--bg)" }} data-testid="preview-sheet">
+    <div className="fixed inset-0 z-50" style={{ background: "var(--bg)" }} data-testid="preview-sheet">
+      {/* Same phone-width column as the HUD so desktop mode matches mobile. */}
+      <div className="mx-auto flex h-full w-full max-w-md flex-col">
       <header className="row between p-4" style={{ gap: 8 }}>
         <div>
           <h2>{t("title")}</h2>
@@ -156,6 +161,7 @@ export function PreviewSheet({
         <Button size="lg" className="btn-block" onClick={onClose} data-testid="preview-go-onsite">
           {t("goOnSite")}
         </Button>
+      </div>
       </div>
     </div>
   );

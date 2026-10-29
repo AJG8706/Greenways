@@ -209,6 +209,8 @@ async function createLotsUnderMaster(
         address: master.address,
         county: master.county,
         parent_id: master.id,
+        // Plat order; the Lots table can reorder or re-sort by name later.
+        sort_order: lot.n,
       })
       .select("id")
       .single();
@@ -239,7 +241,12 @@ async function createLotsUnderMaster(
 
   // Master totals + audit; the source file lands in the master's Documents.
   const totalAcres = Math.round(lots.reduce((s, l) => s + l.acres, 0) * 100) / 100;
-  await supabase.from("properties").update({ acres: totalAcres }).eq("id", master.id);
+  // A manually typed master acreage (platted figure) survives the re-import.
+  await supabase
+    .from("properties")
+    .update({ acres: totalAcres })
+    .eq("id", master.id)
+    .eq("acres_manual", false);
   if (file) {
     const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
     const { error: upError } = await supabase.storage
@@ -289,11 +296,20 @@ async function applyParsedKml(
     ],
   } as unknown as Json;
 
+  // The geometry calculation is the DEFAULT acreage; once the team has typed
+  // the platted figure (acres_manual), a re-import never overwrites it.
+  const { data: existing } = await supabase
+    .from("properties")
+    .select("acres_manual")
+    .eq("id", propertyId)
+    .maybeSingle();
+  const keepManualAcres = existing?.acres_manual === true;
+
   const { error: propError } = await supabase
     .from("properties")
     .update({
       boundary,
-      acres,
+      ...(keepManualAcres ? {} : { acres }),
       entrance_lat: entrance.lat,
       entrance_lng: entrance.lng,
       geometry_source: `${fileName} · ${parsed.name ?? "KML polygon"}`,
@@ -446,7 +462,7 @@ export async function lockCorners(propertyId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Unlock corners for adjustment — admin only; the DB trigger enforces and logs it. */
+/** Unlock corners for adjustment — any team member; the DB trigger logs it. */
 export async function unlockCorners(propertyId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase
@@ -457,8 +473,9 @@ export async function unlockCorners(propertyId: string): Promise<ActionResult> {
   if (error) {
     return {
       ok: false,
+      // Deploy-before-db-push gap: the old trigger still enforces admin-only.
       message: error.message.includes("admin_only")
-        ? "Only an admin can unlock corners."
+        ? "The database still enforces admin-only unlock — run the DB push workflow (migration 20261029120000), then retry."
         : error.message,
     };
   }
@@ -550,7 +567,7 @@ export async function placeTestLot(
   if (existing.some((c) => c.locked)) {
     return {
       ok: false,
-      message: "Corners are locked. Unlock (admin) before moving the test square.",
+      message: "Corners are locked. Unlock before moving the test square.",
     };
   }
 
@@ -777,6 +794,18 @@ export async function duplicateProperty(
     slug = `${src.slug}-copy-${i}`;
   }
 
+  // A copy sorts to the end of its master's lot list.
+  let sortOrder = 0;
+  if (src.parent_id) {
+    const { data: siblings } = await supabase
+      .from("properties")
+      .select("sort_order")
+      .eq("parent_id", src.parent_id)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    sortOrder = (siblings?.[0]?.sort_order ?? 0) + 1;
+  }
+
   const srcName = i18nText(src.name);
   const { data: created, error } = await supabase
     .from("properties")
@@ -796,6 +825,7 @@ export async function duplicateProperty(
       geometry_source: src.geometry_source,
       media_brief: src.media_brief,
       test_lot: src.test_lot,
+      sort_order: sortOrder,
       // Fresh start by design: draft, unreviewed Spanish, available, no demo.
     })
     .select("id")
@@ -853,9 +883,11 @@ export async function updateAcres(propertyId: string, acres: number): Promise<Ac
     .maybeSingle();
   if (!before) return { ok: false, message: "Property not found" };
 
+  // acres_manual makes the typed figure sticky: the survey-geometry
+  // calculation stays the default, but re-imports stop overwriting it.
   const { error } = await supabase
     .from("properties")
-    .update({ acres: rounded })
+    .update({ acres: rounded, acres_manual: true })
     .eq("id", propertyId);
   if (error) return { ok: false, message: error.message };
 
@@ -868,4 +900,81 @@ export async function updateAcres(propertyId: string, acres: number): Promise<Ac
   if (before.parent_id) revalidatePath(`/admin/properties/${before.parent_id}`);
   revalidatePath(`/admin/properties/${propertyId}`);
   return { ok: true };
+}
+
+/** A master's lots in display order, resequenced 1..n. */
+async function lotSequence(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  masterId: string,
+) {
+  const { data: lots } = await supabase
+    .from("properties")
+    .select("id, name, slug, sort_order, created_at")
+    .eq("parent_id", masterId)
+    .order("sort_order")
+    .order("created_at");
+  return lots ?? null;
+}
+
+async function writeLotOrder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  masterId: string,
+  orderedIds: string[],
+): Promise<ActionResult> {
+  for (let i = 0; i < orderedIds.length; i++) {
+    const { error } = await supabase
+      .from("properties")
+      .update({ sort_order: i + 1 })
+      .eq("id", orderedIds[i]!);
+    if (error) return { ok: false, message: error.message };
+  }
+  revalidatePath(`/admin/properties/${masterId}`);
+  return { ok: true };
+}
+
+/** Move a lot one step up or down in its master's display order. */
+export async function moveLot(
+  masterId: string,
+  lotId: string,
+  direction: "up" | "down",
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const lots = await lotSequence(supabase, masterId);
+  if (!lots || lots.length === 0) return { ok: false, message: "No lots found" };
+
+  const ids = lots.map((l) => l.id);
+  const index = ids.indexOf(lotId);
+  if (index === -1) return { ok: false, message: "Lot not found under this master" };
+  const target = direction === "up" ? index - 1 : index + 1;
+  if (target < 0 || target >= ids.length) return { ok: true }; // already at the edge
+
+  [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+  return writeLotOrder(supabase, masterId, ids);
+}
+
+/**
+ * Re-sort a master's lots by name (natural order, so "Lot 2" sorts before
+ * "Lot 10") — the one-click fix when imported numbering ran the wrong way
+ * and the lots were renamed afterwards.
+ */
+export async function sortLotsByName(masterId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const lots = await lotSequence(supabase, masterId);
+  if (!lots || lots.length === 0) return { ok: false, message: "No lots found" };
+
+  const sorted = [...lots].sort((a, b) =>
+    (i18nText(a.name).en || a.slug).localeCompare(i18nText(b.name).en || b.slug, "en", {
+      numeric: true,
+      sensitivity: "base",
+    }),
+  );
+  const result = await writeLotOrder(supabase, masterId, sorted.map((l) => l.id));
+  if (result.ok) {
+    await supabase.rpc("write_audit", {
+      p_action: "lots_resorted",
+      p_property_id: masterId,
+      p_detail: { by: "name", lots: sorted.length },
+    });
+  }
+  return result;
 }

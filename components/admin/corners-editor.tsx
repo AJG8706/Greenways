@@ -75,7 +75,6 @@ export function CornersEditor({
   corners,
   entrance,
   geometrySource,
-  isAdmin,
   isTestLot,
   lastLockEvent,
   labels,
@@ -86,7 +85,6 @@ export function CornersEditor({
   corners: CornerRow[];
   entrance: LatLng | null;
   geometrySource: string | null;
-  isAdmin: boolean;
   /** Generated square for GPS field testing rather than CAD-verified geometry. */
   isTestLot: boolean;
   lastLockEvent: { action: string; at: string } | null;
@@ -313,7 +311,7 @@ export function CornersEditor({
             <Lock size={16} /> {labels.lock}
           </Button>
         ) : null}
-        {allLocked && isAdmin ? (
+        {allLocked ? (
           <Button
             variant="secondary"
             disabled={pending}

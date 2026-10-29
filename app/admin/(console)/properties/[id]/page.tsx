@@ -9,6 +9,7 @@ import { DocumentsCard, type PropertyDocument } from "@/components/admin/documen
 import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
 import { AcresCell } from "@/components/admin/acres-cell";
 import { DuplicateLotButton } from "@/components/admin/duplicate-lot-button";
+import { LotOrderControls, SortLotsByNameButton } from "@/components/admin/lot-order-controls";
 import { DEFAULT_APPROACH_PHOTO_PATH, DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 import { LotsBulkEdit } from "@/components/admin/lots-bulk-edit";
 import { Pill, saleTone, statusTone } from "@/components/ui/pill";
@@ -27,7 +28,7 @@ export default async function OverviewPage({
       supabase
         .from("properties")
         .select(
-          "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot, parent_id",
+          "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot, parent_id, acres, acres_manual",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -39,6 +40,7 @@ export default async function OverviewPage({
           "id, slug, name, acres, status, sale_status, es_reviewed, media_brief, corners(n, locked, approach_photo, stake_photo), media_assets(slot, type, status)",
         )
         .eq("parent_id", id)
+        .order("sort_order")
         .order("created_at"),
       supabase
         .from("corners")
@@ -53,15 +55,17 @@ export default async function OverviewPage({
     ]);
   // Same deploy-before-db-push gap as the list page: retry without parent_id.
   let property = propertyRes.data;
-  if (!property && propertyRes.error && /parent_id/.test(propertyRes.error.message)) {
+  if (!property && propertyRes.error && /parent_id|acres_manual/.test(propertyRes.error.message)) {
     const legacy = await supabase
       .from("properties")
       .select(
-        "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot",
+        "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot, acres",
       )
       .eq("id", id)
       .maybeSingle();
-    property = legacy.data ? { ...legacy.data, parent_id: null } : null;
+    property = legacy.data
+      ? { ...legacy.data, parent_id: null, acres_manual: false }
+      : null;
   }
   if (!property) notFound();
 
@@ -226,15 +230,22 @@ export default async function OverviewPage({
       {isMaster ? (
         <section className="card lg:col-span-2" data-testid="lots-card">
           <div className="stack">
-            <h2>Lots</h2>
-            <p className="t-small muted">
-              This is a master tract — each lot below is its own property and walks through
-              assembly individually.
-            </p>
+            <div className="row between" style={{ alignItems: "flex-start" }}>
+              <div>
+                <h2>Lots</h2>
+                <p className="t-small muted">
+                  This is a master tract — each lot below is its own property and walks through
+                  assembly individually. The arrows set the display order everywhere (admin and
+                  buyer lot picker).
+                </p>
+              </div>
+              <SortLotsByNameButton masterId={id} />
+            </div>
             <div className="table-wrap">
               <table data-testid="lots-table">
                 <thead>
                   <tr>
+                    <th aria-label="Order"></th>
                     <th>Lot</th>
                     <th>Acres</th>
                     <th>Status</th>
@@ -244,8 +255,16 @@ export default async function OverviewPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {lotRows.map((lot) => (
+                  {lotRows.map((lot, i) => (
                     <tr key={lot.id}>
+                      <td>
+                        <LotOrderControls
+                          masterId={id}
+                          lotId={lot.id}
+                          first={i === 0}
+                          last={i === lotRows.length - 1}
+                        />
+                      </td>
                       <td>
                         <Link href={`/admin/properties/${lot.id}`} className="t-body-m">
                           {lot.name}
@@ -320,6 +339,25 @@ export default async function OverviewPage({
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+      <section className="card" data-testid="acreage-card">
+        <div className="stack">
+          <h2>Acreage</h2>
+          <p className="t-small muted">
+            Defaults to the acreage computed from the imported survey geometry, which only
+            approximates the plat. Type the platted figure to override — a KML re-import never
+            overwrites a typed value.
+          </p>
+          <div className="row" style={{ alignItems: "center" }}>
+            <AcresCell
+              propertyId={id}
+              acres={property.acres === null ? null : Number(property.acres)}
+            />
+            <span className="t-small muted">
+              {property.acres_manual ? "entered by the team" : "from survey geometry"}
+            </span>
+          </div>
         </div>
       </section>
       <section className="card">

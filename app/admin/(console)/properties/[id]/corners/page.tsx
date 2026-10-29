@@ -13,7 +13,7 @@ export default async function CornersPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: property }, { data: corners }, { data: lockAudit }, userRes] =
+  const [{ data: property }, { data: corners }, { data: lockAudit }] =
     await Promise.all([
       supabase
         .from("properties")
@@ -32,15 +32,8 @@ export default async function CornersPage({
         .in("action", ["corner_locked", "corner_unlocked"])
         .order("created_at", { ascending: false })
         .limit(1),
-      supabase.auth.getUser(),
     ]);
   if (!property) notFound();
-
-  const { data: me } = await supabase
-    .from("team_users")
-    .select("role")
-    .eq("user_id", userRes.data.user?.id ?? "")
-    .maybeSingle();
 
   const t = await getTranslations("admin.corners");
 
@@ -77,7 +70,6 @@ export default async function CornersPage({
           : null
       }
       geometrySource={property.geometry_source}
-      isAdmin={me?.role === "admin"}
       isTestLot={property.test_lot}
       lastLockEvent={lastLockEvent}
       labels={{
