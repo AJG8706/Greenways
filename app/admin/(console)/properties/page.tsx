@@ -22,12 +22,12 @@ export default async function PropertiesPage({
   const res = await supabase
     .from("properties")
     .select(
-      "id, slug, name, county, status, sale_status, demo_mode, test_lot, parent_id, created_at, updated_at, corners(id, locked)",
+      "id, slug, name, county, status, sale_status, demo_mode, test_lot, parent_id, sort_order, created_at, updated_at, corners(id, locked)",
     )
     .order("updated_at", { ascending: false });
   let properties: NonNullable<typeof res.data>;
   if (res.error) {
-    if (!/parent_id/.test(res.error.message)) throw new Error(res.error.message);
+    if (!/parent_id|sort_order/.test(res.error.message)) throw new Error(res.error.message);
     const legacy = await supabase
       .from("properties")
       .select(
@@ -35,13 +35,14 @@ export default async function PropertiesPage({
       )
       .order("updated_at", { ascending: false });
     if (legacy.error) throw new Error(legacy.error.message);
-    properties = legacy.data.map((p) => ({ ...p, parent_id: null }));
+    properties = legacy.data.map((p) => ({ ...p, parent_id: null, sort_order: 0 }));
   } else {
     properties = res.data;
   }
 
   // Masters group their lots: lots render indented under the master row, in
-  // creation (plat) order. A lot whose master is gone falls back to top level.
+  // the same display order the master's Lots table sets (sort_order, then
+  // creation order). A lot whose master is gone falls back to top level.
   const knownIds = new Set(properties.map((p) => p.id));
   const topLevel = properties.filter((p) => !p.parent_id || !knownIds.has(p.parent_id));
   const lotsByMaster = new Map<string, typeof properties>();
@@ -53,7 +54,9 @@ export default async function PropertiesPage({
     }
   }
   for (const list of lotsByMaster.values()) {
-    list.sort((a, b) => a.created_at.localeCompare(b.created_at));
+    list.sort(
+      (a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at),
+    );
   }
 
   // Everything the client table needs, resolved server-side (labels included)
