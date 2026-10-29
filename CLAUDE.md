@@ -21,6 +21,7 @@ This file is the standing brief for Claude Code. Read it before touching the rep
 5. Buyers never need an account or an install. Link → walking in under 30 seconds.
 6. Every buyer-facing string exists in `messages/en.json` and `messages/es.json`. Hard-coded English in a buyer component is a bug. Per-property free text has paired EN/ES fields with a draft-translation helper and a "reviewed by a person" flag; unreviewed Spanish blocks publish.
 7. Brand: `greenways-tokens.css` is the color source of truth; only approved pairings (see `docs/greenways-brand-spec.html`). Harvest Gold and Trailhead Green are never text on cream. Fence Post Red is errors and sold lots only. Logos from the SVG masters; never retyped.
+8. Any buyer-facing figure derived from imported geometry — acreage, boundary lines, distances, lot comparisons — carries the survey-data disclaimer (`lots.surveyNote` short form, `terms.survey` full form): the data comes from the surveyor's file, map imagery may not align exactly, and the recorded survey/plat control. New features that surface KML-derived numbers ship with it, EN + ES.
 
 ## Stack conventions
 - `pnpm`. Node 20+. Strict TypeScript; no `any` in app code.

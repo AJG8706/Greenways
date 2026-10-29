@@ -44,6 +44,12 @@ async function completeWalk(page: Page) {
 
 test("demo walk finds all four corners to completion (desktop)", async ({ page }) => {
   await completeWalk(page);
+
+  // The done screen's "I'm interested" card: a phone number is enough, and
+  // the submit lands in walk_leads via the service-role API route.
+  await page.getByTestId("interest-phone").fill("409-555-0137");
+  await page.getByTestId("interest-send").click();
+  await expect(page.getByTestId("interest-sent")).toBeVisible({ timeout: 15000 });
 });
 
 test("demo walk completes on a phone viewport", async ({ page }) => {

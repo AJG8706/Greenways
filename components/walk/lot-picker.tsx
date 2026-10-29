@@ -127,6 +127,12 @@ export async function LotPicker({
           })}
         </ul>
       )}
+      {lots.length > 0 ? (
+        // Guardrail #8: acreage shown above is survey-file data — say so.
+        <p className="t-small muted text-center" data-testid="survey-note">
+          {t("surveyNote")}
+        </p>
+      ) : null}
     </main>
   );
 }

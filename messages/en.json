@@ -33,6 +33,7 @@
     "risk": "You walk at your own risk. This is open rural land — uneven ground, holes, fences, brush, insects, wildlife, and weather are all part of it. Watch every step and keep children close.",
     "gps": "The arrow is a guide, not a guarantee. GPS accuracy varies; the stakes mark the exact corners. Never follow the arrow over a fence, across a road, into water, or anywhere that looks unsafe.",
     "boundary": "The map draws straight lines between the surveyed corner stakes. The actual boundary between corners can differ — curved road frontage, for example, shows as a straight line. The corner stakes are the reference; the lines are for orientation only.",
+    "survey": "Acreage, boundary lines, and corner locations come from the surveyor's file for this property. Satellite imagery and map overlays may not line up exactly — the figures shown are for orientation, and the recorded survey and plat control.",
     "liability": "To the fullest extent allowed by law, Texas Greener Pastures LLC and its owners, employees, and representatives are not liable for injury, becoming lost, or property damage arising from your visit or your use of this guide.",
     "emergency": "In an emergency, call 911. The map's entrance marker shows the way back to the gate.",
     "close": "Got it"
@@ -102,6 +103,16 @@
     "text": "Text Texas Greener Pastures",
     "again": "Walk it again",
     "share": "Send this walk to someone"
+  },
+  "interest": {
+    "title": "Want this lot?",
+    "body": "Leave your number and Texas Greener Pastures will text you about this lot. No pressure, no spam.",
+    "name": "Name (optional)",
+    "phone": "Phone number",
+    "send": "I'm interested — contact me",
+    "sending": "Sending…",
+    "sent": "Got it — we'll text you shortly. Thanks for walking the lot.",
+    "error": "That didn't go through — check the number and try again."
   },
   "preview": {
     "title": "Preview the walk",
@@ -355,6 +366,8 @@
     },
     "analytics": {
       "title": "Walk analytics",
+      "leads": "Leads",
+      "leadsHint": "Buyers who tapped \"I'm interested\" at the end of a walk.",
       "sessions": "Walks",
       "completion": "Found all corners",
       "median": "Median time to corner",
@@ -448,7 +461,8 @@
     "sold": "Sold",
     "comingSoon": "Walk coming soon",
     "empty": "No lots are open for walking yet. Check back soon.",
-    "remaining": "{available} of {total} lots still available"
+    "remaining": "{available} of {total} lots still available",
+    "surveyNote": "Acreage and lines come from the surveyor's file — map imagery may not align exactly; the recorded survey and plat control."
   },
   "sign": {
     "scanLots": "Scan to walk the lots",

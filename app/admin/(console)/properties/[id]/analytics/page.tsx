@@ -157,6 +157,14 @@ export default async function AnalyticsPage({
     return <MasterRollup lots={masterLots!} />;
   }
 
+  // Errors (table not migrated yet) leave leads null — the card hides.
+  const { data: leads } = await supabase
+    .from("walk_leads")
+    .select("id, name, phone, locale, created_at")
+    .eq("property_id", id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
   const { data: links } = await supabase
     .from("walk_links")
     .select("id, kind")
@@ -208,6 +216,36 @@ export default async function AnalyticsPage({
   return (
     <div className="stack" style={{ gap: "var(--gw-s-5)" }}>
       <h2>{t("title")}</h2>
+
+      {(leads ?? []).length > 0 ? (
+        <section className="card stack" style={{ gap: "var(--gw-s-2)" }}>
+          <h3>{t("leads")}</h3>
+          <p className="t-small muted">{t("leadsHint")}</p>
+          <div className="table-wrap">
+            <table data-testid="walk-leads">
+              <tbody>
+                {leads!.map((l) => (
+                  <tr key={l.id}>
+                    <td className="t-small muted">
+                      {new Date(l.created_at).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="t-body-m">{l.name ?? "—"}</td>
+                    <td className="num">
+                      <a href={`tel:${l.phone}`}>{l.phone}</a>
+                    </td>
+                    <td className="t-small">{l.locale.toUpperCase()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
 
       {(sessions ?? []).length === 0 ? (
         <div className="card">

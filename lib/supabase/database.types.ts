@@ -573,6 +573,51 @@ export type Database = {
           },
         ];
       };
+      walk_leads: {
+        Row: {
+          id: string;
+          property_id: string;
+          session_id: string | null;
+          locale: string;
+          name: string | null;
+          phone: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          property_id: string;
+          session_id?: string | null;
+          locale?: string;
+          name?: string | null;
+          phone: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          property_id?: string;
+          session_id?: string | null;
+          locale?: string;
+          name?: string | null;
+          phone?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "walk_leads_property_id_fkey";
+            columns: ["property_id"];
+            isOneToOne: false;
+            referencedRelation: "properties";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "walk_leads_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "walk_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {

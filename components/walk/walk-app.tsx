@@ -36,6 +36,10 @@ const GoogleMiniMap = dynamic(
   { ssr: false },
 );
 const MiniMap = dynamic(() => import("./mini-map").then((m) => m.MiniMap), { ssr: false });
+const InterestCard = dynamic(
+  () => import("./interest-card").then((m) => m.InterestCard),
+  { ssr: false },
+);
 const DemoTray = dynamic(() => import("./demo-tray").then((m) => m.DemoTray), { ssr: false });
 
 type Screen = "welcome" | "intro" | "permission" | "denied" | "settings" | "hud" | "done";
@@ -754,6 +758,10 @@ export function WalkApp({ config }: { config: WalkConfig }) {
               />
             </div>
           ) : null}
+          <InterestCard
+            slug={config.slug}
+            getSessionId={() => loggerRef.current?.sessionId() ?? null}
+          />
           <Button size="lg" className="btn-block" onClick={restart} data-testid="walk-again">
             {t("done.again")}
           </Button>
