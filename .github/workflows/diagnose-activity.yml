@@ -1,0 +1,62 @@
+name: Diagnose activity
+
+# Manually triggered, read-only: prints the recent audit trail and the lot
+# ordering state, for debugging reports like "saving a lot errors / reorders
+# the lots". Same Management API query endpoint the other diagnose
+# workflows use.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: pdrvinfahqnskuwqumuu
+    steps:
+      - name: Check secret
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN repository secret is missing."
+            exit 1
+          fi
+      - name: Run checks
+        run: |
+          set -o pipefail
+          q() {
+            echo ""
+            echo "===== $1 ====="
+            curl -sf "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg q "$2" '{query: $q}')" | jq .
+          }
+
+          q "Migration state (the two newest must be applied)" "
+            select version, name from supabase_migrations.schema_migrations
+            order by version desc limit 5"
+
+          q "properties columns added in 20261029120000" "
+            select column_name, data_type, column_default
+            from information_schema.columns
+            where table_schema = 'public' and table_name = 'properties'
+              and column_name in ('sort_order', 'acres_manual')"
+
+          q "Last 40 audit rows (newest first)" "
+            select a.created_at, a.action,
+                   coalesce(p.slug, a.property_id::text) as property,
+                   a.actor, a.detail
+            from audit_log a
+            left join properties p on p.id = a.property_id
+            order by a.created_at desc limit 40"
+
+          q "Lot ordering per master (display order = sort_order, created_at)" "
+            select m.slug as master, c.slug as lot, c.name->>'en' as name,
+                   c.sort_order, c.acres, c.acres_manual, c.created_at
+            from properties c
+            join properties m on m.id = c.parent_id
+            order by m.slug, c.sort_order, c.created_at"
