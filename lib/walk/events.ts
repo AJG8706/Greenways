@@ -12,6 +12,8 @@ const FLUSH_INTERVAL_MS = 15000;
 export type WalkLogger = {
   log: (name: string, data?: Record<string, unknown>) => void;
   stop: () => void;
+  /** The server-assigned session id, once the first flush succeeded. */
+  sessionId: () => string | null;
 };
 
 export function createWalkLogger(input: {
@@ -101,6 +103,9 @@ export function createWalkLogger(input: {
         document.removeEventListener("visibilitychange", onHidden);
       }
       void flush();
+    },
+    sessionId() {
+      return sessionId;
     },
   };
 }

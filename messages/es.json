@@ -33,6 +33,7 @@
     "risk": "Usted camina bajo su propio riesgo. Este es campo abierto: terreno desigual, hoyos, cercas, maleza, insectos, fauna silvestre y clima forman parte de él. Mire cada paso y mantenga a los niños cerca.",
     "gps": "La flecha es una guía, no una garantía. La precisión del GPS varía; las estacas marcan las esquinas exactas. Nunca siga la flecha por encima de una cerca, a través de una carretera, hacia el agua ni hacia ningún lugar que parezca inseguro.",
     "boundary": "El mapa dibuja líneas rectas entre las estacas de las esquinas medidas. El límite real entre esquinas puede variar — por ejemplo, un frente de carretera curvo se muestra como una línea recta. Las estacas son la referencia; las líneas son solo para orientación.",
+    "survey": "La superficie, las líneas de lindero y las ubicaciones de las esquinas provienen del archivo del topógrafo de esta propiedad. Las imágenes satelitales y los mapas superpuestos pueden no coincidir exactamente — las cifras mostradas son orientativas, y el levantamiento y plano registrados son los que rigen.",
     "liability": "En la máxima medida permitida por la ley, Texas Greener Pastures LLC y sus propietarios, empleados y representantes no son responsables de lesiones, extravíos ni daños a la propiedad derivados de su visita o del uso de esta guía.",
     "emergency": "En caso de emergencia, llame al 911. El marcador de entrada del mapa muestra el camino de regreso al portón.",
     "close": "Entendido"
@@ -103,6 +104,16 @@
     "again": "Caminarlo otra vez",
     "share": "Enviar este recorrido a alguien"
   },
+  "interest": {
+    "title": "¿Le interesa este lote?",
+    "body": "Deje su número y Texas Greener Pastures le enviará un mensaje de texto sobre este lote. Sin presión y sin spam.",
+    "name": "Nombre (opcional)",
+    "phone": "Número de teléfono",
+    "send": "Me interesa — contáctenme",
+    "sending": "Enviando…",
+    "sent": "Recibido — le escribiremos pronto. Gracias por recorrer el lote.",
+    "error": "No se pudo enviar — revise el número e intente de nuevo."
+  },
   "preview": {
     "title": "Ver el recorrido",
     "body": "Todo el recorrido desde casa: la vista aérea, la entrada, cada esquina, el sitio para la casa.",
@@ -139,7 +150,8 @@
     "sold": "Vendido",
     "comingSoon": "Recorrido disponible pronto",
     "empty": "Aún no hay lotes abiertos para recorrer. Vuelve pronto.",
-    "remaining": "{available} de {total} lotes aún disponibles"
+    "remaining": "{available} de {total} lotes aún disponibles",
+    "surveyNote": "La superficie y las líneas provienen del archivo del topógrafo — las imágenes del mapa pueden no coincidir exactamente; rigen el levantamiento y plano registrados."
   },
   "sign": {
     "scanLots": "Escanea para recorrer los lotes",
