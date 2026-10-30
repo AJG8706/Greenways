@@ -192,7 +192,9 @@ export async function POST(request: NextRequest) {
     if ((justEnded ?? []).length > 0 && !(effectiveDevice ?? "").startsWith("demo:")) {
       const { data: sessionLink } = await supabase
         .from("walk_sessions")
-        .select("walk_links!inner(kind, ghl_contact_id, properties!inner(slug, name))")
+        .select(
+          "walk_links!inner(kind, ghl_contact_id, contact_phone, properties!inner(slug, name))",
+        )
         .eq("id", sessionId)
         .maybeSingle();
       const link = (
@@ -200,17 +202,19 @@ export async function POST(request: NextRequest) {
           walk_links?: {
             kind?: string;
             ghl_contact_id?: string | null;
+            contact_phone?: string | null;
             properties?: { slug?: string; name?: { en?: string } | null };
           };
         } | null
       )?.walk_links;
-      if (link?.kind === "prospect" && link.ghl_contact_id) {
+      if (link?.kind === "prospect" && (link.ghl_contact_id || link.contact_phone)) {
         await forwardWalkMilestone({
           kind: "walk_completed",
           stage: "seen_the_property",
           slug: link.properties?.slug ?? body.slug,
           lot: link.properties?.name?.en || link.properties?.slug || body.slug,
-          ghlContactId: link.ghl_contact_id,
+          ghlContactId: link.ghl_contact_id ?? null,
+          phone: link.contact_phone ?? null,
           locale,
           sessionId,
         });

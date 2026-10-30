@@ -23,6 +23,8 @@ export type IssueResult =
 export async function issueProspectLinkForSlug(input: {
   slug: string;
   ghlContactId?: string;
+  /** Prospect's phone — lets walk milestones match the GHL contact by phone. */
+  contactPhone?: string;
   locale?: string;
   expiresDays?: number;
 }): Promise<IssueResult> {
@@ -45,6 +47,7 @@ export async function issueProspectLinkForSlug(input: {
     token,
     locale,
     ghl_contact_id: input.ghlContactId?.trim() || null,
+    contact_phone: input.contactPhone?.trim().slice(0, 30) || null,
     expires_at: expiresAt,
   });
   if (error) return { ok: false, status: 500, error: error.message };

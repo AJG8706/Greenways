@@ -11,7 +11,12 @@ export async function POST(
   if (!auth.ok) return auth.response;
   const { slug } = await params;
 
-  let body: { ghl_contact_id?: string; locale?: string; expires_days?: number } = {};
+  let body: {
+    ghl_contact_id?: string;
+    contact_phone?: string;
+    locale?: string;
+    expires_days?: number;
+  } = {};
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -21,6 +26,7 @@ export async function POST(
   const result = await issueProspectLinkForSlug({
     slug,
     ghlContactId: body.ghl_contact_id,
+    contactPhone: body.contact_phone,
     locale: body.locale,
     expiresDays: body.expires_days,
   });

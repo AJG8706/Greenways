@@ -501,6 +501,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["link_kind"];
           token: string;
           ghl_contact_id: string | null;
+          contact_phone: string | null;
           locale: string | null;
           expires_at: string | null;
           revoked_at: string | null;
@@ -512,6 +513,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["link_kind"];
           token: string;
           ghl_contact_id?: string | null;
+          contact_phone?: string | null;
           locale?: string | null;
           expires_at?: string | null;
           revoked_at?: string | null;
@@ -523,6 +525,7 @@ export type Database = {
           kind?: Database["public"]["Enums"]["link_kind"];
           token?: string;
           ghl_contact_id?: string | null;
+          contact_phone?: string | null;
           locale?: string | null;
           expires_at?: string | null;
           revoked_at?: string | null;
