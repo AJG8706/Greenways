@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { forwardWalkEvents } from "@/lib/analytics";
 import { clientIp, rateLimitAllowed, rateLimitedResponse } from "@/lib/api/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { forwardWalkMilestone } from "@/lib/walk/milestones";
 
 /**
  * Walk telemetry ingest (HUD spec §11). Buyers are anonymous; writes go
@@ -175,10 +176,46 @@ export async function POST(request: NextRequest) {
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
 
   if (events.some((e) => e.name === "walk_completed")) {
-    await supabase
+    // ended_at IS NULL makes this first-completion-only: replays and
+    // duplicate flushes never re-fire the GHL stage move below.
+    const { data: justEnded } = await supabase
       .from("walk_sessions")
       .update({ ended_at: new Date().toISOString() })
-      .eq("id", sessionId);
+      .eq("id", sessionId)
+      .is("ended_at", null)
+      .select("id");
+
+    // A prospect (tokenized link) finishing the walk moves their GHL
+    // opportunity to "Seen the property" via n8n. Public walkers are
+    // anonymous — their milestone is the lead submit. Demo walks never
+    // leave the building.
+    if ((justEnded ?? []).length > 0 && !(effectiveDevice ?? "").startsWith("demo:")) {
+      const { data: sessionLink } = await supabase
+        .from("walk_sessions")
+        .select("walk_links!inner(kind, ghl_contact_id, properties!inner(slug, name))")
+        .eq("id", sessionId)
+        .maybeSingle();
+      const link = (
+        sessionLink as {
+          walk_links?: {
+            kind?: string;
+            ghl_contact_id?: string | null;
+            properties?: { slug?: string; name?: { en?: string } | null };
+          };
+        } | null
+      )?.walk_links;
+      if (link?.kind === "prospect" && link.ghl_contact_id) {
+        await forwardWalkMilestone({
+          kind: "walk_completed",
+          stage: "seen_the_property",
+          slug: link.properties?.slug ?? body.slug,
+          lot: link.properties?.name?.en || link.properties?.slug || body.slug,
+          ghlContactId: link.ghl_contact_id,
+          locale,
+          sessionId,
+        });
+      }
+    }
   }
 
   // Copy to the external analytics sink (GA4 when configured; demo

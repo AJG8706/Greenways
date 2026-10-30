@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { clientIp, rateLimitAllowed, rateLimitedResponse } from "@/lib/api/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { forwardWalkMilestone } from "@/lib/walk/milestones";
 
 /**
  * Buyer lead capture ("I'm interested") from the walk's done screen. Buyers
  * are anonymous, so the insert goes through the service role while RLS keeps
- * walk_leads closed to anonymous clients. When N8N_LEAD_WEBHOOK_URL is set,
- * each lead is also forwarded to n8n (→ GHL/SMS) — best-effort, never blocks
- * the buyer's confirmation.
+ * walk_leads closed to anonymous clients. Each stored lead also emits the
+ * contract_ready milestone to n8n → GHL (see lib/walk/milestones.ts) —
+ * best-effort, never blocks the buyer's confirmation.
  */
 type Body = {
   slug?: string;
@@ -56,16 +57,24 @@ export async function POST(request: NextRequest) {
   // Session attribution is optional and verified: a session id that doesn't
   // belong to this slug is dropped (wrong attribution must not kill a lead).
   let sessionId: string | null = null;
+  let ghlContactId: string | null = null;
+  let demoSession = false;
   if (body.sessionId) {
     const { data: owned } = await supabase
       .from("walk_sessions")
-      .select("id, walk_links!inner(properties!inner(slug))")
+      .select("id, device, walk_links!inner(ghl_contact_id, properties!inner(slug))")
       .eq("id", body.sessionId)
       .maybeSingle();
-    const ownerSlug = (
-      owned as { walk_links?: { properties?: { slug?: string } } } | null
-    )?.walk_links?.properties?.slug;
-    if (owned && ownerSlug === slug) sessionId = owned.id;
+    const link = (
+      owned as {
+        walk_links?: { ghl_contact_id?: string | null; properties?: { slug?: string } };
+      } | null
+    )?.walk_links;
+    if (owned && link?.properties?.slug === slug) {
+      sessionId = owned.id;
+      ghlContactId = link.ghl_contact_id ?? null;
+      demoSession = (owned.device ?? "").startsWith("demo:");
+    }
   }
 
   const { error } = await supabase.from("walk_leads").insert({
@@ -84,32 +93,21 @@ export async function POST(request: NextRequest) {
       .insert({ session_id: sessionId, name: "lead_submitted", data: {} as never });
   }
 
-  // Hot-lead forward (n8n → GHL/SMS). Optional via env; fire-and-forget.
-  const webhook = process.env.N8N_LEAD_WEBHOOK_URL;
-  if (webhook) {
-    const lotName =
-      (property.name as { en?: string } | null)?.en || property.slug;
-    try {
-      await fetch(webhook, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-webhook-secret": process.env.N8N_WEBHOOK_SECRET ?? "",
-        },
-        body: JSON.stringify({
-          kind: "walk_lead",
-          lot: lotName,
-          slug: property.slug,
-          name,
-          phone,
-          locale,
-          submittedAt: new Date().toISOString(),
-        }),
-        signal: AbortSignal.timeout(5000),
-      });
-    } catch {
-      // The lead row is already stored; the forward is a convenience.
-    }
+  // "I want this property" moves the GHL opportunity to Contract ready and
+  // texts the sales team (via n8n). Prospect sessions carry the contact id;
+  // public walkers are matched by phone in n8n. Demo walks never leave.
+  if (!demoSession) {
+    await forwardWalkMilestone({
+      kind: "walk_lead",
+      stage: "contract_ready",
+      slug: property.slug,
+      lot: (property.name as { en?: string } | null)?.en || property.slug,
+      ghlContactId,
+      locale,
+      sessionId,
+      name,
+      phone,
+    });
   }
 
   return NextResponse.json({ ok: true });
