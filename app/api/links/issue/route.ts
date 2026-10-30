@@ -32,7 +32,13 @@ export async function POST(request: NextRequest) {
     return rateLimitedResponse(60);
   }
 
-  let body: { slug?: string; ghl_contact_id?: string; locale?: string; expires_days?: number };
+  let body: {
+    slug?: string;
+    ghl_contact_id?: string;
+    contact_phone?: string;
+    locale?: string;
+    expires_days?: number;
+  };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -43,6 +49,7 @@ export async function POST(request: NextRequest) {
   const result = await issueProspectLinkForSlug({
     slug: body.slug,
     ghlContactId: body.ghl_contact_id,
+    contactPhone: body.contact_phone,
     locale: body.locale,
     expiresDays: body.expires_days,
   });

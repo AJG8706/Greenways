@@ -1,10 +1,11 @@
 import "server-only";
 
 /**
- * Walk milestones → n8n → GoHighLevel opportunity stages. The app never
- * talks to GHL directly (locked decision: GHL goes through n8n); it emits
- * the milestone with an explicit stage intent and the n8n workflow moves
- * the contact's opportunity:
+ * Walk milestones → GoHighLevel opportunity stages, via GHL's own
+ * inbound-webhook workflow (Alton's Oct 30 call; an n8n relay works too —
+ * the receiver just gets JSON). The app emits the milestone with an
+ * explicit stage intent and the receiving workflow moves the contact's
+ * opportunity:
  *
  *   walk_completed → "seen_the_property"  (Seen the property)
  *   walk_lead      → "contract_ready"     (Contract ready)
@@ -31,7 +32,12 @@ export type WalkMilestone = {
 const NOTIFY_SALES_TEAM = true;
 
 export async function forwardWalkMilestone(milestone: WalkMilestone): Promise<void> {
-  const webhook = process.env.N8N_WALK_WEBHOOK_URL || process.env.N8N_LEAD_WEBHOOK_URL;
+  // Points at the GoHighLevel inbound-webhook workflow (no n8n needed for
+  // milestones); the older env names keep working.
+  const webhook =
+    process.env.WALK_MILESTONE_WEBHOOK_URL ||
+    process.env.N8N_WALK_WEBHOOK_URL ||
+    process.env.N8N_LEAD_WEBHOOK_URL;
   if (!webhook) return;
   try {
     await fetch(webhook, {
