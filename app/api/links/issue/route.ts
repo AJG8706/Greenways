@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { clientIp, rateLimitAllowed, rateLimitedResponse } from "@/lib/api/rate-limit";
-import { issueProspectLinkForSlug } from "@/lib/links-service";
+import { issueProspectLinkForSlug, resolveSlugByArea } from "@/lib/links-service";
 
 function secretMatches(given: string, expected: string): boolean {
   const a = Buffer.from(given);
@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
 
   let body: {
     slug?: string;
+    /** GHL area_of_interest text — resolved to a slug when slug is absent. */
+    area?: string;
     ghl_contact_id?: string;
     contact_phone?: string;
     locale?: string;
@@ -44,10 +46,22 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "bad json" }, { status: 400 });
   }
-  if (!body.slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
+
+  let slug = body.slug;
+  if (!slug && body.area) {
+    const resolved = await resolveSlugByArea(String(body.area).slice(0, 200));
+    if (!resolved) {
+      return NextResponse.json(
+        { error: `no property matches area "${String(body.area).slice(0, 120)}"` },
+        { status: 404 },
+      );
+    }
+    slug = resolved;
+  }
+  if (!slug) return NextResponse.json({ error: "slug or area required" }, { status: 400 });
 
   const result = await issueProspectLinkForSlug({
-    slug: body.slug,
+    slug,
     ghlContactId: body.ghl_contact_id,
     contactPhone: body.contact_phone,
     locale: body.locale,
@@ -57,6 +71,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
   return NextResponse.json({
+    slug: result.slug,
     url: result.url,
     token: result.token,
     expires_at: result.expires_at,
