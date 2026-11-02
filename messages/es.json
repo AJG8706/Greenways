@@ -116,6 +116,11 @@
     "error": "No se pudo enviar — revise el número e intente de nuevo.",
     "open": "¿Le interesa este lote?"
   },
+  "swipe": {
+    "label": "¿Le encanta este terreno? Deslice para avisarnos",
+    "sending": "Enviando…",
+    "sent": "Recibido — Texas Greener Pastures le contactará pronto. ¡Siga recorriendo!"
+  },
   "preview": {
     "title": "Ver el recorrido",
     "body": "Todo el recorrido desde casa: la vista aérea, la entrada, cada esquina, el sitio para la casa.",

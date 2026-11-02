@@ -40,6 +40,10 @@ const InterestCard = dynamic(
   () => import("./interest-card").then((m) => m.InterestCard),
   { ssr: false },
 );
+const SwipeInterest = dynamic(
+  () => import("./swipe-interest").then((m) => m.SwipeInterest),
+  { ssr: false },
+);
 const DemoTray = dynamic(() => import("./demo-tray").then((m) => m.DemoTray), { ssr: false });
 
 type Screen = "welcome" | "intro" | "permission" | "denied" | "settings" | "hud" | "done";
@@ -727,6 +731,12 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           <p className="t-small text-center" style={{ color: "var(--text-2)" }}>
             {t("hud.honesty")}
           </p>
+
+          <SwipeInterest
+            slug={config.slug}
+            getSessionId={() => loggerRef.current?.sessionId() ?? null}
+            prospect={Boolean(config.linkToken)}
+          />
         </section>
       ) : null}
 

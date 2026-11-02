@@ -19,6 +19,8 @@ async function completeWalk(page: Page) {
   await expect(page.getByTestId("hud-arrow")).toBeVisible();
   await expect(page.getByTestId("tracked-name")).toBeVisible();
   await expect(page.getByTestId("found-count")).toContainText("0");
+  // Slide-to-interest rides the HUD the whole walk.
+  await expect(page.getByTestId("swipe-interest")).toBeVisible();
 
   await page.getByTestId("demo-tray-toggle").click();
 

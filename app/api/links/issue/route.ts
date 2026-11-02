@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     area?: string;
     ghl_contact_id?: string;
     contact_phone?: string;
+    contact_name?: string;
     locale?: string;
     expires_days?: number;
   };
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
     slug,
     ghlContactId: body.ghl_contact_id,
     contactPhone: body.contact_phone,
+    contactName: body.contact_name,
     locale: body.locale,
     expiresDays: body.expires_days,
   });

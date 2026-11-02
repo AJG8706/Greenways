@@ -160,14 +160,14 @@ export default async function AnalyticsPage({
   // Errors (table not migrated yet) leave leads null — the card hides.
   const { data: leads } = await supabase
     .from("walk_leads")
-    .select("id, name, phone, locale, created_at")
+    .select("id, session_id, name, phone, locale, source, created_at")
     .eq("property_id", id)
     .order("created_at", { ascending: false })
     .limit(50);
 
   const { data: links } = await supabase
     .from("walk_links")
-    .select("id, kind")
+    .select("id, kind, contact_name, contact_phone")
     .eq("property_id", id);
   const linkIds = (links ?? []).map((l) => l.id);
   const prospectLinkIds = new Set(
@@ -197,6 +197,23 @@ export default async function AnalyticsPage({
 
   const agg = aggregateWalks(sessions ?? [], events ?? [], prospectLinkIds);
   const bySession = agg.perSession;
+
+  // The Visitor log: a session reads as a person wherever we know one —
+  // the prospect link's booked contact, or the lead they left themselves.
+  // Greenways-side audit of who saw the property; no GHL required.
+  const linkById = new Map((links ?? []).map((l) => [l.id, l]));
+  const leadBySession = new Map(
+    (leads ?? []).filter((l) => l.session_id).map((l) => [l.session_id as string, l]),
+  );
+  const visitorFor = (s: { id: string; link_id: string | null }) => {
+    const lead = leadBySession.get(s.id);
+    const link = s.link_id ? linkById.get(s.link_id) : undefined;
+    return {
+      name: lead?.name || link?.contact_name || null,
+      phone: lead?.phone || link?.contact_phone || null,
+      interested: Boolean(lead),
+    };
+  };
 
   const tiles: { label: string; value: string; testId?: string }[] = [
     { label: t("sessions"), value: String(agg.buyerWalks), testId: "stat-sessions" },
@@ -236,9 +253,10 @@ export default async function AnalyticsPage({
                     </td>
                     <td className="t-body-m">{l.name ?? "—"}</td>
                     <td className="num">
-                      <a href={`tel:${l.phone}`}>{l.phone}</a>
+                      {l.phone ? <a href={`tel:${l.phone}`}>{l.phone}</a> : "—"}
                     </td>
                     <td className="t-small">{l.locale.toUpperCase()}</td>
+                    <td className="t-small muted">{l.source === "swipe" ? "Swipe" : "Form"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -299,6 +317,7 @@ export default async function AnalyticsPage({
                 <tbody>
                   {(sessions ?? []).slice(0, 20).map((s) => {
                     const agg = bySession.get(s.id);
+                    const visitor = visitorFor(s);
                     return (
                       <tr key={s.id}>
                         <td className="t-small muted">
@@ -308,6 +327,12 @@ export default async function AnalyticsPage({
                             hour: "numeric",
                             minute: "2-digit",
                           })}
+                        </td>
+                        <td>
+                          <span className="t-small">{visitor.name ?? "—"}</span>
+                          {visitor.phone ? (
+                            <span className="t-small muted"> · {visitor.phone}</span>
+                          ) : null}
                         </td>
                         <td className="t-small">{(s.locale ?? "en").toUpperCase()}</td>
                         <td className="t-small">
@@ -323,6 +348,9 @@ export default async function AnalyticsPage({
                         <td>
                           {agg?.completed ? (
                             <span className="pill pill-live">{t("completedTag")}</span>
+                          ) : null}
+                          {visitor.interested ? (
+                            <span className="pill pill-working">{t("interestedTag")}</span>
                           ) : null}
                         </td>
                       </tr>

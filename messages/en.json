@@ -116,6 +116,11 @@
     "error": "That didn't go through — check the number and try again.",
     "open": "Interested in this lot?"
   },
+  "swipe": {
+    "label": "Love this land? Slide to tell us",
+    "sending": "Sending…",
+    "sent": "We got you — Texas Greener Pastures will reach out shortly. Keep walking!"
+  },
   "preview": {
     "title": "Preview the walk",
     "body": "The whole tour from home: the flyover, the entrance, every corner, the homesite.",
@@ -386,6 +391,7 @@
       "publicTag": "Public",
       "cornersShort": "corners",
       "completedTag": "Completed",
+      "interestedTag": "Interested",
       "perLotHint": "Master tract - buyer numbers rolled up per lot. Click a lot for its full breakdown.",
       "lotCol": "Lot",
       "totalRow": "All lots"

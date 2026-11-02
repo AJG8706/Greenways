@@ -502,6 +502,7 @@ export type Database = {
           token: string;
           ghl_contact_id: string | null;
           contact_phone: string | null;
+          contact_name: string | null;
           locale: string | null;
           expires_at: string | null;
           revoked_at: string | null;
@@ -514,6 +515,7 @@ export type Database = {
           token: string;
           ghl_contact_id?: string | null;
           contact_phone?: string | null;
+          contact_name?: string | null;
           locale?: string | null;
           expires_at?: string | null;
           revoked_at?: string | null;
@@ -526,6 +528,7 @@ export type Database = {
           token?: string;
           ghl_contact_id?: string | null;
           contact_phone?: string | null;
+          contact_name?: string | null;
           locale?: string | null;
           expires_at?: string | null;
           revoked_at?: string | null;
@@ -583,7 +586,8 @@ export type Database = {
           session_id: string | null;
           locale: string;
           name: string | null;
-          phone: string;
+          phone: string | null;
+          source: string;
           created_at: string;
         };
         Insert: {
@@ -592,7 +596,8 @@ export type Database = {
           session_id?: string | null;
           locale?: string;
           name?: string | null;
-          phone: string;
+          phone?: string | null;
+          source?: string;
           created_at?: string;
         };
         Update: {
@@ -601,7 +606,8 @@ export type Database = {
           session_id?: string | null;
           locale?: string;
           name?: string | null;
-          phone?: string;
+          phone?: string | null;
+          source?: string;
           created_at?: string;
         };
         Relationships: [
