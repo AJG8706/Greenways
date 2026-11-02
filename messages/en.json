@@ -71,7 +71,8 @@
     "help": "Help",
     "compass": "Compass",
     "courseMode": "Walk a few steps so the arrow can point.",
-    "rotate": "Turn your phone upright."
+    "rotate": "Turn your phone upright.",
+    "lots": "Lots"
   },
   "picker": {
     "title": "Pick a corner",
@@ -112,7 +113,8 @@
     "send": "I'm interested — contact me",
     "sending": "Sending…",
     "sent": "Got it — we'll text you shortly. Thanks for walking the lot.",
-    "error": "That didn't go through — check the number and try again."
+    "error": "That didn't go through — check the number and try again.",
+    "open": "Interested in this lot?"
   },
   "preview": {
     "title": "Preview the walk",

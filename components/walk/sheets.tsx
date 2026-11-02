@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { InterestCard } from "@/components/walk/interest-card";
 import type { WalkCorner } from "@/lib/walk/types";
 import type { I18nText } from "@/lib/i18n/text";
+
+/** Everything the inline "I'm interested" form needs from the walk shell. */
+export type InterestProps = { slug: string; getSessionId: () => string | null };
 
 function pick(text: I18nText, locale: string): string {
   return (locale === "es" ? text.es : text.en) || text.en || text.es;
@@ -97,6 +102,7 @@ export function ArrivalCard({
   allFound,
   onNext,
   onStay,
+  interest,
 }: {
   corner: WalkCorner;
   clipUrl: string | null;
@@ -104,9 +110,13 @@ export function ArrivalCard({
   allFound: boolean;
   onNext: () => void;
   onStay: () => void;
+  interest?: InterestProps;
 }) {
   const t = useTranslations();
   const locale = useLocale();
+  // A buyer who has seen enough shouldn't have to walk every corner to say
+  // so — the form is one tap away at every arrival, full card on request.
+  const [showInterest, setShowInterest] = useState(false);
   return (
     <div className="fixed inset-0 z-40 flex flex-col justify-end" style={{ pointerEvents: "none" }}>
       <div
@@ -177,6 +187,21 @@ export function ArrivalCard({
                 {t("arrival.stay")}
               </Button>
             ) : null}
+            {interest && !allFound ? (
+              showInterest ? (
+                <InterestCard slug={interest.slug} getSessionId={interest.getSessionId} />
+              ) : (
+                <button
+                  type="button"
+                  className="t-small underline"
+                  style={{ color: "var(--link)", background: "none", border: 0, padding: 4 }}
+                  onClick={() => setShowInterest(true)}
+                  data-testid="interest-open"
+                >
+                  {t("interest.open")}
+                </button>
+              )
+            ) : null}
           </div>
         </div>
       </div>
@@ -238,7 +263,13 @@ export function TermsSheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function HelpSheet({ onClose }: { onClose: () => void }) {
+export function HelpSheet({
+  onClose,
+  interest,
+}: {
+  onClose: () => void;
+  interest?: InterestProps;
+}) {
   const t = useTranslations("help");
   const tc = useTranslations("common");
   return (
@@ -258,6 +289,10 @@ export function HelpSheet({ onClose }: { onClose: () => void }) {
               {t(k)}
             </p>
           ))}
+          {interest ? (
+            // Always one tap from the HUD: interest never requires finishing.
+            <InterestCard slug={interest.slug} getSessionId={interest.getSessionId} />
+          ) : null}
           <Button variant="secondary" onClick={onClose}>
             {tc("close")}
           </Button>

@@ -29,6 +29,8 @@ async function completeWalk(page: Page) {
   for (let i = 0; i < 4; i++) {
     await page.getByTestId("demo-jump").click();
     await expect(page.getByTestId("arrival-card")).toBeVisible({ timeout: 20000 });
+    // Interest is offered before the walk is finished, at every arrival.
+    if (i === 0) await expect(page.getByTestId("interest-open")).toBeVisible();
     sawDefaultPin =
       sawDefaultPin ||
       (await page

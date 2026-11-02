@@ -593,6 +593,16 @@ export function WalkApp({ config }: { config: WalkConfig }) {
               {t("hud.foundCount", { found: foundIds.size, total: config.corners.length })}
             </span>
             <span className="row" style={{ gap: 8 }}>
+              {config.master ? (
+                <a
+                  className="hud-chip"
+                  style={{ textDecoration: "none" }}
+                  href={`/walk/${config.master.slug}`}
+                  data-testid="hud-other-lots"
+                >
+                  {t("hud.lots")}
+                </a>
+              ) : null}
               <button
                 type="button"
                 className="hud-chip"
@@ -765,6 +775,16 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           <Button size="lg" className="btn-block" onClick={restart} data-testid="walk-again">
             {t("done.again")}
           </Button>
+          {config.master ? (
+            <a
+              className="t-body-m underline text-center"
+              style={{ color: "var(--link)" }}
+              href={`/walk/${config.master.slug}`}
+              data-testid="done-other-lots"
+            >
+              {t("welcome.otherLots")}
+            </a>
+          ) : null}
         </section>
       ) : null}
 
@@ -790,10 +810,22 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           allFound={allFound}
           onNext={nextCorner}
           onStay={() => setArrivalFor(null)}
+          interest={{
+            slug: config.slug,
+            getSessionId: () => loggerRef.current?.sessionId() ?? null,
+          }}
         />
       ) : null}
 
-      {showHelp ? <HelpSheet onClose={() => setShowHelp(false)} /> : null}
+      {showHelp ? (
+        <HelpSheet
+          onClose={() => setShowHelp(false)}
+          interest={{
+            slug: config.slug,
+            getSessionId: () => loggerRef.current?.sessionId() ?? null,
+          }}
+        />
+      ) : null}
 
       {showTerms ? <TermsSheet onClose={() => setShowTerms(false)} /> : null}
 
