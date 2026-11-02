@@ -72,7 +72,7 @@
     "compass": "Brújula",
     "courseMode": "Camine unos pasos para que la flecha pueda apuntar.",
     "rotate": "Ponga el teléfono en vertical.",
-    "lots": "Lotes"
+    "lots": "Otros lotes"
   },
   "picker": {
     "title": "Elija una esquina",
@@ -112,14 +112,14 @@
     "phone": "Número de teléfono",
     "send": "Me interesa — contáctenme",
     "sending": "Enviando…",
-    "sent": "Recibido — le escribiremos pronto. Gracias por recorrer el lote.",
+    "sent": "Perfecto — Laura o Mario le escribirán pronto. ¡Gracias por recorrer el terreno!",
     "error": "No se pudo enviar — revise el número e intente de nuevo.",
     "open": "¿Le interesa este lote?"
   },
   "swipe": {
     "label": "¿Le encanta este terreno? Deslice para avisarnos",
     "sending": "Enviando…",
-    "sent": "Recibido — Texas Greener Pastures le contactará pronto. ¡Siga recorriendo!"
+    "sent": "¡Este terreno le queda perfecto! Laura o Mario le escribirán pronto para ayudarle a hacerlo suyo. Disfrute el resto del recorrido."
   },
   "preview": {
     "title": "Ver el recorrido",
