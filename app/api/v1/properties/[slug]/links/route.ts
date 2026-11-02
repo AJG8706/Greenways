@@ -14,6 +14,7 @@ export async function POST(
   let body: {
     ghl_contact_id?: string;
     contact_phone?: string;
+    contact_name?: string;
     locale?: string;
     expires_days?: number;
   } = {};
@@ -27,6 +28,7 @@ export async function POST(
     slug,
     ghlContactId: body.ghl_contact_id,
     contactPhone: body.contact_phone,
+    contactName: body.contact_name,
     locale: body.locale,
     expiresDays: body.expires_days,
   });

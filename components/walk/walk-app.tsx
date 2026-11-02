@@ -40,6 +40,10 @@ const InterestCard = dynamic(
   () => import("./interest-card").then((m) => m.InterestCard),
   { ssr: false },
 );
+const SwipeInterest = dynamic(
+  () => import("./swipe-interest").then((m) => m.SwipeInterest),
+  { ssr: false },
+);
 const DemoTray = dynamic(() => import("./demo-tray").then((m) => m.DemoTray), { ssr: false });
 
 type Screen = "welcome" | "intro" | "permission" | "denied" | "settings" | "hud" | "done";
@@ -593,6 +597,16 @@ export function WalkApp({ config }: { config: WalkConfig }) {
               {t("hud.foundCount", { found: foundIds.size, total: config.corners.length })}
             </span>
             <span className="row" style={{ gap: 8 }}>
+              {config.master ? (
+                <a
+                  className="hud-chip"
+                  style={{ textDecoration: "none" }}
+                  href={`/walk/${config.master.slug}`}
+                  data-testid="hud-other-lots"
+                >
+                  {t("hud.lots")}
+                </a>
+              ) : null}
               <button
                 type="button"
                 className="hud-chip"
@@ -717,6 +731,12 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           <p className="t-small text-center" style={{ color: "var(--text-2)" }}>
             {t("hud.honesty")}
           </p>
+
+          <SwipeInterest
+            slug={config.slug}
+            getSessionId={() => loggerRef.current?.sessionId() ?? null}
+            prospect={Boolean(config.linkToken)}
+          />
         </section>
       ) : null}
 
@@ -765,6 +785,16 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           <Button size="lg" className="btn-block" onClick={restart} data-testid="walk-again">
             {t("done.again")}
           </Button>
+          {config.master ? (
+            <a
+              className="t-body-m underline text-center"
+              style={{ color: "var(--link)" }}
+              href={`/walk/${config.master.slug}`}
+              data-testid="done-other-lots"
+            >
+              {t("welcome.otherLots")}
+            </a>
+          ) : null}
         </section>
       ) : null}
 
@@ -790,10 +820,22 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           allFound={allFound}
           onNext={nextCorner}
           onStay={() => setArrivalFor(null)}
+          interest={{
+            slug: config.slug,
+            getSessionId: () => loggerRef.current?.sessionId() ?? null,
+          }}
         />
       ) : null}
 
-      {showHelp ? <HelpSheet onClose={() => setShowHelp(false)} /> : null}
+      {showHelp ? (
+        <HelpSheet
+          onClose={() => setShowHelp(false)}
+          interest={{
+            slug: config.slug,
+            getSessionId: () => loggerRef.current?.sessionId() ?? null,
+          }}
+        />
+      ) : null}
 
       {showTerms ? <TermsSheet onClose={() => setShowTerms(false)} /> : null}
 

@@ -16,6 +16,8 @@ type Body = {
   name?: string;
   phone?: string;
   locale?: string;
+  /** "swipe" = slide-to-interest; a prospect session needs no typed phone. */
+  source?: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -36,15 +38,11 @@ export async function POST(request: NextRequest) {
   }
 
   const slug = String(body.slug ?? "").slice(0, 120);
-  const phone = String(body.phone ?? "").trim().slice(0, 30);
-  const name = String(body.name ?? "").trim().slice(0, 80) || null;
+  const typedPhone = String(body.phone ?? "").trim().slice(0, 30);
+  let name = String(body.name ?? "").trim().slice(0, 80) || null;
   const locale = body.locale === "es" ? "es" : "en";
-  // Loose on purpose (international formats, spaces, dashes) — the digits are
-  // what the follow-up text needs.
-  const digits = phone.replace(/\D/g, "");
-  if (!slug || digits.length < 7 || digits.length > 15) {
-    return NextResponse.json({ error: "slug and a valid phone required" }, { status: 400 });
-  }
+  const source = body.source === "swipe" ? "swipe" : "form";
+  if (!slug) return NextResponse.json({ error: "slug required" }, { status: 400 });
 
   const supabase = createAdminClient();
   const { data: property } = await supabase
@@ -58,23 +56,47 @@ export async function POST(request: NextRequest) {
   // belong to this slug is dropped (wrong attribution must not kill a lead).
   let sessionId: string | null = null;
   let ghlContactId: string | null = null;
+  let linkPhone: string | null = null;
   let demoSession = false;
   if (body.sessionId) {
     const { data: owned } = await supabase
       .from("walk_sessions")
-      .select("id, device, walk_links!inner(ghl_contact_id, properties!inner(slug))")
+      .select(
+        "id, device, walk_links!inner(kind, ghl_contact_id, contact_phone, contact_name, properties!inner(slug))",
+      )
       .eq("id", body.sessionId)
       .maybeSingle();
     const link = (
       owned as {
-        walk_links?: { ghl_contact_id?: string | null; properties?: { slug?: string } };
+        walk_links?: {
+          kind?: string;
+          ghl_contact_id?: string | null;
+          contact_phone?: string | null;
+          contact_name?: string | null;
+          properties?: { slug?: string };
+        };
       } | null
     )?.walk_links;
     if (owned && link?.properties?.slug === slug) {
       sessionId = owned.id;
-      ghlContactId = link.ghl_contact_id ?? null;
       demoSession = (owned.device ?? "").startsWith("demo:");
+      if (link.kind === "prospect") {
+        ghlContactId = link.ghl_contact_id ?? null;
+        linkPhone = link.contact_phone ?? null;
+        if (!name) name = link.contact_name ?? null;
+      }
     }
+  }
+
+  // A swipe from an attributed prospect needs no typed phone — the link
+  // already knows who they are. Everyone else must leave a reachable number.
+  // Loose phone check on purpose (international formats, spaces, dashes).
+  const phone = typedPhone || linkPhone;
+  const digits = (typedPhone || "").replace(/\D/g, "");
+  const typedPhoneValid = digits.length >= 7 && digits.length <= 15;
+  const attributed = ghlContactId !== null || linkPhone !== null;
+  if (!typedPhoneValid && !(source === "swipe" && attributed)) {
+    return NextResponse.json({ error: "a valid phone is required" }, { status: 400 });
   }
 
   const { error } = await supabase.from("walk_leads").insert({
@@ -83,6 +105,7 @@ export async function POST(request: NextRequest) {
     locale,
     name,
     phone,
+    source,
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
