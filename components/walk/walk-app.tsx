@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { HelpCircle, Map as MapIcon, Compass } from "lucide-react";
+import { ArrowLeft, HelpCircle, Map as MapIcon, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/walk/language-toggle";
 import { bearingDeg } from "@/lib/geo/bearing";
@@ -593,19 +593,26 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       {screen === "hud" && trackedCorner ? (
         <section className="flex grow flex-col gap-3 py-3">
           <header className="row between">
-            <span className="hud-chip" data-testid="found-count">
-              {t("hud.foundCount", { found: foundIds.size, total: config.corners.length })}
-            </span>
+            {config.master ? (
+              // Back-style escape hatch to the subdivision's lot picker.
+              <a
+                className="hud-chip"
+                style={{ textDecoration: "none" }}
+                href={`/walk/${config.master.slug}`}
+                data-testid="hud-other-lots"
+              >
+                <ArrowLeft size={16} aria-hidden /> {t("hud.lots")}
+              </a>
+            ) : (
+              <span className="hud-chip" data-testid="found-count">
+                {t("hud.foundCount", { found: foundIds.size, total: config.corners.length })}
+              </span>
+            )}
             <span className="row" style={{ gap: 8 }}>
               {config.master ? (
-                <a
-                  className="hud-chip"
-                  style={{ textDecoration: "none" }}
-                  href={`/walk/${config.master.slug}`}
-                  data-testid="hud-other-lots"
-                >
-                  {t("hud.lots")}
-                </a>
+                <span className="hud-chip" data-testid="found-count">
+                  {t("hud.foundCount", { found: foundIds.size, total: config.corners.length })}
+                </span>
               ) : null}
               <button
                 type="button"
