@@ -2,6 +2,7 @@ import "server-only";
 
 import { newLinkToken, walkPackSms, walkUrl } from "@/lib/links";
 import { i18nText } from "@/lib/i18n/text";
+import { matchPropertyByArea } from "@/lib/links-match";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -12,6 +13,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export type IssueResult =
   | {
       ok: true;
+      slug: string;
       url: string;
       token: string;
       expires_at: string;
@@ -19,6 +21,31 @@ export type IssueResult =
       sms: { en: string; es: string };
     }
   | { ok: false; status: number; error: string };
+
+/**
+ * Resolve a GHL area_of_interest string to a property slug. Test lots never
+ * match; see lib/links-match.ts for the ranking.
+ */
+export async function resolveSlugByArea(area: string): Promise<string | null> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("properties")
+    .select("id, slug, name, address, parent_id, status, test_lot");
+  const match = matchPropertyByArea(
+    (data ?? [])
+      .filter((p) => !p.test_lot)
+      .map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        nameEn: i18nText(p.name).en || p.slug,
+        address: p.address,
+        parentId: p.parent_id,
+        published: p.status === "published",
+      })),
+    area,
+  );
+  return match?.slug ?? null;
+}
 
 export async function issueProspectLinkForSlug(input: {
   slug: string;
@@ -56,6 +83,7 @@ export async function issueProspectLinkForSlug(input: {
   const name = i18nText(property.name);
   return {
     ok: true,
+    slug: property.slug,
     url,
     token,
     expires_at: expiresAt,
