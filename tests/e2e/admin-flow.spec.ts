@@ -358,3 +358,31 @@ test("demo mode is off by default and gates the simulated walk scenarios", async
   await expect(page.getByTestId("launch-demo-boundary")).toBeVisible();
   await expect(page.getByTestId("live-gps-banner")).toHaveCount(0);
 });
+
+test("archiving keeps a sold property's pages while hiding it from the list", async ({
+  page,
+}) => {
+  await signIn(page, ADMIN_EMAIL);
+  await page.getByRole("link", { name: new RegExp(E2E_PROPERTY) }).click();
+  await page.getByTestId("archive-property").click();
+  await expect(page.getByTestId("archived-banner")).toBeVisible({ timeout: 15_000 });
+
+  // Still fully viewable: analytics renders for the archived property.
+  await page.getByTestId("tab-analytics").click();
+  await expect(page.getByTestId("tab-analytics")).toBeVisible();
+
+  // Out of the working list, present in the collapsed Archived section.
+  await page.goto("/admin/properties");
+  await expect(page.getByTestId("properties-table")).not.toContainText(E2E_PROPERTY);
+  const archived = page.getByTestId("archived-section");
+  await expect(archived).toContainText("Archived (1)");
+  await archived.locator("summary").click();
+  await archived.getByRole("link", { name: new RegExp(E2E_PROPERTY) }).click();
+
+  // Reversible: unarchive from the banner; the list returns to normal.
+  await page.getByTestId("archive-property").click();
+  await expect(page.getByTestId("archived-banner")).toHaveCount(0, { timeout: 15_000 });
+  await page.goto("/admin/properties");
+  await expect(page.getByTestId("properties-table")).toContainText(E2E_PROPERTY);
+  await expect(page.getByTestId("archived-section")).toHaveCount(0);
+});

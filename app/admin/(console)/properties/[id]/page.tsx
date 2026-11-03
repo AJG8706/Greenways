@@ -8,6 +8,7 @@ import { DeletePropertyButton } from "@/components/admin/delete-property-button"
 import { DocumentsCard, type PropertyDocument } from "@/components/admin/documents-card";
 import { SubdivisionImportCard } from "@/components/admin/subdivision-import-card";
 import { AcresCell } from "@/components/admin/acres-cell";
+import { ArchivePropertyButton } from "@/components/admin/archive-property-button";
 import { DuplicateLotButton } from "@/components/admin/duplicate-lot-button";
 import { LotOrderControls, SortLotsByNameButton } from "@/components/admin/lot-order-controls";
 import { DEFAULT_APPROACH_PHOTO_PATH, DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
@@ -28,7 +29,7 @@ export default async function OverviewPage({
       supabase
         .from("properties")
         .select(
-          "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot, parent_id, acres, acres_manual",
+          "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot, parent_id, acres, acres_manual, archived_at",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -55,6 +56,18 @@ export default async function OverviewPage({
     ]);
   // Same deploy-before-db-push gap as the list page: retry without parent_id.
   let property = propertyRes.data;
+  if (!property && propertyRes.error && /archived_at/.test(propertyRes.error.message)) {
+    // archived_at not migrated yet: retry with everything else intact so a
+    // master's Overview keeps its Lots table during the gap.
+    const retry = await supabase
+      .from("properties")
+      .select(
+        "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot, parent_id, acres, acres_manual",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    property = retry.data ? { ...retry.data, archived_at: null } : null;
+  }
   if (!property && propertyRes.error && /parent_id|acres_manual/.test(propertyRes.error.message)) {
     const legacy = await supabase
       .from("properties")
@@ -64,7 +77,7 @@ export default async function OverviewPage({
       .eq("id", id)
       .maybeSingle();
     property = legacy.data
-      ? { ...legacy.data, parent_id: null, acres_manual: false }
+      ? { ...legacy.data, parent_id: null, acres_manual: false, archived_at: null }
       : null;
   }
   if (!property) notFound();
@@ -219,6 +232,27 @@ export default async function OverviewPage({
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
+      {property.archived_at ? (
+        <section
+          className="card lg:col-span-2 row between"
+          style={{ borderColor: "var(--gw-harvest-gold, #BCAA6E)" }}
+          data-testid="archived-banner"
+        >
+          <div>
+            <h3>Archived</h3>
+            <p className="t-small muted">
+              Out of the main list and off the buyer side since{" "}
+              {new Date(property.archived_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+              . Every stat, lead and photo stays viewable here.
+            </p>
+          </div>
+          <ArchivePropertyButton propertyId={id} archived />
+        </section>
+      ) : null}
       {parent ? (
         <p className="t-small muted lg:col-span-2" data-testid="lot-breadcrumb">
           Part of{" "}
@@ -390,6 +424,19 @@ export default async function OverviewPage({
             }}
           />
         </div>
+      ) : null}
+      {!property.archived_at && !property.test_lot ? (
+        <section className="card lg:col-span-2 row between">
+          <div>
+            <h3>Archive</h3>
+            <p className="t-small muted">
+              Sold{isMaster ? " out" : ""}? Archiving moves this{" "}
+              {isMaster ? "tract and its lots" : "property"} out of the main list and off the
+              buyer side — analytics, leads and photos stay right here. Reversible any time.
+            </p>
+          </div>
+          <ArchivePropertyButton propertyId={id} archived={false} />
+        </section>
       ) : null}
       <div className="lg:col-span-2">
         <DocumentsCard

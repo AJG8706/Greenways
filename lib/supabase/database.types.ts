@@ -351,6 +351,7 @@ export type Database = {
           acres: number | null;
           acres_manual: boolean;
           sort_order: number;
+          archived_at: string | null;
           entrance_lat: number | null;
           media_brief: Json;
           monday_item_id: string | null;
@@ -378,6 +379,7 @@ export type Database = {
           acres?: number | null;
           acres_manual?: boolean;
           sort_order?: number;
+          archived_at?: string | null;
           entrance_lat?: number | null;
           media_brief?: Json;
           monday_item_id?: string | null;
@@ -405,6 +407,7 @@ export type Database = {
           acres?: number | null;
           acres_manual?: boolean;
           sort_order?: number;
+          archived_at?: string | null;
           entrance_lat?: number | null;
           media_brief?: Json;
           monday_item_id?: string | null;
