@@ -22,12 +22,14 @@ export default async function PropertiesPage({
   const res = await supabase
     .from("properties")
     .select(
-      "id, slug, name, county, status, sale_status, demo_mode, test_lot, parent_id, sort_order, created_at, updated_at, corners(id, locked)",
+      "id, slug, name, county, status, sale_status, demo_mode, test_lot, parent_id, sort_order, archived_at, created_at, updated_at, corners(id, locked)",
     )
     .order("updated_at", { ascending: false });
   let properties: NonNullable<typeof res.data>;
   if (res.error) {
-    if (!/parent_id|sort_order/.test(res.error.message)) throw new Error(res.error.message);
+    if (!/parent_id|sort_order|archived_at/.test(res.error.message)) {
+      throw new Error(res.error.message);
+    }
     const legacy = await supabase
       .from("properties")
       .select(
@@ -35,7 +37,12 @@ export default async function PropertiesPage({
       )
       .order("updated_at", { ascending: false });
     if (legacy.error) throw new Error(legacy.error.message);
-    properties = legacy.data.map((p) => ({ ...p, parent_id: null, sort_order: 0 }));
+    properties = legacy.data.map((p) => ({
+      ...p,
+      parent_id: null,
+      sort_order: 0,
+      archived_at: null,
+    }));
   } else {
     properties = res.data;
   }
@@ -83,7 +90,10 @@ export default async function PropertiesPage({
       lots: (lotsByMaster.get(p.id) ?? []).map(toRow),
     };
   };
-  const rows = topLevel.map(toRow);
+  // Archived properties drop into their own collapsed section — still one
+  // click from all their stats, out of the daily working list.
+  const rows = topLevel.filter((p) => !p.archived_at).map(toRow);
+  const archivedRows = topLevel.filter((p) => p.archived_at).map(toRow);
 
   return (
     <div className="stack" style={{ gap: "var(--gw-s-6)" }}>
@@ -123,6 +133,22 @@ export default async function PropertiesPage({
           </table>
         </div>
       )}
+
+      {archivedRows.length > 0 ? (
+        <details data-testid="archived-section">
+          <summary className="t-body-m muted" style={{ cursor: "pointer" }}>
+            Archived ({archivedRows.length}) — sold properties kept for their stats
+          </summary>
+          <div className="table-wrap" style={{ marginTop: "var(--gw-s-3)" }}>
+            <table data-testid="archived-table">
+              <PropertiesTable
+                rows={archivedRows}
+                labels={{ master: t("master"), lotCount: t("lots") }}
+              />
+            </table>
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

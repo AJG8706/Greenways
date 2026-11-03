@@ -902,6 +902,48 @@ export async function updateAcres(propertyId: string, acres: number): Promise<Ac
   return { ok: true };
 }
 
+/**
+ * Archive / unarchive a sold property: out of the daily list and off the
+ * buyer side, with every stat and lead kept viewable. Reversible, so it's
+ * a team action (unlike delete); audited. A master takes its lots along
+ * both ways.
+ */
+export async function setArchived(
+  propertyId: string,
+  archived: boolean,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const archivedAt = archived ? new Date().toISOString() : null;
+
+  const { error } = await supabase
+    .from("properties")
+    .update({ archived_at: archivedAt })
+    .eq("id", propertyId);
+  if (error) {
+    return {
+      ok: false,
+      // Deploy-before-db-push gap: the column isn't on the hosted DB yet.
+      message: /archived_at/.test(error.message)
+        ? "The archive migration (20261103150000) has not reached the database yet — run the DB push workflow, then retry."
+        : error.message,
+    };
+  }
+  const { error: childError } = await supabase
+    .from("properties")
+    .update({ archived_at: archivedAt })
+    .eq("parent_id", propertyId);
+  if (childError) return { ok: false, message: childError.message };
+
+  await supabase.rpc("write_audit", {
+    p_action: archived ? "property_archived" : "property_unarchived",
+    p_property_id: propertyId,
+  });
+
+  revalidatePath("/admin/properties");
+  revalidatePath(`/admin/properties/${propertyId}`, "layout");
+  return { ok: true };
+}
+
 /** A master's lots in display order, resequenced 1..n. */
 async function lotSequence(
   supabase: Awaited<ReturnType<typeof createClient>>,

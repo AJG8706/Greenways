@@ -28,24 +28,44 @@ export default async function WalkPage({
   const { demo, t } = await searchParams;
   const supabase = createAdminClient();
 
-  const { data: property } = await supabase
+  const propertyRes = await supabase
     .from("properties")
     .select(
-      "id, slug, name, acres, entrance_lat, entrance_lng, demo_mode, test_lot, status, parent_id",
+      "id, slug, name, acres, entrance_lat, entrance_lng, demo_mode, test_lot, status, parent_id, archived_at",
     )
     .eq("slug", slug)
     .maybeSingle();
+  // Deploy-before-db-push gap: archived_at missing must never 404 live walks.
+  let property = propertyRes.data;
+  if (!property && propertyRes.error && /archived_at/.test(propertyRes.error.message)) {
+    const legacy = await supabase
+      .from("properties")
+      .select(
+        "id, slug, name, acres, entrance_lat, entrance_lng, demo_mode, test_lot, status, parent_id",
+      )
+      .eq("slug", slug)
+      .maybeSingle();
+    property = legacy.data ? { ...legacy.data, archived_at: null } : null;
+  }
   if (!property) notFound();
+  // Archived (sold) properties no longer serve a walk — tokenized links too.
+  if (property.archived_at) notFound();
 
   // Master tract: the QR at the gate opens a lot picker instead of a walk.
   // Buyers only ever see lots that are individually walkable — published
   // (or team-reachable demo/test), CAD-locked corners, entrance set.
-  const { data: children } = await supabase
+  const { data: childRows } = await supabase
     .from("properties")
-    .select("slug, name, acres, status, sale_status, demo_mode, test_lot, entrance_lat, corners(locked)")
+    .select(
+      "slug, name, acres, status, sale_status, demo_mode, test_lot, entrance_lat, archived_at, corners(locked)",
+    )
     .eq("parent_id", property.id)
     .order("sort_order")
     .order("created_at");
+  // Archived lots leave the picker and its "X of Y" counts entirely —
+  // filtered in JS so a pre-migration DB (null childRows) degrades the
+  // same way the admin pages do.
+  const children = (childRows ?? []).filter((lot) => !lot.archived_at);
   if (children && children.length > 0) {
     // Unpublished lots stay invisible to the public even in demo/test mode:
     // drafts are reachable only by a signed-in team member. The picker page
