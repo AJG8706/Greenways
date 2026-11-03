@@ -26,8 +26,19 @@ export default async function PropertiesPage({
     )
     .order("updated_at", { ascending: false });
   let properties: NonNullable<typeof res.data>;
-  if (res.error) {
-    if (!/parent_id|sort_order|archived_at/.test(res.error.message)) {
+  if (res.error && /archived_at/.test(res.error.message)) {
+    // archived_at not migrated yet: retry with everything else intact so
+    // masters keep their lots (and the accordion) during the gap.
+    const retry = await supabase
+      .from("properties")
+      .select(
+        "id, slug, name, county, status, sale_status, demo_mode, test_lot, parent_id, sort_order, created_at, updated_at, corners(id, locked)",
+      )
+      .order("updated_at", { ascending: false });
+    if (retry.error) throw new Error(retry.error.message);
+    properties = retry.data.map((p) => ({ ...p, archived_at: null }));
+  } else if (res.error) {
+    if (!/parent_id|sort_order/.test(res.error.message)) {
       throw new Error(res.error.message);
     }
     const legacy = await supabase

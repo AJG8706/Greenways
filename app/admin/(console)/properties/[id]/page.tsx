@@ -56,11 +56,19 @@ export default async function OverviewPage({
     ]);
   // Same deploy-before-db-push gap as the list page: retry without parent_id.
   let property = propertyRes.data;
-  if (
-    !property &&
-    propertyRes.error &&
-    /parent_id|acres_manual|archived_at/.test(propertyRes.error.message)
-  ) {
+  if (!property && propertyRes.error && /archived_at/.test(propertyRes.error.message)) {
+    // archived_at not migrated yet: retry with everything else intact so a
+    // master's Overview keeps its Lots table during the gap.
+    const retry = await supabase
+      .from("properties")
+      .select(
+        "id, boundary, geometry_source, status, es_reviewed, published_at, name, media_brief, test_lot, parent_id, acres, acres_manual",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    property = retry.data ? { ...retry.data, archived_at: null } : null;
+  }
+  if (!property && propertyRes.error && /parent_id|acres_manual/.test(propertyRes.error.message)) {
     const legacy = await supabase
       .from("properties")
       .select(
