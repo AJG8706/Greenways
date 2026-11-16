@@ -89,6 +89,15 @@ test("an unlocked corner takes the device's GPS fix, with accuracy shown", async
     timeout: 15_000,
   });
 
+  // A mistaken move is one tap from undone: the corner returns to where it
+  // was before the GPS fix, and the button goes away once the stack empties.
+  await expect(page.getByTestId("undo-move")).toContainText("Undo move C1");
+  await page.getByTestId("undo-move").click();
+  await expect(page.getByTestId("corners-table")).not.toContainText("30.200100", {
+    timeout: 15_000,
+  });
+  await expect(page.getByTestId("undo-move")).toHaveCount(0);
+
   // Locking removes the capture buttons: locked corners never move.
   await page.getByTestId("lock-corners").click();
   await expect(page.getByTestId("gps-corner-1")).toHaveCount(0, { timeout: 15_000 });
