@@ -326,11 +326,12 @@ test("activity page shows sign-ins and the audit trail (admin only)", async ({ p
   await expect(table).toContainText("Locked a corner");
 });
 
-test("publish stays blocked while Spanish is unreviewed", async ({ page }) => {
+test("unreviewed Spanish is noted but no longer blocks publish", async ({ page }) => {
   await signIn(page, ADMIN_EMAIL);
   await page.getByRole("link", { name: new RegExp(E2E_PROPERTY) }).click();
   await page.getByTestId("tab-publish").click();
-  await expect(page.getByTestId("publish-blocked")).toBeVisible();
+  await expect(page.getByTestId("es-unreviewed-note")).toBeVisible();
+  await expect(page.getByTestId("publish-toggle")).toBeEnabled();
 });
 
 test("demo mode is off by default and gates the simulated walk scenarios", async ({

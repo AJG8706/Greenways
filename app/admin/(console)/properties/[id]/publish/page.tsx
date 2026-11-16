@@ -54,7 +54,7 @@ export default async function PublishPage({
   // sequences each ready lot through the normal per-lot gates.
   const { data: masterLots } = await supabase
     .from("properties")
-    .select("id, status, es_reviewed, test_lot, corners(locked)")
+    .select("id, status, test_lot, corners(locked)")
     .eq("parent_id", id);
   if ((masterLots ?? []).length > 0) {
     const lotCount = masterLots!.length;
@@ -63,7 +63,6 @@ export default async function PublishPage({
       const corners = l.corners ?? [];
       return (
         l.status !== "published" &&
-        l.es_reviewed &&
         !l.test_lot &&
         corners.length >= 3 &&
         corners.every((c) => c.locked)
@@ -124,8 +123,8 @@ export default async function PublishPage({
       </div>
 
       {!property.es_reviewed ? (
-        <div className="banner banner-warn" role="status" data-testid="publish-blocked">
-          {t("blockedEs")}
+        <div className="banner" role="status" data-testid="es-unreviewed-note">
+          {t("esNote")}
         </div>
       ) : null}
       {property.test_lot ? (

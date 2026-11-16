@@ -89,7 +89,7 @@ export function ContentForm({
       const result = await saveContent(propertyId, form);
       setMessage(
         result.ok
-          ? { kind: "ok", text: "Saved. Spanish needs a person's review before publish." }
+          ? { kind: "ok", text: result.message ?? "Saved." }
           : { kind: "error", text: result.message ?? "Save failed" },
       );
     });
@@ -242,8 +242,9 @@ export function ContentForm({
           </span>
         </label>
         <p className="t-small muted" style={{ marginTop: 8 }}>
-          Publish stays blocked until a person confirms the Spanish. Saving any
-          change clears the flag.
+          Review is tracked here and shown on the Publish tab (it no longer
+          blocks publish). Saving a text change clears the flag; saving with
+          nothing changed keeps it.
         </p>
       </section>
     </div>
