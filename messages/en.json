@@ -214,6 +214,7 @@
       "verified": "CAD-verified",
       "locked": "Locked",
       "unlock": "Unlock to edit — walk goes offline",
+      "undo": "Undo move",
       "order": "Numbered clockwise from the road entrance",
       "entrance": "Entrance",
       "stakeDesc": "Stake description",

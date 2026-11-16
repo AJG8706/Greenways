@@ -81,6 +81,7 @@ export default async function CornersPage({
         lock: t("lock"),
         lockHint: t("lockHint"),
         unlock: t("unlock"),
+        undo: t("undo"),
         order: t("order"),
         entrance: t("entrance"),
         stakeDesc: t("stakeDesc"),

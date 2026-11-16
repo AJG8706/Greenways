@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Crosshair, LocateFixed, Lock, LockOpen, Upload } from "lucide-react";
+import { Crosshair, LocateFixed, Lock, LockOpen, Undo2, Upload } from "lucide-react";
 import {
   importKml,
   lockCorners,
@@ -39,6 +39,7 @@ export type CornersLabels = {
   lock: string;
   lockHint: string;
   unlock: string;
+  undo: string;
   order: string;
   entrance: string;
   stakeDesc: string;
@@ -101,6 +102,22 @@ export function CornersEditor({
   const [gpsNote, setGpsNote] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
+  // Mistake insurance: every position change remembers what it replaced,
+  // and Undo walks the stack back one move at a time (client-side, so it
+  // lasts for this editing session). Capped so it can't grow unbounded.
+  type UndoEntry =
+    | { kind: "corner"; cornerId: string; n: number; lat: number; lng: number }
+    | { kind: "entrance"; lat: number; lng: number };
+  const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
+
+  function rememberCorner(cornerId: string) {
+    const prev = corners.find((c) => c.id === cornerId);
+    if (!prev) return;
+    setUndoStack((stack) => [
+      ...stack.slice(-19),
+      { kind: "corner", cornerId, n: prev.n, lat: prev.lat, lng: prev.lng },
+    ]);
+  }
 
   const hasGeometry = corners.length >= 3;
   const allLocked = hasGeometry && corners.every((c) => c.locked);
@@ -148,7 +165,19 @@ export function CornersEditor({
   }
 
   function onCornerDragged(cornerId: string, next: LatLng) {
+    rememberCorner(cornerId);
     run(() => moveCorner(cornerId, propertyId, next.lat, next.lng));
+  }
+
+  function undo() {
+    const last = undoStack[undoStack.length - 1];
+    if (!last) return;
+    setUndoStack((stack) => stack.slice(0, -1));
+    if (last.kind === "corner") {
+      run(() => moveCorner(last.cornerId, propertyId, last.lat, last.lng));
+    } else {
+      run(() => moveEntrance(propertyId, { lat: last.lat, lng: last.lng }));
+    }
   }
 
   /**
@@ -200,6 +229,7 @@ export function CornersEditor({
         setGpsBusy(null);
         const ft = Math.round(pos.coords.accuracy * 3.28084);
         setGpsNote(`C${c.n} ${labels.gpsCaptured} · ±${ft} ft`);
+        rememberCorner(c.id);
         run(() =>
           moveCorner(c.id, propertyId, pos.coords.latitude, pos.coords.longitude),
         );
@@ -227,6 +257,12 @@ export function CornersEditor({
       closestPointOnPolygon(proj.toLocal(p), ring.map(proj.toLocal)),
     );
     setEntranceMode(false);
+    if (entrance) {
+      setUndoStack((stack) => [
+        ...stack.slice(-19),
+        { kind: "entrance", lat: entrance.lat, lng: entrance.lng },
+      ]);
+    }
     run(() => moveEntrance(propertyId, snapped));
   }
 
@@ -331,6 +367,19 @@ export function CornersEditor({
             }}
           >
             {entranceMode ? "Click the lot line…" : "Move entrance"}
+          </Button>
+        ) : null}
+        {undoStack.length > 0 && !allLocked ? (
+          <Button
+            variant="ghost"
+            disabled={pending}
+            onClick={undo}
+            data-testid="undo-move"
+          >
+            <Undo2 size={16} />{" "}
+            {undoStack[undoStack.length - 1]!.kind === "corner"
+              ? `${labels.undo} C${(undoStack[undoStack.length - 1] as { n: number }).n}`
+              : labels.undo}
           </Button>
         ) : null}
       </div>
