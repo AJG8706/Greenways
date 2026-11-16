@@ -16,7 +16,9 @@ export type ActionResult = { ok: boolean; message?: string };
 /** Human-readable text for the publish-gate trigger errors (guardrails). */
 function publishError(message: string): string {
   if (message.includes("es_unreviewed")) {
-    return "Spanish must be reviewed by a person first (Content tab).";
+    // Only reachable while the hosted DB still runs the old gate — the
+    // 20261116120000 migration removed this check.
+    return "The database still enforces the old Spanish-review gate — run the DB push workflow (migration 20261116120000), then retry.";
   }
   if (message.includes("corners_unverified")) {
     return "All corners must be locked (CAD-verified) first (Corners tab).";
@@ -27,7 +29,7 @@ function publishError(message: string): string {
   return message;
 }
 
-/** Publish: the DB trigger enforces es_reviewed + locked corners + not test_lot. */
+/** Publish: the DB trigger enforces locked corners + not test_lot. */
 export async function publishProperty(propertyId: string): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase
@@ -73,8 +75,9 @@ export async function publishAllReadyLots(masterId: string): Promise<ActionResul
   const supabase = await createClient();
   const { data: lots, error } = await supabase
     .from("properties")
-    .select("id, slug, status, es_reviewed, test_lot, corners(locked)")
-    .eq("parent_id", masterId);
+    .select("id, slug, status, test_lot, corners(locked)")
+    .eq("parent_id", masterId)
+    .is("archived_at", null);
   if (error) return { ok: false, message: error.message };
   if (!lots || lots.length === 0) return { ok: false, message: "This property has no lots." };
 
@@ -82,7 +85,6 @@ export async function publishAllReadyLots(masterId: string): Promise<ActionResul
     const corners = l.corners ?? [];
     return (
       l.status !== "published" &&
-      l.es_reviewed &&
       !l.test_lot &&
       corners.length >= 3 &&
       corners.every((c) => c.locked)
@@ -91,8 +93,7 @@ export async function publishAllReadyLots(masterId: string): Promise<ActionResul
   if (ready.length === 0) {
     return {
       ok: false,
-      message:
-        "No lots are ready — a lot publishes once its corners are locked and its Spanish is reviewed.",
+      message: "No lots are ready — a lot publishes once its corners are locked.",
     };
   }
 

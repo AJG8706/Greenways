@@ -13,6 +13,8 @@ import { DuplicateLotButton } from "@/components/admin/duplicate-lot-button";
 import { LotOrderControls, SortLotsByNameButton } from "@/components/admin/lot-order-controls";
 import { DEFAULT_APPROACH_PHOTO_PATH, DEFAULT_STAKE_PHOTO_PATH } from "@/lib/photos";
 import { LotsBulkEdit } from "@/components/admin/lots-bulk-edit";
+import { DraftSpanishAllButton } from "@/components/admin/draft-spanish-all-button";
+import { PublishAllButton } from "@/components/admin/publish-all-button";
 import { Pill, saleTone, statusTone } from "@/components/ui/pill";
 
 // Overview tab: the assemble checklist, computed from real data.
@@ -38,7 +40,7 @@ export default async function OverviewPage({
       supabase
         .from("properties")
         .select(
-          "id, slug, name, acres, status, sale_status, es_reviewed, media_brief, corners(n, locked, approach_photo, stake_photo), media_assets(slot, type, status)",
+          "id, slug, name, acres, status, sale_status, es_reviewed, test_lot, archived_at, media_brief, corners(n, locked, approach_photo, stake_photo), media_assets(slot, type, status)",
         )
         .eq("parent_id", id)
         .order("sort_order")
@@ -220,6 +222,20 @@ export default async function OverviewPage({
   });
   const isMaster = lotRows.length > 0;
 
+  // Same readiness rule as the bulk publish action (publish/actions.ts):
+  // locked corners (≥3), not a test lot, not archived. Spanish review is
+  // tracked on the Content tab but no longer blocks publish (Alton, Nov 2026).
+  const readyLotCount = (lots ?? []).filter((lot) => {
+    const lotCorners = lot.corners ?? [];
+    return (
+      !lot.archived_at &&
+      lot.status !== "published" &&
+      !lot.test_lot &&
+      lotCorners.length >= 3 &&
+      lotCorners.every((c) => c.locked)
+    );
+  }).length;
+
   const parent = property.parent_id
     ? (
         await supabase
@@ -331,6 +347,17 @@ export default async function OverviewPage({
                 </tbody>
               </table>
             </div>
+            <div
+              className="row"
+              style={{ gap: "var(--gw-s-3)", flexWrap: "wrap", alignItems: "flex-start" }}
+            >
+              <DraftSpanishAllButton masterId={id} />
+              <PublishAllButton masterId={id} readyCount={readyLotCount} />
+            </div>
+            <p className="t-small muted">
+              Draft Spanish fills only the empty Spanish fields on each lot. Review on the
+              Content tab is tracked but no longer blocks publish.
+            </p>
           </div>
         </section>
       ) : null}

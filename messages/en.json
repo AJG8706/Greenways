@@ -345,7 +345,7 @@
       "published": "Published",
       "unpublish": "Unpublish",
       "draft": "Draft",
-      "blockedEs": "Publish is blocked: the Spanish text has not been reviewed by a person (Content tab).",
+      "esNote": "The Spanish text has not been reviewed by a person yet (Content tab). Review is tracked but no longer blocks publish.",
       "blockedTestLot": "A generated test lot can never be published — it exists for GPS testing only.",
       "linkHint": "The link goes live the moment the property is published; until then buyers get a not-found page.",
       "prospectHint": "Tokenized links tie a walk session to a prospect — issued here or automatically when a Property Tours booking lands (n8n webhook).",

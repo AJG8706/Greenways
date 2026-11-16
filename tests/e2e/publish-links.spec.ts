@@ -57,20 +57,14 @@ test("an unpublished listing never serves a walk (locked corners or not)", async
   expect(res.status()).toBe(404);
 });
 
-test("publish is blocked until Spanish review, then goes live", async ({ page }) => {
+test("publish goes live without Spanish review (note shown, gate relaxed)", async ({ page }) => {
   await signIn(page, ADMIN_EMAIL);
   await page.goto(`/admin/properties/${propertyId}`);
   await page.getByTestId("tab-publish").click();
 
-  await expect(page.getByTestId("publish-blocked")).toBeVisible();
-  await page.getByTestId("publish-toggle").click();
-  await expect(page.getByTestId("publish-error")).toContainText(/spanish/i);
-
-  // A person reviews the Spanish (Content tab elsewhere); service role stands in.
-  const supabase = adminApi();
-  await supabase.from("properties").update({ es_reviewed: true }).eq("id", propertyId);
-
-  await page.reload();
+  // Unreviewed Spanish is surfaced as a note but no longer blocks the gate
+  // (relaxed Nov 2026); locked corners remain the hard requirement.
+  await expect(page.getByTestId("es-unreviewed-note")).toBeVisible();
   await page.getByTestId("publish-toggle").click();
   await expect(page.getByTestId("publish-status")).toHaveText(/published/i, {
     timeout: 15_000,

@@ -58,8 +58,9 @@ E2E suite against a local Supabase stack on every push and PR.
 
 The guardrails in `CLAUDE.md` §Standing guardrails — notably: corners only from
 CAD-verified geometry (locked in the DB; unlock is admin-only and audit-logged),
-no hard-coded English in buyer components, and nothing AI-generated reaches a
-buyer without a person approving it (`es_reviewed` gates publish).
+no hard-coded English in buyer components, and no generated media reaches a
+buyer without a person approving it (the review queue). Spanish review is
+tracked per property (`es_reviewed`) but no longer gates publish.
 
 `data/lot4-google-aerial.jpg` is an internal test capture only — never served
 to buyers.
