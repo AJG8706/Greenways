@@ -426,7 +426,9 @@
       "fOpened": "Opened",
       "fStarted": "Started",
       "fCompleted": "Completed",
-      "fInterested": "Interested"
+      "fInterested": "Interested",
+      "heatmap": "Where walkers go",
+      "heatmapHint": "Position samples from real walks over the lot outline (local feet, demo walks excluded). Darker green = more time spent there — it shows which approaches get used and where people linger."
     },
     "demo": {
       "title": "Demo & QA",

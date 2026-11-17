@@ -5,6 +5,9 @@ import { i18nText } from "@/lib/i18n/text";
 import { aggregateWalks, isDemoDevice } from "@/lib/analytics/walk-aggregate";
 import { tallyFeedback } from "@/lib/analytics/feedback";
 import { buildFunnel } from "@/lib/analytics/funnel";
+import { aggregateHeatCells } from "@/lib/analytics/heatmap";
+import { centroid, makeProjection } from "@/lib/geo/project";
+import { WalkHeatmap } from "@/components/admin/walk-heatmap";
 
 /**
  * Walk analytics (plan §3 Phase 5): opened, corners found, hesitation
@@ -255,6 +258,12 @@ export default async function AnalyticsPage({
     .order("created_at", { ascending: false })
     .limit(50);
 
+  const { data: propertyCorners } = await supabase
+    .from("corners")
+    .select("n, lat, lng")
+    .eq("property_id", id)
+    .order("n");
+
   const { data: links } = await supabase
     .from("walk_links")
     .select("id, kind, contact_name, contact_phone")
@@ -294,6 +303,34 @@ export default async function AnalyticsPage({
   const feedback = tallyFeedback(events ?? [], demoSessionIds);
   const KNOWN_REASONS = new Set(["tooSmall", "price", "access", "location", "other"]);
   const tFb = await getTranslations("feedback");
+
+  // Heatmap: pos_sample events from buyer sessions, binned over the lot
+  // ring in local tangent feet (HUD spec §2). Demo walks excluded.
+  const ringLatLng = (propertyCorners ?? []).map((c) => ({ lat: c.lat, lng: c.lng }));
+  let heatmap: ReturnType<typeof aggregateHeatCells> | null = null;
+  let heatRing: { x: number; y: number }[] = [];
+  let heatCorners: { n: number; x: number; y: number }[] = [];
+  if (ringLatLng.length >= 3) {
+    const proj = makeProjection(centroid(ringLatLng));
+    heatRing = ringLatLng.map((p) => proj.toLocal(p));
+    heatCorners = (propertyCorners ?? []).map((c) => ({
+      n: c.n,
+      ...proj.toLocal({ lat: c.lat, lng: c.lng }),
+    }));
+    const samples = (events ?? [])
+      .filter(
+        (e) =>
+          e.name === "pos_sample" && e.session_id && !demoSessionIds.has(e.session_id),
+      )
+      .map((e) => {
+        const d = (e.data ?? {}) as { lat?: unknown; lng?: unknown };
+        return typeof d.lat === "number" && typeof d.lng === "number"
+          ? proj.toLocal({ lat: d.lat, lng: d.lng })
+          : null;
+      })
+      .filter((p): p is { x: number; y: number } => p !== null);
+    if (samples.length > 0) heatmap = aggregateHeatCells(samples, heatRing);
+  }
 
   // The Visitor log: a session reads as a person wherever we know one —
   // the prospect link's booked contact, or the lead they left themselves.
@@ -413,6 +450,14 @@ export default async function AnalyticsPage({
                     .join(" · ")}
                 </p>
               ) : null}
+            </section>
+          ) : null}
+
+          {heatmap && heatmap.cells.length > 0 ? (
+            <section className="card stack" style={{ gap: "var(--gw-s-2)" }}>
+              <h3>{t("heatmap")}</h3>
+              <p className="t-small muted">{t("heatmapHint")}</p>
+              <WalkHeatmap ring={heatRing} corners={heatCorners} heat={heatmap} />
             </section>
           ) : null}
 

@@ -28,6 +28,7 @@ const ALLOWED_EVENTS = new Set([
   "preview_played",
   "walk_feedback",
   "walk_shared",
+  "pos_sample",
 ]);
 
 type Body = {
@@ -238,7 +239,10 @@ export async function POST(request: NextRequest) {
     return out;
   };
   await forwardWalkEvents(
-    events.map((e) => ({ name: e.name!, data: forwardable(e.data) })),
+    // Position samples stay in-house: ~60 per walk would be pure GA4 noise.
+    events
+      .filter((e) => e.name !== "pos_sample")
+      .map((e) => ({ name: e.name!, data: forwardable(e.data) })),
     {
       slug: body.slug,
       sessionId,

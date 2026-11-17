@@ -68,6 +68,9 @@ type Machine = {
   lastDistDisplayMs: number | null;
   startedAtMs: number | null;
   cornerStartedAtMs: number | null;
+  /** Heatmap sampling throttle (≤1 per 30 s, ≤200 per session). */
+  lastPosSampleMs?: number;
+  posSamples?: number;
 };
 
 export function WalkApp({ config }: { config: WalkConfig }) {
@@ -274,6 +277,19 @@ export function WalkApp({ config }: { config: WalkConfig }) {
       }
       setDistances(nextDistances);
       setBuyerPoint(m.fixLocal);
+
+      // Position sample for the admin heatmap: where walkers actually go.
+      // Throttled hard (one per 30 s, 200 per session) and rounded to
+      // ~4 ft so the telemetry stays light.
+      if (now - (m.lastPosSampleMs ?? 0) >= 30_000 && (m.posSamples ?? 0) < 200) {
+        m.lastPosSampleMs = now;
+        m.posSamples = (m.posSamples ?? 0) + 1;
+        const ll = geo.proj.fromLocal(m.fixLocal);
+        loggerRef.current?.log("pos_sample", {
+          lat: Number(ll.lat.toFixed(5)),
+          lng: Number(ll.lng.toFixed(5)),
+        });
+      }
 
       const tracked = trackedRef.current;
       if (tracked) {

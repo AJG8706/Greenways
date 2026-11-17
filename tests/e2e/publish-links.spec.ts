@@ -139,6 +139,9 @@ test("analytics tab aggregates buyer walks and separates demo", async ({ page, r
       device: "e2e-phone",
       events: [
         { name: "walk_opened", ts: 1 },
+        { name: "pos_sample", data: { lat: 30.1744, lng: -94.1964 }, ts: 2 },
+        { name: "pos_sample", data: { lat: 30.1744, lng: -94.1964 }, ts: 2 },
+        { name: "pos_sample", data: { lat: 30.174, lng: -94.1957 }, ts: 3 },
         { name: "corner_found", data: { n: 1, seconds: 30, accuracyFt: 12 }, ts: 2 },
         { name: "corner_found", data: { n: 2, seconds: 50, accuracyFt: 15 }, ts: 3 },
         { name: "walk_completed", data: { seconds: 200 }, ts: 4 },
@@ -171,6 +174,9 @@ test("analytics tab aggregates buyer walks and separates demo", async ({ page, r
   await expect(page.getByTestId("stat-completed")).toContainText("100%");
   await expect(page.getByTestId("corner-times")).toContainText("Corner 1");
   await expect(page.getByTestId("recent-walks")).toContainText("Demo");
+
+  // The heatmap draws from the pos_sample events: lot outline + density.
+  await expect(page.getByTestId("walk-heatmap")).toBeVisible();
 });
 
 test("automations: off by default; digest composes; no-show nudges once", async ({
