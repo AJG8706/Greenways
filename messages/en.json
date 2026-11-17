@@ -121,6 +121,25 @@
     "sending": "Sending…",
     "sent": "This land suits you! Laura or Mario will text you shortly to help make it yours. Enjoy the rest of your walk."
   },
+  "feedback": {
+    "title": "How did this land feel?",
+    "loved": "Loved it",
+    "thinking": "Still thinking",
+    "notForMe": "Not for me",
+    "whyTitle": "What didn't fit? (optional)",
+    "reasons": {
+      "tooSmall": "Too small",
+      "price": "The price",
+      "access": "Getting there",
+      "location": "The location",
+      "other": "Something else"
+    },
+    "skip": "Skip",
+    "thanks": "Thanks — that helps us find you the right land."
+  },
+  "share": {
+    "copied": "Link copied — text it to anyone."
+  },
   "preview": {
     "title": "Preview the walk",
     "body": "The whole tour from home: the flyover, the entrance, every corner, the homesite.",
@@ -395,7 +414,12 @@
       "interestedTag": "Interested",
       "perLotHint": "Master tract - buyer numbers rolled up per lot. Click a lot for its full breakdown.",
       "lotCol": "Lot",
-      "totalRow": "All lots"
+      "totalRow": "All lots",
+      "feedback": "Buyer feedback",
+      "feedbackHint": "One-tap exit feedback from the done screen. “Not for me” reasons tell you how to reprice or re-stage the lot.",
+      "fbLoved": "Loved it",
+      "fbThinking": "Still thinking",
+      "fbNotForMe": "Not for me"
     },
     "demo": {
       "title": "Demo & QA",

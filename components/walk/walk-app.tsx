@@ -26,6 +26,8 @@ import { createDemoSource, createSensorSource, type WalkSource } from "@/lib/wal
 import { hasPreviewMedia, type WalkConfig } from "@/lib/walk/types";
 import { ArrowRing, CornerStrip, DistanceReadout, StatusLine } from "./hud-parts";
 import { ArrivalCard, BoundaryBanner, HelpSheet, PickerSheet, TermsSheet } from "./sheets";
+import { ExitFeedback } from "./exit-feedback";
+import { ShareWalk } from "./share-walk";
 
 // Heavy or later-screen components load on demand so the welcome screen ships
 // (and executes) less JS on a phone — the Lighthouse gate watches this.
@@ -554,6 +556,10 @@ export function WalkApp({ config }: { config: WalkConfig }) {
               {t("welcome.preview")}
             </Button>
           ) : null}
+          <ShareWalk
+            propertyName={propertyName}
+            log={(method) => loggerRef.current?.log("walk_shared", { method })}
+          />
           <p className="t-small muted">{t("welcome.loadHint")}</p>
         </section>
       ) : null}
@@ -785,6 +791,9 @@ export function WalkApp({ config }: { config: WalkConfig }) {
               />
             </div>
           ) : null}
+          <ExitFeedback
+            log={(d) => loggerRef.current?.log("walk_feedback", d)}
+          />
           <InterestCard
             slug={config.slug}
             getSessionId={() => loggerRef.current?.sessionId() ?? null}
@@ -792,6 +801,10 @@ export function WalkApp({ config }: { config: WalkConfig }) {
           <Button size="lg" className="btn-block" onClick={restart} data-testid="walk-again">
             {t("done.again")}
           </Button>
+          <ShareWalk
+            propertyName={propertyName}
+            log={(method) => loggerRef.current?.log("walk_shared", { method })}
+          />
           {config.master ? (
             <a
               className="t-body-m underline text-center"
