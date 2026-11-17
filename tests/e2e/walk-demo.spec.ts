@@ -49,6 +49,16 @@ async function completeWalk(page: Page) {
 test("demo walk finds all four corners to completion (desktop)", async ({ page }) => {
   await completeWalk(page);
 
+  // One-tap exit feedback: "Not for me" asks one optional follow-up, a
+  // reason tap sends the single walk_feedback event and thanks the buyer.
+  await expect(page.getByTestId("exit-feedback")).toBeVisible();
+  await page.getByTestId("feedback-not-for-me").click();
+  await page.getByTestId("feedback-reason-price").click();
+  await expect(page.getByTestId("feedback-thanks")).toBeVisible();
+
+  // Share-the-walk is offered on the done screen (native share or copy).
+  await expect(page.getByTestId("share-walk")).toBeVisible();
+
   // The done screen's "I'm interested" card: a phone number is enough, and
   // the submit lands in walk_leads via the service-role API route.
   await page.getByTestId("interest-phone").fill("409-555-0137");

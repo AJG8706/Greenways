@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
 import { aggregateWalks, isDemoDevice } from "@/lib/analytics/walk-aggregate";
+import { tallyFeedback } from "@/lib/analytics/feedback";
 
 /**
  * Walk analytics (plan §3 Phase 5): opened, corners found, hesitation
@@ -198,6 +199,13 @@ export default async function AnalyticsPage({
   const agg = aggregateWalks(sessions ?? [], events ?? [], prospectLinkIds);
   const bySession = agg.perSession;
 
+  const demoSessionIds = new Set(
+    (sessions ?? []).filter((s) => isDemoDevice(s.device)).map((s) => s.id),
+  );
+  const feedback = tallyFeedback(events ?? [], demoSessionIds);
+  const KNOWN_REASONS = new Set(["tooSmall", "price", "access", "location", "other"]);
+  const tFb = await getTranslations("feedback");
+
   // The Visitor log: a session reads as a person wherever we know one —
   // the prospect link's booked contact, or the lead they left themselves.
   // Greenways-side audit of who saw the property; no GHL required.
@@ -291,6 +299,34 @@ export default async function AnalyticsPage({
             ))}
           </div>
 
+          {feedback.bySession.size > 0 ? (
+            <section className="card stack" style={{ gap: "var(--gw-s-2)" }}>
+              <h3>{t("feedback")}</h3>
+              <p className="t-small muted">{t("feedbackHint")}</p>
+              <div className="row" style={{ gap: 16, flexWrap: "wrap" }} data-testid="feedback-tally">
+                <span className="pill pill-live">
+                  {t("fbLoved")} {feedback.loved}
+                </span>
+                <span className="pill pill-working">
+                  {t("fbThinking")} {feedback.thinking}
+                </span>
+                <span className="pill pill-draft">
+                  {t("fbNotForMe")} {feedback.notForMe}
+                </span>
+              </div>
+              {Object.keys(feedback.reasons).length > 0 ? (
+                <p className="t-small muted" data-testid="feedback-reasons">
+                  {Object.entries(feedback.reasons)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(
+                      ([r, n]) => `${KNOWN_REASONS.has(r) ? tFb(`reasons.${r}`) : r} ×${n}`,
+                    )
+                    .join(" · ")}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
           {agg.perCorner.length > 0 ? (
             <section className="card stack" style={{ gap: "var(--gw-s-2)" }}>
               <h3>{t("byCorner")}</h3>
@@ -352,6 +388,24 @@ export default async function AnalyticsPage({
                           {visitor.interested ? (
                             <span className="pill pill-working">{t("interestedTag")}</span>
                           ) : null}
+                          {(() => {
+                            const fb = feedback.bySession.get(s.id);
+                            if (!fb) return null;
+                            const label =
+                              fb.verdict === "loved"
+                                ? t("fbLoved")
+                                : fb.verdict === "thinking"
+                                  ? t("fbThinking")
+                                  : t("fbNotForMe");
+                            return (
+                              <span className="pill pill-draft">
+                                {label}
+                                {fb.reason && KNOWN_REASONS.has(fb.reason)
+                                  ? ` · ${tFb(`reasons.${fb.reason}`)}`
+                                  : ""}
+                              </span>
+                            );
+                          })()}
                         </td>
                       </tr>
                     );

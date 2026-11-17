@@ -121,6 +121,25 @@
     "sending": "Enviando…",
     "sent": "¡Este terreno le queda perfecto! Laura o Mario le escribirán pronto para ayudarle a hacerlo suyo. Disfrute el resto del recorrido."
   },
+  "feedback": {
+    "title": "¿Qué le pareció este terreno?",
+    "loved": "Me encantó",
+    "thinking": "Aún lo pienso",
+    "notForMe": "No es para mí",
+    "whyTitle": "¿Qué no le convenció? (opcional)",
+    "reasons": {
+      "tooSmall": "Muy pequeño",
+      "price": "El precio",
+      "access": "Llegar hasta aquí",
+      "location": "La ubicación",
+      "other": "Otra cosa"
+    },
+    "skip": "Omitir",
+    "thanks": "Gracias — eso nos ayuda a encontrarle el terreno ideal."
+  },
+  "share": {
+    "copied": "Enlace copiado — envíelo por mensaje a quien quiera."
+  },
   "preview": {
     "title": "Ver el recorrido",
     "body": "Todo el recorrido desde casa: la vista aérea, la entrada, cada esquina, el sitio para la casa.",

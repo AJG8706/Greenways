@@ -26,6 +26,8 @@ const ALLOWED_EVENTS = new Set([
   "language_switched",
   "walk_completed",
   "preview_played",
+  "walk_feedback",
+  "walk_shared",
 ]);
 
 type Body = {
@@ -229,7 +231,7 @@ export async function POST(request: NextRequest) {
   const forwardable = (d?: Record<string, unknown>): Record<string, unknown> | undefined => {
     if (!d) return undefined;
     const out: Record<string, unknown> = {};
-    for (const k of ["n", "seconds", "accuracyFt", "slot", "scenario", "locale"]) {
+    for (const k of ["n", "seconds", "accuracyFt", "slot", "scenario", "locale", "verdict", "reason", "method"]) {
       const v = d[k];
       if (typeof v === "number" || typeof v === "string" || typeof v === "boolean") out[k] = v;
     }
