@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { i18nText } from "@/lib/i18n/text";
 import { aggregateWalks, isDemoDevice } from "@/lib/analytics/walk-aggregate";
 import { tallyFeedback } from "@/lib/analytics/feedback";
+import { buildFunnel } from "@/lib/analytics/funnel";
 
 /**
  * Walk analytics (plan §3 Phase 5): opened, corners found, hesitation
@@ -30,7 +31,12 @@ async function MasterRollup({
 
   const { data: links } = await supabase
     .from("walk_links")
-    .select("id, kind, property_id")
+    .select("id, kind, property_id, revoked_at")
+    .in("property_id", lotIds);
+  // Errors (walk_leads not migrated) leave this null — funnel shows 0 interested.
+  const { data: lotLeads } = await supabase
+    .from("walk_leads")
+    .select("id, property_id")
     .in("property_id", lotIds);
   const linkIds = (links ?? []).map((l) => l.id);
   const { data: sessions } = linkIds.length
@@ -69,8 +75,17 @@ async function MasterRollup({
       id: lot.id,
       name: i18nText(lot.name as never).en || lot.slug,
       agg: aggregateWalks(lotSessions, lotEvents, lotProspects),
+      funnel: buildFunnel({
+        sessions: lotSessions,
+        events: lotEvents,
+        issuedLinks: (links ?? []).filter(
+          (l) => l.property_id === lot.id && l.kind === "prospect" && !l.revoked_at,
+        ).length,
+        leads: (lotLeads ?? []).filter((l) => l.property_id === lot.id).length,
+      }),
     };
   });
+  const maxOpened = Math.max(1, ...rows.map((r) => r.funnel.opened));
   const totals = rows.reduce(
     (acc, r) => ({
       walks: acc.walks + r.agg.buyerWalks,
@@ -127,6 +142,80 @@ async function MasterRollup({
           </tbody>
         </table>
       </div>
+
+      <section className="card stack" style={{ gap: "var(--gw-s-2)" }}>
+        <h3>{t("funnel")}</h3>
+        <p className="t-small muted">{t("funnelHint")}</p>
+        <div className="table-wrap">
+          <table data-testid="funnel-table">
+            <thead>
+              <tr>
+                <th>{t("lotCol")}</th>
+                <th className="num">{t("fIssued")}</th>
+                <th className="num">{t("fOpened")}</th>
+                <th className="num">{t("fStarted")}</th>
+                <th className="num">{t("fCompleted")}</th>
+                <th className="num">{t("fInterested")}</th>
+                <th style={{ width: "30%" }} aria-label={t("funnel")}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const f = r.funnel;
+                const openedPct = Math.round((f.opened / maxOpened) * 100);
+                const startedPct = f.opened ? Math.round((f.started / f.opened) * 100) : 0;
+                const completedPct = f.opened ? Math.round((f.completed / f.opened) * 100) : 0;
+                return (
+                  <tr key={r.id}>
+                    <td className="t-body-m">{r.name}</td>
+                    <td className="num">{f.issued}</td>
+                    <td className="num">{f.opened}</td>
+                    <td className="num">{f.started}</td>
+                    <td className="num">{f.completed}</td>
+                    <td className="num">{f.interested}</td>
+                    <td>
+                      {/* Opened (muted) → started (gold) → completed (green),
+                          all scaled to the busiest lot so rows compare. */}
+                      <div
+                        style={{
+                          width: `${openedPct}%`,
+                          minWidth: f.opened > 0 ? 24 : 0,
+                          height: 10,
+                          borderRadius: 5,
+                          background: "var(--border)",
+                          position: "relative",
+                          overflow: "hidden",
+                        }}
+                        role="img"
+                        aria-label={`${f.opened} ${t("fOpened")}, ${f.started} ${t("fStarted")}, ${f.completed} ${t("fCompleted")}`}
+                      >
+                        <div
+                          style={{
+                            position: "absolute",
+                            insetBlock: 0,
+                            left: 0,
+                            width: `${startedPct}%`,
+                            background: "var(--gw-harvest-gold, #BCAA6E)",
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: "absolute",
+                            insetBlock: 0,
+                            left: 0,
+                            width: `${completedPct}%`,
+                            background: "var(--ok)",
+                          }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

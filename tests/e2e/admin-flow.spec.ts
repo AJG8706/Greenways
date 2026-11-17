@@ -176,6 +176,9 @@ test("assemble: a master KML at creation splits into lot properties", async ({
   await page.getByTestId("tab-analytics").click();
   await expect(page.getByTestId("master-analytics").locator("tbody tr")).toHaveCount(11);
 
+  // The funnel table sits under the rollup: one row per lot, five stages.
+  await expect(page.getByTestId("funnel-table").locator("tbody tr")).toHaveCount(10);
+
   // Buyer side: a fully-draft subdivision does not exist for the public —
   // the picker page itself (name, lot counts) is team-only until something
   // publishes. The `request` fixture carries no session cookie.

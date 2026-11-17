@@ -1,6 +1,8 @@
 import { getTranslations } from "next-intl/server";
+import { AutomationsCard } from "@/components/admin/automations-card";
 import { ServiceKeysCard, type KeyRow } from "@/components/admin/service-keys-card";
 import { kekConfigured, SERVICE_KEYS, serviceKeyStatus } from "@/lib/keys";
+import { AUTOMATION_DEFAULTS, getAutomationSettings } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function SettingsPage() {
@@ -16,6 +18,7 @@ export default async function SettingsPage() {
     .eq("user_id", user?.id ?? "")
     .maybeSingle();
   const isAdmin = me?.role === "admin";
+  const automations = isAdmin ? await getAutomationSettings() : AUTOMATION_DEFAULTS;
 
   const keyRows: KeyRow[] = isAdmin
     ? await Promise.all(
@@ -44,6 +47,14 @@ export default async function SettingsPage() {
             </p>
           </div>
         )
+      ) : null}
+      {isAdmin ? (
+        <AutomationsCard
+          digestEnabled={automations.digestEnabled}
+          noshowEnabled={automations.noshowEnabled}
+          noshowDays={automations.noshowDays}
+          migrated={automations.migrated}
+        />
       ) : null}
       <div className="card">
         <p className="muted">

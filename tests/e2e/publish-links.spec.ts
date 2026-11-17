@@ -173,6 +173,80 @@ test("analytics tab aggregates buyer walks and separates demo", async ({ page, r
   await expect(page.getByTestId("recent-walks")).toContainText("Demo");
 });
 
+test("automations: off by default; digest composes; no-show nudges once", async ({
+  request,
+}) => {
+  const SECRET = process.env.N8N_WEBHOOK_SECRET ?? "e2e-webhook-secret";
+  const supabase = adminApi();
+
+  // Both automations ship OFF: with no settings rows the endpoints no-op.
+  await supabase.from("app_settings").delete().in("key", ["weekly_digest", "noshow_nudges"]);
+  const offRes = await request.post("/api/digest", {
+    headers: { "x-webhook-secret": SECRET },
+    data: {},
+  });
+  expect(offRes.status()).toBe(200);
+  expect(((await offRes.json()) as { enabled: boolean }).enabled).toBe(false);
+
+  // Digest on: earlier tests walked this property, so the text has content.
+  await supabase.from("app_settings").upsert({ key: "weekly_digest", value: { enabled: true } });
+  const digestRes = await request.post("/api/digest", {
+    headers: { "x-webhook-secret": SECRET },
+    data: {},
+  });
+  expect(digestRes.status()).toBe(200);
+  const digest = (await digestRes.json()) as { enabled: boolean; text: string | null };
+  expect(digest.enabled).toBe(true);
+  expect(digest.text).toContain("Greenways");
+
+  // No-show on: a prospect link issued 4 days ago that nobody ever opened
+  // gets exactly one nudge, stamped on the link.
+  await supabase
+    .from("app_settings")
+    .upsert({ key: "noshow_nudges", value: { enabled: true, days: 3 } });
+  const { data: staleLink } = await supabase
+    .from("walk_links")
+    .insert({
+      property_id: propertyId,
+      kind: "prospect",
+      token: `e2e-noshow-${Date.now()}`,
+      contact_phone: "+14095550188",
+      created_at: new Date(Date.now() - 4 * 86400_000).toISOString(),
+    })
+    .select("id")
+    .single();
+  const nudgeRes = await request.post("/api/links/no-shows", {
+    headers: { "x-webhook-secret": SECRET },
+    data: {},
+  });
+  expect(nudgeRes.status()).toBe(200);
+  const nudge = (await nudgeRes.json()) as { enabled: boolean; nudged: number };
+  expect(nudge.enabled).toBe(true);
+  expect(nudge.nudged).toBeGreaterThanOrEqual(1);
+  const { data: stamped } = await supabase
+    .from("walk_links")
+    .select("noshow_notified_at")
+    .eq("id", staleLink!.id)
+    .single();
+  expect(stamped!.noshow_notified_at).not.toBeNull();
+
+  // Second pass: the stamp holds, that link is never nudged again.
+  const again = await request.post("/api/links/no-shows", {
+    headers: { "x-webhook-secret": SECRET },
+    data: {},
+  });
+  const { data: still } = await supabase
+    .from("walk_links")
+    .select("noshow_notified_at")
+    .eq("id", staleLink!.id)
+    .single();
+  expect(still!.noshow_notified_at).toBe(stamped!.noshow_notified_at);
+  expect(again.status()).toBe(200);
+
+  // Leave both OFF, as shipped.
+  await supabase.from("app_settings").delete().in("key", ["weekly_digest", "noshow_nudges"]);
+});
+
 test("webhook brute-force burns a per-IP budget and hits 429", async ({ request }) => {
   // Wrong-secret attempts are limited to 20/min per IP; a flood must start
   // seeing 429 instead of an unbounded stream of 401 oracle responses.

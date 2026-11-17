@@ -70,6 +70,22 @@ export async function saveServiceKey(
   }
 }
 
+/** Opt-in automations (weekly digest, no-show nudges) — admin toggles. */
+export async function setAutomation(
+  key: "weekly_digest" | "noshow_nudges",
+  enabled: boolean,
+): Promise<KeyActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+  const { setAppSetting } = await import("@/lib/settings");
+  const value = key === "noshow_nudges" ? { enabled, days: 3 } : { enabled };
+  const res = await setAppSetting(key, value, gate.teamId);
+  if (!res.ok) return res;
+  await audit("automation_toggled", { key, enabled: String(enabled) });
+  revalidatePath("/admin/settings");
+  return { ok: true };
+}
+
 export async function removeServiceKey(name: string): Promise<KeyActionResult> {
   const gate = await requireAdmin();
   if (!gate.ok) return gate;
