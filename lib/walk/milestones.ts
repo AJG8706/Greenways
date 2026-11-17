@@ -16,8 +16,8 @@ import "server-only";
  * request. Unset env = no-op.
  */
 export type WalkMilestone = {
-  kind: "walk_completed" | "walk_lead";
-  stage: "seen_the_property" | "contract_ready";
+  kind: "walk_completed" | "walk_lead" | "walk_noshow";
+  stage: "seen_the_property" | "contract_ready" | "no_show";
   slug: string;
   lot: string;
   ghlContactId: string | null;
@@ -55,5 +55,39 @@ export async function forwardWalkMilestone(milestone: WalkMilestone): Promise<vo
     });
   } catch {
     // The row is already stored; the stage move retries on the next milestone.
+  }
+}
+
+/**
+ * Team-facing notices (the weekly digest) ride the same GHL inbound
+ * webhook: the workflow branches on `kind` and texts Laura & Mario the
+ * `text`. Returns whether the POST was accepted so the caller can report.
+ */
+export async function forwardTeamNotice(notice: {
+  kind: "weekly_digest";
+  text: string;
+}): Promise<boolean> {
+  const webhook =
+    process.env.WALK_MILESTONE_WEBHOOK_URL ||
+    process.env.N8N_WALK_WEBHOOK_URL ||
+    process.env.N8N_LEAD_WEBHOOK_URL;
+  if (!webhook) return false;
+  try {
+    const res = await fetch(webhook, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-webhook-secret": process.env.N8N_WEBHOOK_SECRET ?? "",
+      },
+      body: JSON.stringify({
+        ...notice,
+        notifySalesTeam: NOTIFY_SALES_TEAM,
+        submittedAt: new Date().toISOString(),
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }

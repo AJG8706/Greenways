@@ -509,6 +509,7 @@ export type Database = {
           locale: string | null;
           expires_at: string | null;
           revoked_at: string | null;
+          noshow_notified_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -522,6 +523,7 @@ export type Database = {
           locale?: string | null;
           expires_at?: string | null;
           revoked_at?: string | null;
+          noshow_notified_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -535,6 +537,7 @@ export type Database = {
           locale?: string | null;
           expires_at?: string | null;
           revoked_at?: string | null;
+          noshow_notified_at?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -629,6 +632,27 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      app_settings: {
+        Row: {
+          key: string;
+          value: Json;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          key: string;
+          value?: Json;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          key?: string;
+          value?: Json;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

@@ -419,7 +419,16 @@
       "feedbackHint": "One-tap exit feedback from the done screen. “Not for me” reasons tell you how to reprice or re-stage the lot.",
       "fbLoved": "Loved it",
       "fbThinking": "Still thinking",
-      "fbNotForMe": "Not for me"
+      "fbNotForMe": "Not for me",
+      "funnel": "Funnel",
+      "funnelHint": "Links issued → opened → started → completed → interested, per lot. Bars scale to the busiest lot: grey is opened, gold started, green completed.",
+      "fIssued": "Issued",
+      "fOpened": "Opened",
+      "fStarted": "Started",
+      "fCompleted": "Completed",
+      "fInterested": "Interested",
+      "heatmap": "Where walkers go",
+      "heatmapHint": "Position samples from real walks over the lot outline (local feet, demo walks excluded). Darker green = more time spent there — it shows which approaches get used and where people linger."
     },
     "demo": {
       "title": "Demo & QA",
